@@ -1,0 +1,21 @@
+<ion-view view-title="Settings">
+  <ion-nav-buttons side="right">
+  </ion-nav-buttons>    
+    <ion-content scroll="false">
+        <ion-slides  options="options" slider="data.slider">
+            <ion-slide-page>
+                <ng-include src="'templates/settings_device.html'"></ng-include>
+            </ion-slide-page>
+
+            <ion-slide-page>
+                <ng-include src="'templates/settings_connection.html'"></ng-include>
+            </ion-slide-page>
+            
+            <ion-slide-page>
+                <ng-include src="'templates/settings_voicedetection.html'"></ng-include>
+            </ion-slide-page>            
+
+        </ion-slides>
+    </ion-content>
+
+</ion-view>
