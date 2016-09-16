@@ -7,9 +7,19 @@
 
 
  
-function HomeCtrl($scope, $state) 
+function HomeCtrl($scope, $state, $ionicPopup, $ionicHistory)
 {
+    $scope.$on('$ionicView.enter', function(){
+        $ionicHistory.clearHistory();
+    });
     
+    $scope.exit = function()
+    {
+        $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'}).then(function(res) 
+        {
+            if (res){  ionic.Platform.exitApp();  }
+        });
+    }
 };
 
 

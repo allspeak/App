@@ -1,0 +1,22 @@
+<ion-view view-title="Settings">
+<!-- <ion-nav-back-button class="button-clear">
+  </ion-nav-back-button>  -->
+    <ion-content scroll="false">
+        <ion-tabs class="tabs-icon-top tabs-positive">
+
+          <ion-tab title="Device" icon-on="ion-social-bitcoin" icon-off="ion-social-bitcoin-outline" ui-sref="settings.device">
+            <ion-nav-view name="device-settings"></ion-nav-view>
+          </ion-tab>
+
+          <ion-tab title="Setup Audio Input" icon-on="ion-ios-analytics" icon-off="ion-ios-analytics-outline" ui-sref="settings.setup_input">
+            <ion-nav-view name="setupinput-settings"></ion-nav-view>
+          </ion-tab>
+
+          <ion-tab title="Server Connection" icon-on="ion-ios-cog" icon-off="ion-ios-cog-outline" ui-sref="settings.server_connection">
+            <ion-nav-view name="server-settings"></ion-nav-view>
+          </ion-tab>
+
+        </ion-tabs>
+    </ion-content>
+
+</ion-view>

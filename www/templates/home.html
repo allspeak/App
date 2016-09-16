@@ -1,21 +1,29 @@
-    <ion-view view-title="ALLSPEAK home">  
+<ion-view view-title="ALLSPEAK home">  
         
-  <ion-nav-buttons side="right">
-    <button class="button button-icon icon ion-settings" ui-sref="settings">  </button>
-  </ion-nav-buttons>          
+<ion-nav-buttons side="right">
+    <!--<button class="button button-icon icon ion-settings" ui-sref="settings.device">  </button>-->
+  </ion-nav-buttons>       
         
       <ion-content class="padding">
         <h1 style="text-align: center;"></h1><br/>
-          <button class="button button-block button-positive" ui-sref="amplifier">
+          <button class="button button-block button-large button-positive" ui-sref="amplifier">
             Amplifier
           </button>
-        <br/><br/>
-        <button class="button button-block button-positive" ui-sref="recognition">
+        <button class="button button-block button-large button-positive" ui-sref="recognition">
             Recognition
           </button>
-        <br/><br/>        
-        <button class="button button-block button-positive" ui-sref="vocabulary">
-          Vocabulary
+        <button class="button button-block button-large button-positive" ui-sref="vocabulary">
+            Vocabulary
         </button>        
+        <button class="button button-block button-large button-positive" ui-sref="settings.device">
+            Settings
+        </button>        
+        <br/><br/> 
+        <br/><br/> 
+        <br/><br/> 
+        <button class="button button-block button-positive" ng-click="exit()">
+            Exit
+        </button>        
+        
       </ion-content>
-    </ion-view>
+</ion-view>

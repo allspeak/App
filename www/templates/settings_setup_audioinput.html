@@ -1,0 +1,57 @@
+<ion-view view-title="Audio Input Settings">
+    
+<ion-nav-buttons side="left">
+ <button class="button button-clear" ui-sref="home"><i class="icon ion-arrow-left-c" ></i>Home</button>
+</ion-nav-buttons>
+    
+  <ion-content>
+    <div class="list">
+        
+<!--    <div>  Input source: {{input_sources}}  </div>
+        <br></br>          
+        <div>  selected Input Device : {{selectedSourceType}} </div>-->
+
+        <label class="item item-input item-select">
+            <div class="input-label"> Input device </div>
+            <!--<select ng-model="selectedSourceType" ng-option="item.value as item.label for item in input_sources" ng-change="updateSourceType(selectedSourceType)"></select>-->
+            <!--<select ng-model="selectedSourceType" ng-option="item.value as item.label for item in input_sources" ng-change="updateSourceType(selectedSourceType)"></select>-->
+            <!--<select ng-model="selectedSourceType" ng-option="item.value as item.label for item in input_sources" ng-change="updateSourceType(selectedSourceType)"></select>-->
+            <!--<select ng-init="selectedSourceType = input_sources[0].value" ng-model="selectedSourceType" ng-change="updateSourceType(selectedSourceType)">-->
+            <select ng-model="selectedSourceType" ng-change="updateSourceType(selectedSourceType)">
+                <option ng-selected="{{item.value == captureCfg.audioSourceType}}" ng-repeat="item in input_sources" value="{{item.value}}">{{item.label}}</option>
+            </select>            
+        </label>
+        <label class="item item-input item-select">
+            <div class="input-label">
+                S. Frequency
+            </div>
+            <select ng-model="selectedFrequency" ng-change="updateFrequency(selectedFrequency)">
+                <option ng-selected="{{item.value == captureCfg.sampleRate}}" ng-repeat="item in sampling_frequencies" value="{{item.value}}">{{item.label}}</option>
+            </select>            
+        </label>     
+
+        <label class="item">
+          adjust microphone threshold <span class="badge">{{voicedetection.volume}}</span>
+        </label>
+      
+        <div class="item range">
+            <i class="icon ion-volume-low"></i>
+                <input type="range" name="volume" ng-model="voicedetection.volume">
+            <i class="icon ion-volume-high"></i>
+        </div>
+
+        <label class="item">
+          Data received :  <span class="badge">{{totalReceivedData}}</span>
+        </label>        
+        <label class="item">
+          Elapsed Time : <span class="badge">{{elapsedTime}}</span>
+        </label>        
+        <label class="item">
+          Voice is : <span class="badge">{{vad_status}}</span>
+        </label>        
+        <button class="button button-block button-positive" ng-click="startVoiceMonitoring()">
+           {{voicemon_label}}
+        </button> 
+    </div>      
+  </ion-content>
+</ion-view>

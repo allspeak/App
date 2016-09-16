@@ -1,6 +1,7 @@
 (function(window) {
 
-  var VAD = function(options) {
+  var VAD = function(options) 
+  {
     // Default options
     this.options = {
       fftSize: 512,

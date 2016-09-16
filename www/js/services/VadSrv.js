@@ -6,7 +6,10 @@
 function VadSrv($cordovaNativeAudio, $cordovaMediaCapture)
 {
     this.controller_scope       = {};
-    this.window                 = {};   
+    this.window                 = {};
+    this.audioContext           = new AudioContext();
+    
+    
     // Define function called by getUserMedia 
     this.onVoiceStart = function()
     {
@@ -37,12 +40,12 @@ function VadSrv($cordovaNativeAudio, $cordovaMediaCapture)
         this.audioserver_manager.vad = new VAD(options);
     };  
 
-    this.monitorVoice = function($window, controller_scope)
+    this.startCapture = function(captureCfg, $scope, $window)
     {
+        this.controller_scope = $scope;
         $window.AudioContext = $window.AudioContext || $window.webkitAudioContext;
 
-        this.controller_scope       = controller_scope;
-        $window.audioserver_manager = {audiocontext : new AudioContext(),
+        $window.audioserver_manager = {audiocontext : this.audioContext,
                                        controller : this.controller_scope,
                                        audioserver : this};
 
@@ -50,7 +53,7 @@ function VadSrv($cordovaNativeAudio, $cordovaMediaCapture)
                                          $window.navigator.mozGetUserMedia || 
                                          $window.navigator.webkitGetUserMedia;
         $window.navigator.getUserMedia({audio: true}, this.startUserMedia, function(e) { console.log("No live audio input in this browser: " + e); });        
-    }
+    };
     //=============================================   
     this.getSource = function() 
     {

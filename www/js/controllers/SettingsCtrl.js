@@ -4,19 +4,58 @@
  * and open the template in the editor.
  */
 
-function SettingsCtrl($scope, $window, $cordovaDevice, AudioSrv, VadSrv, HarkSrv, CaptureNativeSrv)
+function SettingsCtrl($scope, $window, $ionicPlatform, AudioSrv, VadSrv, HarkSrv, cpAISrv, HWSrv)
 {
-    //$scope.device = $cordovaDevice.device();
+    
+//    $ionicPlatform.ready(function() 
+//    {
+//        HWSrv.init();
+//        $scope.$apply(function() 
+//        {
+//            $scope.cordova.loaded = true;
+//        });
+//    });    
+    $scope.device_item_to_be_shown    = [ {label:"model", value:""},  
+                                        {label:"manufacturer", value:""} , 
+                                        {label:"platform", value:""} , 
+                                        {label:"serial", value:""},  
+                                        {label:"version", value:""}];
+    var len_dev = $scope.device_item_to_be_shown.length;
+    
+    $scope.device       = HWSrv.getDevice();
+    
+    for (d=0; d<len_dev; d++)
+    {
+        lab                                         = $scope.device_item_to_be_shown[d].label;
+        $scope.device_item_to_be_shown[d].value     = $scope.device[lab];
+    }
+    $scope.inputsources = HWSrv.getInputSources();
+    
+    //$scope.selectedInputDevice = {};
+    //$scope.device_item_list = 
     $scope.voicedetection = {
         volume : 95
     };
+    $scope.vm_label_start="Start Voice Monitoring";
+    $scope.vm_label_stop="Stop Voice Monitoring";
+    $scope.ismonitoring=0;
     
+    $scope.voicemon_label="Start Voice Monitoring";
     $scope.vad_status = "OFF";
     $scope.startVoiceMonitoring = function()
     {
-        //VadSrv.monitorVoice($window, $scope);
-        HarkSrv.monitorVoice($window, $scope);
-    }
-}
+        $scope.ismonitoring=!$scope.ismonitoring;
+        if ($scope.ismonitoring)
+        {
+            cpAISrv.monitorVoice($window, $scope);
+            $scope.voicemon_label=$scope.vm_label_stop;
+        }
+        else
+        {
+            $scope.voicemon_label=$scope.vm_label_start;
+        }
+        
+    };
+};
 controllers_module.controller('SettingsCtrl', SettingsCtrl)   
   
