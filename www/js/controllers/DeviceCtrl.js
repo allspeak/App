@@ -26,7 +26,7 @@ function DeviceCtrl($scope, HWSrv)
             lab                                         = $scope.device_item_to_be_shown[d].label;
             $scope.device_item_to_be_shown[d].value     = $scope.device[lab];
         }
-        $scope.inputsources = HWSrv.getInputSources();
+        //$scope.inputsources = HWSrv.getInputSources();
     }
 };
 controllers_module.controller('DeviceCtrl', DeviceCtrl)   

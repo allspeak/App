@@ -11,28 +11,34 @@
         <br></br>          
         <div>  selected Input Device : {{selectedSourceType}} </div>-->
 
-        <label class="item item-input item-select">
+<!--        <label class="item item-input item-select">
             <div class="input-label"> Input device </div>
-            <!--<select ng-model="selectedSourceType" ng-option="item.value as item.label for item in input_sources" ng-change="updateSourceType(selectedSourceType)"></select>-->
-            <!--<select ng-model="selectedSourceType" ng-option="item.value as item.label for item in input_sources" ng-change="updateSourceType(selectedSourceType)"></select>-->
-            <!--<select ng-model="selectedSourceType" ng-option="item.value as item.label for item in input_sources" ng-change="updateSourceType(selectedSourceType)"></select>-->
-            <!--<select ng-init="selectedSourceType = input_sources[0].value" ng-model="selectedSourceType" ng-change="updateSourceType(selectedSourceType)">-->
+            <select ng-model="selectedSourceType" ng-option="item.value as item.label for item in input_sources" ng-change="updateSourceType(selectedSourceType)"></select>
+            <select ng-model="selectedSourceType" ng-option="item.value as item.label for item in input_sources" ng-change="updateSourceType(selectedSourceType)"></select>
+            <select ng-model="selectedSourceType" ng-option="item.value as item.label for item in input_sources" ng-change="updateSourceType(selectedSourceType)"></select>
+            <select ng-init="selectedSourceType = input_sources[0].value" ng-model="selectedSourceType" ng-change="updateSourceType(selectedSourceType)">
             <select ng-model="selectedSourceType" ng-change="updateSourceType(selectedSourceType)">
                 <option ng-selected="{{item.value == captureCfg.audioSourceType}}" ng-repeat="item in input_sources" value="{{item.value}}">{{item.label}}</option>
             </select>            
-        </label>
+        </label>-->
+
         <label class="item item-input item-select">
-            <div class="input-label">
-                S. Frequency
-            </div>
+            <div class="input-label">S. Frequency</div>
+            
             <select ng-model="selectedFrequency" ng-change="updateFrequency(selectedFrequency)">
                 <option ng-selected="{{item.value == captureCfg.sampleRate}}" ng-repeat="item in sampling_frequencies" value="{{item.value}}">{{item.label}}</option>
             </select>            
         </label>     
 
-<!--        <label class="item">
-          adjust microphone threshold <span class="badge">{{voicedetection.volume}}</span>
-        </label>
+        <label class="item item-input item-select">
+            <div class="input-label">CaptureBuffer</div>
+            
+            <select ng-model="selectedCaptureBuffer" ng-change="updateCaptureBuffer(selectedCaptureBuffer)">
+                <option ng-selected="{{item.value == captureCfg.bufferSize}}" ng-repeat="item in capture_buffer" value="{{item.value}}">{{item.label}}</option>
+            </select>            
+        </label>     
+
+<!--        <label class="item">adjust microphone threshold <span class="badge">{{voicedetection.volume}}</span></label>
       
         <div class="item range">
             <i class="icon ion-volume-low"></i>
@@ -40,60 +46,49 @@
             <i class="icon ion-volume-high"></i>
         </div>-->
 
-        <label class="item">
-          Data received :  <span class="badge">{{totalReceivedData}}</span>
-        </label>   
+        <label class="item">Data received : <span class="badge">{{totalReceivedData}}</span> </label>   
 
 <!--<ion-item>
   <ion-label>Elapsed Time</ion-label>
   <ion-datetime displayFormat="mm:ss" [(ngModel)]="elapsedTime"></ion-datetime>
 </ion-item>-->
 
+        <label class="item">Elapsed Time : <span class="badge">{{elapsedTime*1000 | secondsToDateTime }}</span></label>      
 
-        <label class="item">
-          Elapsed Time : <span class="badge">
-                         <!--{{elapsedTime | date:'mm:ss'}}-->
-                         <!--{{elapsedTime}}-->
-                         {{elapsedTime*1000 | secondsToDateTime }}
-                        </span>
-        </label>        
-        <label class="item">
+<!--        <label class="item">
           # packets : <span class="badge">{{packetsNumber}}</span>
-        </label>        
-        <label class="item">
-          bitrate : <span class="badge">{{bitRate}}</span>
-        </label>        
+        </label>        -->
+
+        <label class="item">bitrate : <span class="badge">{{bitRate}}</span></label>        
+
 <!--        <label class="item">
           Voice is : <span class="badge">{{vad_status}}</span>
         </label>        -->
-        <button class="button button-block button-positive" ng-click="startVoiceMonitoring()">
-           {{vm_raw_label}}
-        </button> 
-        <button class="button button-block button-assertive" ng-click="startVoiceMonitoringDebug()">
-           {{vm_fft_label}}
-        </button> 
+
+        <button class="button button-block button-positive" ng-click="startVoiceMonitoring()">{{vm_raw_label}}</button> 
+        <button class="button button-block button-assertive" ng-click="startVoiceMonitoringDebug()">{{vm_fft_label}}</button> 
 
         <label class="item item-input item-select">
             <div class="input-label">SubSampling</div>
+            
             <select ng-model="selectedSSF" ng-change="updateSubsamplingFactor(selectedSSF)">
                 <option ng-selected="{{item.value == 0}}" ng-repeat="item in subsampling_factors" value="{{item.value}}">{{item.label}}</option>
             </select>            
         </label> 
 
-	<!--<div fusioncharts width="400" height="100" type="column2d"  datasource="{{myDataSource}}"></div>-->
-        <div class="chart" style="width:100%; height:{{height}}px;">
-
-            <div class="bar" style="height:{{volume / max_volume * height}}px; width:40px; left:10px;"></div>
-            
+        <div class="chart" style="width:100%; height:{{chart.height}}px; left:0px;">
+            <div class="bar" style="height:{{chart.volume / chart.max_volume * chart.height}}px; width:40px; left:10px;"></div>
             <!-- Labels -->
-            <div class="y" style="width:{{height}}px;">{{yAxis}}</div>
-            <div class="x">{{xAxis}}</div>
-
+<!--            <div class="y" style="width:{{chart.height}}px; left:10;">{{chart.yAxis}}</div>
+            <div class="x">{{chart.xAxis}}</div>-->
             <!-- Data -->
-            <div ng-repeat="dot in spectrum track by $index" class="dot" style="bottom:{{dot / max_spectrum * height}}px; left:{{($index + 0.5) / spectrum.length * width + 60}}px;"></div>
-            <!--<div ng-repeat="bar in spectrum track by $index" class="bar" style="height:{{bar / max_spectrum * height}}px; width:{{width / spectrum.length - 5}}px; left:{{$index / spectrum.length * width}}px;"></div>-->
-
+            <div ng-repeat="dot in chart.data track by $index" class="dot" style="bottom:100px; left:{{($index + 0.5) / chart.data.length * chart.width + 60}}px;"></div>   
+            <!--<div ng-repeat="bar in spectrum track by $index" class="bar" style="height:{{bar / max_spectrum * height}}px; width:1px:; left:{{$index / spectrum.length * width}}px;"></div>    {{chart.width / chart.data.length - 65}}px -->
+            
+            <!--{{dot / chart.max_data * chart.height*chart.yScale}}px-->
+            
         </div>        
+        
     </div>      
   </ion-content>
 </ion-view>

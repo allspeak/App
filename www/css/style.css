@@ -2,6 +2,8 @@
 
 .chart {
   border-left: 1px solid black;
+  border-right: 1px solid black;
+  border-top: 1px solid black;
   border-bottom: 1px solid black;
   margin: 60px auto;
   position: relative;

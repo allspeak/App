@@ -43,7 +43,9 @@ function cpAISrv()
                     audioSourceType: window.audioinput.AUDIOSOURCE_TYPE["DEFAULT"],
                     streamToWebAudio: window.audioinput.DEFAULT["STREAM_TO_WEBAUDIO"],
                     fftSize: window.audioinput.DEFAULT["FFT_SIZES"],
-                    captureMode: window.audioinput.DEFAULT["FFT_SIZES"]
+                    captureMode: window.audioinput.DEFAULT["FFT_SIZES"],
+                    fftWindow: window.audioinput.DEFAULT["fftWindow"],
+                    fftAverage: window.audioinput.DEFAULT["fftAverage"]
         };
     }
    
@@ -83,7 +85,7 @@ function cpAISrv()
                 
                 captureCfg.captureMode = $window.audioinput.CAPTURE_MODES.FFTDATA_MODE;
 
-                $window.addEventListener('audioinput', this.onAudioFFTInputCapture, false);
+                $window.addEventListener('audiofftinput', this.onAudioFFTInputCapture, false);
                 $window.addEventListener('audioinputerror', this.onAudioInputError, false);
 
                 $window.audioinput.start(captureCfg);
@@ -143,10 +145,12 @@ function cpAISrv()
                 window.audioserver_manager.audioserver.calculateElapsedTime(evt);
 
                 window.audioserver_manager.audioserver.audioRawDataQueue.push(evt.data);
-                window.audioserver_manager.controller.refreshMonitoringEx(window.audioserver_manager.audioserver.totalReceivedData, 
-                                                                          window.audioserver_manager.audioserver.captureElapsedTime, 
-                                                                          window.audioserver_manager.audioserver.packetsNumber, 
-                                                                          window.audioserver_manager.audioserver.bitRate, 0, []);
+                var subsampled_data = window.audioserver_manager.audioserver.subsampleData(evt.data, window.audioserver_manager.audioserver.subsamplingFactor);
+                
+                window.audioserver_manager.controller.refreshMonitoring( window.audioserver_manager.audioserver.totalReceivedData, 
+                                                                         window.audioserver_manager.audioserver.captureElapsedTime, 
+                                                                         window.audioserver_manager.audioserver.packetsNumber, 
+                                                                         window.audioserver_manager.audioserver.bitRate, evt.volume, subsampled_data);
             }
         }
         catch (ex) {
@@ -165,11 +169,11 @@ function cpAISrv()
             {
                 window.audioserver_manager.audioserver.calculateElapsedTime(evt);
                 
-                var subsampled_spectrum = window.audioserver_manager.audioserver.subsampleData(evt.data, this.subsamplingFactor);
-                window.audioserver_manager.controller.refreshMonitoringEx(window.audioserver_manager.audioserver.totalReceivedData,
-                                                                          window.audioserver_manager.audioserver.captureElapsedTime, 
-                                                                          window.audioserver_manager.audioserver.packetsNumber,
-                                                                          window.audioserver_manager.audioserver.bitRate, evt.volume, subsampled_spectrum);
+                var subsampled_data = window.audioserver_manager.audioserver.subsampleData(evt.data, window.audioserver_manager.audioserver.subsamplingFactor);
+                window.audioserver_manager.controller.refreshMonitoring (window.audioserver_manager.audioserver.totalReceivedData,
+                                                                         window.audioserver_manager.audioserver.captureElapsedTime, 
+                                                                         window.audioserver_manager.audioserver.packetsNumber,
+                                                                         window.audioserver_manager.audioserver.bitRate, evt.volume, subsampled_data);
                                                                           
                 
             }
@@ -179,6 +183,7 @@ function cpAISrv()
         }
     };   
     
+
     this.setSubSamplingFactor = function(factor)
     {
         this.subsamplingFactor = factor;
@@ -242,6 +247,15 @@ function cpAISrv()
         return this.standardCaptureCfg;
     };
     //=============================================   
+    // convert  a = {gigi:aaa, bimbo:bbb}  ->  b = [{label:gigi, value:aaa}, {label:bimbo, value:bbb}]
+    this.Obj2ArrJSON = function(obj)
+    {
+        var arr = [];
+        for (item in obj)
+            arr.push({label: item, value:obj[item]});
+        return arr;
+    }
+    
     this.getSource = function() 
     {
         if (ionic.Platform.isAndroid()) {
@@ -250,6 +264,24 @@ function cpAISrv()
         }
         else {   return source;  }
     };
+
+    // ================================================================================
+    // ==  G E T   A U D I O I N P U T     C O N S T A N T S ==========================
+    // ================================================================================
+    // ================================================================================
+    this.getInputSources = function()
+    {
+        return this.Obj2ArrJSON(window.audioinput.AUDIOSOURCE_TYPE);
+    };
+    this.getSamplingFrequencies = function()
+    {
+        return this.Obj2ArrJSON(window.audioinput.SAMPLERATE);        
+    };   
+    this.getCaptureBuffers = function()
+    {
+        return this.Obj2ArrJSON(window.audioinput.BUFFER_SIZES);        
+    };   
+    // ================================================================================
 }
 
  main_module.service('cpAISrv', cpAISrv);
