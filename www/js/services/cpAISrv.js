@@ -150,7 +150,7 @@ function cpAISrv()
                 window.audioserver_manager.controller.refreshMonitoring( window.audioserver_manager.audioserver.totalReceivedData, 
                                                                          window.audioserver_manager.audioserver.captureElapsedTime, 
                                                                          window.audioserver_manager.audioserver.packetsNumber, 
-                                                                         window.audioserver_manager.audioserver.bitRate, evt.volume, subsampled_data);
+                                                                         window.audioserver_manager.audioserver.bitRate, evt.params, subsampled_data);
             }
         }
         catch (ex) {
@@ -173,7 +173,7 @@ function cpAISrv()
                 window.audioserver_manager.controller.refreshMonitoring (window.audioserver_manager.audioserver.totalReceivedData,
                                                                          window.audioserver_manager.audioserver.captureElapsedTime, 
                                                                          window.audioserver_manager.audioserver.packetsNumber,
-                                                                         window.audioserver_manager.audioserver.bitRate, evt.volume, subsampled_data);
+                                                                         window.audioserver_manager.audioserver.bitRate, evt.params, subsampled_data);
                                                                           
                 
             }
@@ -183,12 +183,12 @@ function cpAISrv()
         }
     };   
     
-
     this.setSubSamplingFactor = function(factor)
     {
         this.subsamplingFactor = factor;
     };
     
+
     this.subsampleData = function(data, factor)
     {
         var l       = data.length;

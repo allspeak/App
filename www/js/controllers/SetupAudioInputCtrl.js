@@ -51,9 +51,11 @@ function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
                     xAxis : "Frequencies",
                     yScale : 10000,
                     data : [],
-                    max_data : 0,
-                    volume : 0,
-                    max_volume : 500
+                    max_data : -Infinity,
+                    min_data : Infinity,
+                    mean_data : 0,
+                    max_volume : 500,
+                    all_pos : 0
                 };    
     
     // FFT
@@ -113,15 +115,19 @@ function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
         }
     };
     
-    $scope.refreshMonitoring = function(received_data, elapsed, npackets, bitrate, volume, data)
+    $scope.refreshMonitoring = function(received_data, elapsed, npackets, bitrate, data_params, data)
     {    
         $scope.totalReceivedData    = received_data;
         $scope.elapsedTime          = elapsed;
         $scope.packetsNumber        = npackets;
         $scope.bitRate              = bitrate;
-        $scope.chart.volume[2]      = volume;
+        
+        $scope.chart.min_data       = data_params[0];
+        $scope.chart.max_data       = data_params[1];
+        $scope.chart.mean_data      = data_params[2];
         $scope.chart.data           = data;
 
+        $scope.scaleData($scope.chart);
         $scope.$apply();
     };    
     // ============================================================================================
@@ -151,6 +157,26 @@ function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
         cpAISrv.setSubSamplingFactor(selSSF);
     }; 
     // ============================================================================================
+    
+    $scope.scaleData = function(chart_obj)
+    {
+        var allpos = (chart_obj.min_data >= 0 ? 1 : 0);
+        //var range = [];
+        if (allpos)
+        {
+            //range               = [0, chart_obj.max_data];
+            chart_obj.yScale    = chart_obj.max_data;
+            chart_obj.y0        = 0;
+        }
+        else
+        {
+            var max             = Math.max(Math.abs(chart_obj.min_data, Math.abs(chart_obj.max_data)));
+            //range               = [-max, max];
+            chart_obj.yScale    = 2*max;
+            chart_obj.y0        = max;
+        }
+    };    
+        
 };
 controllers_module.controller('SetupAudioInputCtrl', SetupAudioInputCtrl)   
   
