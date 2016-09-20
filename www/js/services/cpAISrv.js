@@ -45,7 +45,8 @@ function cpAISrv()
                     fftSize: window.audioinput.DEFAULT["FFT_SIZES"],
                     captureMode: window.audioinput.DEFAULT["FFT_SIZES"],
                     fftWindow: window.audioinput.DEFAULT["fftWindow"],
-                    fftAverage: window.audioinput.DEFAULT["fftAverage"]
+                    fftAvg: window.audioinput.DEFAULT["fftAvg"],
+                    fftAvgParams: window.audioinput.DEFAULT["fftAvgParams"]
         };
     }
    
@@ -197,7 +198,7 @@ function cpAISrv()
         
         for (st=0; st<step; st++)
         {
-            var start   = st*factor
+            var start   = st*factor;
             var end     = start+factor;
             var average = 0;
 
@@ -206,7 +207,7 @@ function cpAISrv()
             result.push(average/factor);
         }
         return result;
-    }
+    };
     
     this.calculateElapsedTime = function(evt)
     {
@@ -232,7 +233,7 @@ function cpAISrv()
         window.audioserver_manager.audioserver.totalReceivedData += evt.data.length; // in FFT capturing: received packets are N/2 long. so I simulate the real number of data read by 2*data
         window.audioserver_manager.audioserver.bitRate = Math.round((window.audioserver_manager.audioserver.totalReceivedData/window.audioserver_manager.audioserver.captureElapsedTime));
 
-    }
+    };
     
     /**
     * Called when a plugin error happens.
@@ -259,7 +260,7 @@ function cpAISrv()
     this.getSource = function() 
     {
         if (ionic.Platform.isAndroid()) {
-            source = '/android_asset/www/' + source;
+            source = 'android_asset/www/' + source;
             return source;
         }
         else {   return source;  }

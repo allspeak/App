@@ -55,7 +55,9 @@ function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
                     min_data : Infinity,
                     mean_data : 0,
                     max_volume : 500,
-                    all_pos : 0
+                    all_pos : 0,
+                    top_value_time : 0.1,
+                    top_value_spectrum : 500000
                 };    
     
     // FFT
@@ -81,6 +83,7 @@ function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
         $scope.iscapturing=!$scope.iscapturing;
         if ($scope.iscapturing)
         {
+            $scope.chart.top_value = $scope.chart.top_value_time;            
             cpAISrv.startRawCapture($scope.captureCfg, $scope, $window);
             $scope.vm_raw_label = $scope.vm_raw_label_stop;
         }
@@ -101,6 +104,7 @@ function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
         $scope.iscapturing_fft = !$scope.iscapturing_fft;
         if ($scope.iscapturing_fft)
         {
+            $scope.chart.top_value = $scope.chart.top_value_spectrum;            
 //            cpAISrv.startCapture($scope.captureCfg, $scope, $window);
             cpAISrv.startFFTCapture($scope.captureCfg, $scope, $window);
 //            VadSrv.startCapture($scope.captureCfg, $scope, $window);
@@ -127,7 +131,8 @@ function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
         $scope.chart.mean_data      = data_params[2];
         $scope.chart.data           = data;
 
-        $scope.scaleData($scope.chart);
+        $scope.scaleData($scope.chart, 1, $scope.chart.top_value);  // scale chart to fit into its window
+       
         $scope.$apply();
     };    
     // ============================================================================================
@@ -135,45 +140,59 @@ function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
     // callback from ng-DOM
     $scope.updateSourceType = function(selDevice)
     {
-        $scope.selectedSourceType           = selDevice;
+        $scope.selectedSourceType           = parseInt(selDevice);
         $scope.captureCfg.audioSourceType   = $scope.selectedSourceType;
     };
 
     $scope.updateFrequency = function(selFreq)
     {
-        $scope.selectedFrequency        = selFreq;
+        $scope.selectedFrequency        = parseInt(selFreq);
         $scope.captureCfg.sampleRate    = $scope.selectedFrequency;
     };    
     
     $scope.updateCaptureBuffer = function(selCaptBuf)
     {
-        $scope.selectedCaptureBuffer    = selCaptBuf;
+        $scope.selectedCaptureBuffer    = parseInt(selCaptBuf);
         $scope.captureCfg.BUFFER_SIZES  = $scope.selectedCaptureBuffer;
     };    
 
     $scope.updateSubsamplingFactor = function(selSSF)
     {
-        $scope.selectedSSF        = selSSF;
-        cpAISrv.setSubSamplingFactor(selSSF);
+        $scope.selectedSSF        = parseInt(selSSF);
+        cpAISrv.setSubSamplingFactor($scope.selectedSSF);
     }; 
     // ============================================================================================
-    
-    $scope.scaleData = function(chart_obj)
+    // top indicates if set a global maximum, top_value represents that value
+    $scope.scaleData = function(chart_obj, top, top_value)
     {
+        
         var allpos = (chart_obj.min_data >= 0 ? 1 : 0);
         //var range = [];
         if (allpos)
         {
-            //range               = [0, chart_obj.max_data];
-            chart_obj.yScale    = chart_obj.max_data;
+            if (top)
+                chart_obj.yScale    = chart_obj.top_value;
+            else
+                chart_obj.yScale    = chart_obj.max_scale;
+            
             chart_obj.y0        = 0;
         }
         else
         {
             var max             = Math.max(Math.abs(chart_obj.min_data, Math.abs(chart_obj.max_data)));
-            //range               = [-max, max];
-            chart_obj.yScale    = 2*max;
-            chart_obj.y0        = max;
+            
+            if (top)            
+            {
+                chart_obj.yScale    = 2*top_value;
+                chart_obj.y0        = top_value;            
+            }
+            else
+            {
+                chart_obj.yScale    = 2*max;
+                chart_obj.y0        = max;            
+            }
+                
+            
         }
     };    
         

@@ -31,25 +31,4 @@ function VocabularyCtrl($scope, $location, VocabularySrv, AudioSrv)
     };    
     
  }
-function SentenceTrainCtrl($scope, $stateParams, VocabularySrv)
-{
-    $scope.id = $stateParams.sentenceId;
-    $scope.selectedItemId       = $scope.id-1;
-    $scope.selectedSentence     = VocabularySrv.vocabulary[$scope.selectedItemId];    
-    $scope.selectedTitle        = $scope.selectedSentence.title;    
-    
-}
-
-function SentenceRecordCtrl($scope, $stateParams, VocabularySrv)
-{
-    $scope.id = $stateParams.sentenceId;
-    $scope.selectedItemId       = $scope.id-1;
-    $scope.selectedSentence     = VocabularySrv.vocabulary[$scope.selectedItemId];    
-    $scope.selectedTitle        = $scope.selectedSentence.title;    
-    
-}
-
 controllers_module.controller('VocabularyCtrl', VocabularyCtrl)   
-controllers_module.controller('SentenceTrainCtrl', SentenceTrainCtrl) 
-controllers_module.controller('SentenceRecordCtrl', SentenceRecordCtrl) 
-  

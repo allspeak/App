@@ -63,6 +63,11 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
         url: '/amplifier',
         templateUrl: 'templates/amplifier.html'
     })
+    .state('training', {
+        url: '/training',
+        templateUrl: 'templates/training.html',
+        controller: 'TrainingCtrl'
+    })
     .state('vocabulary', {
         url: '/vocabulary',
         templateUrl: 'templates/vocabulary.html',

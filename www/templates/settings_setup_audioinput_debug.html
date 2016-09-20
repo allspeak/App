@@ -77,12 +77,12 @@
         </label> 
 
         <div class="chart" style="width:100%; height:{{chart.height}}px; left:0px;">
-            <div class="bar" style="height:{{chart.volume / chart.max_volume * chart.height}}px; width:40px; left:10px;"></div>
+            <div class="bar" style="height:{{chart.mean_data * chart.height / chart.yScale}}px; width:40px; left:10px;"></div>
             <!-- Labels -->
 <!--            <div class="y" style="width:{{chart.height}}px; left:10;">{{chart.yAxis}}</div>
             <div class="x">{{chart.xAxis}}</div>-->
             <!-- Data -->
-            <div ng-repeat="dot in chart.data track by $index" class="dot" style="bottom:{{(dot + chart.y0) * chart.height/chart.yScale}}px; left:{{($index + 0.5) / chart.data.length * chart.width + 60}}px;"></div>   
+            <div ng-repeat="dot in chart.data track by $index" class="dot" style="bottom:{{(dot + chart.y0) * chart.height / chart.yScale}}px; left:{{($index + 0.5) / chart.data.length * chart.width + 60}}px;"></div>   
             <!--<div ng-repeat="bar in spectrum track by $index" class="bar" style="height:{{bar / max_spectrum * height}}px; width:1px:; left:{{$index / spectrum.length * width}}px;"></div>    {{chart.width / chart.data.length - 65}}px -->
             
             <!--{{dot / chart.max_data * chart.height*chart.yScale}}px-->

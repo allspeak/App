@@ -1,0 +1,42 @@
+<ion-view view-title="Training">
+    <ion-content>
+        <ion-list>
+            
+            <button class="button button-block button-assertive" ng-click="startTraining()">
+              Inizia
+            </button>            
+            
+            <div class="button-bar">
+                <a class="button" ng-click="selectAll()">Seleziona tutto</a>
+                <a class="button" ng-click="deselectAll()">deseleziona tutto</a>
+            </div>            
+            
+            
+            <ion-item ng-repeat="sentence in vocabulary">
+                    <div class="item-checkbox-right">{{sentence.title}}
+                        <label class="checkbox">
+                            <input type="checkbox"
+                                   ng-model="sentence.selected"
+                                   ng-checked="sentence.checked" 
+                                   ng-change="">
+                        </label>
+                    </div>
+                
+<!--                <div class="item item-button-right"> {{sentence.title}}
+                    <div class="buttons">
+                        <button class="button button-clear button-balanced" ng-click="play($index, {{sentence.id}})">
+                            <i class="icon ion-play"></i>
+                        </button>
+                        <button class="button button-clear button-assertive" ng-click="recordSentence($index, {{sentence.id}})">
+                            <i class="icon ion-mic-a"></i>
+                        </button>
+                        ui-sref="#/app/vocabulary/{{sentence.id}}"
+                        <button class="button button-clear button-royal" ng-click="trainSentence({{sentence.id}})">   
+                            <i class="icon ion-levels"></i>
+                        </button>                        
+                    </div>
+                </div>           -->
+            </ion-item>
+        </ion-list>
+    </ion-content>
+</ion-view>
