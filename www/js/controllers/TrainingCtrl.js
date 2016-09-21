@@ -8,7 +8,7 @@ function TrainingCtrl($scope, vocabulary)
 {
 
 //    $scope.vocabulary = VocabularySrv.getVocabulary();
-    $scope.vocubulary = vocabulary;
+    $scope.vocabulary = vocabulary;
     
     $scope.deselectAll = function()
     {

@@ -16,9 +16,9 @@ main_module.service('VocabularySrv', function($http) {
           vocabulary = data;
       },
       getVocabulary: function () {
-          return $http.get('./json/vocabulary.json').then(function(data){
-              return data.data});
-//          return vocabulary.vocabulary;
+          return $http.get('./json/vocabulary.json').then(function(res){
+              return res.data.vocabulary;
+          });
       }
     };
 });
