@@ -1,5 +1,16 @@
 <ion-view view-title="amplifier">
   <ion-content>
-    <h1>Amplifier3</h1>
+
+      <br></br>
+        <button class="button button-block button-large button-positive" ng-click="start()">
+            {{buttonLabel}}
+        </button>       
+      <br></br>
+        <label class="item">adjust microphone threshold <span class="badge">{{volume}}</span></label>
+        <div class="item range">
+            <i class="icon ion-volume-low"></i>
+                <input type="range" name="volume" ng-model="volume" ng-change="onChangeVolume()">
+            <i class="icon ion-volume-high"></i>
+        </div>
   </ion-content>
 </ion-view>

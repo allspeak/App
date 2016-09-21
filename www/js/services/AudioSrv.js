@@ -66,58 +66,6 @@ function AudioSrv(HWSrv, $cordovaNativeAudio, $cordovaMediaCapture)
              // An error occurred. Show a message to the user
         });        
     }; 
-    //=============================================
-    // MONITORING      
-    // Define function called by getUserMedia 
-    
-    this.onVoiceStart = function()
-    {
-        console.log('voice_start'); 
-    };
-    this.onVoiceStop = function()
-    {
-        console.log('voice_stop');
-    };
-
-    this.monitorVoice = function($window)
-    {
-        
-        function startUserMedia (stream) // this is $window
-        {
-            // Create MediaStreamAudioSourceNode
-            this.audioserver_controller.source = this.audioContext.createMediaStreamSource(stream);
-
-            // Setup options
-            var options = 
-            {
-                source: this.audioserver_controller.source,
-                voice_stop: this.audioserver_controller.onVoiceStart, 
-                voice_start: this.audioserver_controller.onVoiceStop
-            }; 
-            // Create VAD
-            this.audioserver_controller.vad = new VAD(options);
-        };        
-        
-        
-        $window.AudioContext = $window.AudioContext || $window.webkitAudioContext;
-        $window.audioContext = new AudioContext();
-        // Ask for audio device
-        $window.audioserver_controller = this.controller;
-        
-        $window.navigator.getUserMedia = $window.navigator.getUserMedia || 
-                                         $window.navigator.mozGetUserMedia || 
-                                         $window.navigator.webkitGetUserMedia;
-        $window.navigator.getUserMedia({audio: true}, startUserMedia, function(e) { console.log("No live audio input in this browser: " + e); });        
-    }
-    //=============================================   
-    this.getSource = function() 
-    {
-        if (ionic.Platform.isAndroid()) {
-            source = '/android_asset/www/' + source;
-            return source;
-        }
-        else {   return source;  }
-    };
 }
 
  main_module.service('AudioSrv', AudioSrv);

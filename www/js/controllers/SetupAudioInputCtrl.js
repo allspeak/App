@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
+function SetupAudioInputCtrl($scope, cpAISrv, $window)
 {
     ionic.Platform.ready(function()
     {
@@ -105,9 +105,7 @@ function SetupAudioInputCtrl($scope, cpAISrv, HWSrv, $window, VadSrv)
         if ($scope.iscapturing_fft)
         {
             $scope.chart.top_value = $scope.chart.top_value_spectrum;            
-//            cpAISrv.startCapture($scope.captureCfg, $scope, $window);
             cpAISrv.startFFTCapture($scope.captureCfg, $scope, $window);
-//            VadSrv.startCapture($scope.captureCfg, $scope, $window);
             $scope.vm_fft_label = $scope.vm_fft_label_stop;
         }
         else

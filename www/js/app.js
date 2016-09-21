@@ -85,7 +85,8 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
     })
     .state('amplifier', {
         url: '/amplifier',
-        templateUrl: 'templates/amplifier.html'
+        templateUrl: 'templates/amplifier.html',
+        controller: 'AmplifierCtrl'
     })
     .state('training', {
         url: '/training',

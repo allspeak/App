@@ -3,40 +3,44 @@
  */
 
 
-function cpAISrv2()
+function cpAISrv()
 {
-    this.clearCounters = function()
+    var service = {};
+//    var self = service;
+//    var that = service;
+
+    service.clearCounters = function()
     {  
-        this.lastTS             = 0;
-        this.firstTS            = 0;
-        this.firstGetTime       = 0;
-        this.captureElapsedTime = 0;
+        service.lastTS             = 0;
+        service.firstTS            = 0;
+        service.firstGetTime       = 0;
+        service.captureElapsedTime = 0;
         
-        this.audioRawDataQueue  = [];
-        this.totalReceivedData  = 0;
-//        this.totalPlayedData    = 0;    
-        this.packetsNumber      = 0;        
-        this.bitRate            = 0;    
-        this.data2bewritten     = 0;
+        service.audioRawDataQueue  = [];
+        service.totalReceivedData  = 0;
+//        service.totalPlayedData    = 0;    
+        service.packetsNumber      = 0;        
+        service.bitRate            = 0;    
+        service.data2bewritten     = 0;
     };  
 
-    this.clearCounters();
+    service.clearCounters();
     
     // How many data chunks should be joined before playing them
-    //this.concatenateMaxChunks   = 10;
+    //service.concatenateMaxChunks   = 10;
     
-    this.controller_scope       = {};
+    service.controller_scope       = {};
      
-    this.data2bewritten         = 0;
-    this.subsamplingFactor      = 8;
+    service.data2bewritten         = 0;
+    service.subsamplingFactor      = 8;
     
     // set standard Capture Configuration
-    this.standardCaptureCfg = {};
+    service.standardCaptureCfg = {};
     if (window.audioinput)
     {
-        this.standardCaptureCfg = {
+        service.standardCaptureCfg = {
                     sampleRate: window.audioinput.SAMPLERATE["TELEPHONE_8000Hz"],
-                    bufferSize: 1024, //window.audioinput.DEFAULT["BUFFER_SIZE"], 
+                    bufferSize: 512, //window.audioinput.DEFAULT["BUFFER_SIZE"], 
                     channels: window.audioinput.DEFAULT["CHANNELS"],
                     format: window.audioinput.DEFAULT["FORMAT"],
                     audioSourceType: window.audioinput.AUDIOSOURCE_TYPE["DEFAULT"],
@@ -49,23 +53,27 @@ function cpAISrv2()
         };
     }
    
-    this.startRawCapture = function (captureCfg, $scope, $window) 
+    service.startRawPlayback = function (captureCfg, $scope, $window) 
     {
+        if (captureCfg == null)
+            service.captureCfg = service.standardCaptureCfg;
+        else
+            service.captureCfg = captureCfg;
+        
         try {
             if ($window.audioinput && !$window.audioinput.isCapturing()) 
             {
-                this.clearCounters();
-                this.controller_scope = $scope;    
-                $window.audioserver_manager = { controller      : this.controller_scope,
-                                                audioserver     : this};                
+                service.clearCounters();
+                service.controller_scope = $scope;    
                 
-                captureCfg.captureMode = $window.audioinput.CAPTURE_MODES.RAWDATA_MODE;
+                service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.WAAPLAY_MODE;
+                service.captureCfg.streamToWebAudio = true;
 
-                $window.addEventListener('audioinput', this.onAudioRawInputCapture, false);
-                $window.addEventListener('audioinputerror', this.onAudioInputError, false);
-onAudioRawInputCapture
+                $window.addEventListener('audioinput', service.onAudioRawInputCapture, false);
+                $window.addEventListener('audioinputerror', service.onAudioInputError, false);
+
                 $window.audioinput.start(captureCfg);
-                this.firstGetTime = new Date().getTime();
+                service.firstGetTime        = new Date().getTime();
                 console.log("Microphone input started!");
             }
         }
@@ -73,23 +81,57 @@ onAudioRawInputCapture
             alert("startCapture exception: " + e);
         }
     };
-    this.startFFTCapture = function (captureCfg, $scope, $window) 
+    
+    service.startRawCapture = function (captureCfg, $scope, $window) 
     {
+        if (captureCfg == null)
+            service.captureCfg = service.standardCaptureCfg;
+        else
+            service.captureCfg = captureCfg;
+        
         try {
             if ($window.audioinput && !$window.audioinput.isCapturing()) 
             {
-                this.clearCounters();
-                this.controller_scope = $scope;    
-                $window.audioserver_manager = { controller      : this.controller_scope,
-                                                audioserver     : this};                
+                service.clearCounters();
+                service.controller_scope = $scope;    
                 
-                captureCfg.captureMode = $window.audioinput.CAPTURE_MODES.FFTDATA_MODE;
+                service.captureCfg.captureMode = $window.audioinput.CAPTURE_MODES.RAWDATA_MODE;
+                service.captureCfg.streamToWebAudio = false;
 
-                $window.addEventListener('audiofftinput', this.onAudioFFTInputCapture, false);
-                $window.addEventListener('audioinputerror', this.onAudioInputError, false);
+                $window.addEventListener('audioinput', service.onAudioRawInputCapture, false);
+                $window.addEventListener('audioinputerror', service.onAudioInputError, false);
 
                 $window.audioinput.start(captureCfg);
-                this.firstGetTime = new Date().getTime();
+                service.firstGetTime = new Date().getTime();
+                console.log("Microphone input started!");
+            }
+        }
+        catch (e) {
+            alert("startCapture exception: " + e);
+        }
+    };
+    
+    service.startFFTCapture = function (captureCfg, $scope, $window) 
+    {
+        if (captureCfg == null)
+            service.captureCfg = service.standardCaptureCfg;
+        else
+            service.captureCfg = captureCfg;
+        
+        try {
+            if ($window.audioinput && !$window.audioinput.isCapturing()) 
+            {
+                service.clearCounters();
+                service.controller_scope            = $scope;    
+                
+                service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.FFTDATA_MODE;
+                service.captureCfg.streamToWebAudio = false;
+
+                $window.addEventListener('audiofftinput', service.onAudioFFTInputCapture, false);
+                $window.addEventListener('audioinputerror', service.onAudioInputError, false);
+
+                $window.audioinput.start(captureCfg);
+                service.firstGetTime = new Date().getTime();
                 console.log("Microphone input started!");
             }
         }
@@ -98,7 +140,7 @@ onAudioRawInputCapture
         }
     };
 
-    this.stopCapture = function () 
+    service.stopCapture = function () 
     {
         try {
             if (window.audioinput && window.audioinput.isCapturing()) 
@@ -113,7 +155,7 @@ onAudioRawInputCapture
     };
     
     // don't need Web Audio API support
-    this.saveArray2Wave = function(captureCfg, data_array, filename)
+    service.saveArray2Wave = function(captureCfg, data_array, filename)
     {
         console.log("Encoding WAV...");
         var encoder = new WavAudioEncoder(captureCfg.sampleRate, captureCfg.channels);
@@ -135,22 +177,22 @@ onAudioRawInputCapture
     };
     /**
      * Called continuously while Raw Audio Input capture is running.
-     * this is global
+     * service is global
      */
-    this.onAudioRawInputCapture = function (evt)
+    service.onAudioRawInputCapture = function (evt)
     {
         try {
             if (evt && evt.data) 
             {
-                window.audioserver_manager.audioserver.calculateElapsedTime(evt);
+                service.calculateElapsedTime(evt);
 
-                window.audioserver_manager.audioserver.audioRawDataQueue.push(evt.data);
-                var subsampled_data = window.audioserver_manager.audioserver.subsampleData(evt.data, window.audioserver_manager.audioserver.subsamplingFactor);
+                service.audioRawDataQueue.push(evt.data);
+                var subsampled_data = service.subsampleData(evt.data, service.subsamplingFactor);
                 
-                window.audioserver_manager.controller.refreshMonitoring( window.audioserver_manager.audioserver.totalReceivedData, 
-                                                                         window.audioserver_manager.audioserver.captureElapsedTime, 
-                                                                         window.audioserver_manager.audioserver.packetsNumber, 
-                                                                         window.audioserver_manager.audioserver.bitRate, evt.params, subsampled_data);
+                service.controller_scope.refreshMonitoring( service.totalReceivedData, 
+                                                                         service.captureElapsedTime, 
+                                                                         service.packetsNumber, 
+                                                                         service.bitRate, evt.params, subsampled_data);
             }
         }
         catch (ex) {
@@ -160,20 +202,20 @@ onAudioRawInputCapture
  
     /**
      * Called continuously while Raw Audio Input capture is running.
-     * this is global
+     * service is global
      */
-    this.onAudioFFTInputCapture = function (evt)
+    service.onAudioFFTInputCapture = function (evt)
     {
         try {
             if (evt && evt.data) 
             {
-                window.audioserver_manager.audioserver.calculateElapsedTime(evt);
+                service.calculateElapsedTime(evt);
                 
-                var subsampled_data = window.audioserver_manager.audioserver.subsampleData(evt.data, window.audioserver_manager.audioserver.subsamplingFactor);
-                window.audioserver_manager.controller.refreshMonitoring (window.audioserver_manager.audioserver.totalReceivedData,
-                                                                         window.audioserver_manager.audioserver.captureElapsedTime, 
-                                                                         window.audioserver_manager.audioserver.packetsNumber,
-                                                                         window.audioserver_manager.audioserver.bitRate, evt.params, subsampled_data);
+                var subsampled_data = service.subsampleData(evt.data, service.subsamplingFactor);
+                service.controller_scope.refreshMonitoring (service.totalReceivedData,
+                                                                         service.captureElapsedTime, 
+                                                                         service.packetsNumber,
+                                                                         service.bitRate, evt.params, subsampled_data);
                                                                           
                 
             }
@@ -183,13 +225,13 @@ onAudioRawInputCapture
         }
     };   
     
-    this.setSubSamplingFactor = function(factor)
+    service.setSubSamplingFactor = function(factor)
     {
-        this.subsamplingFactor = factor;
+        service.subsamplingFactor = factor;
     };
     
 
-    this.subsampleData = function(data, factor)
+    service.subsampleData = function(data, factor)
     {
         var l       = data.length;
         var result  = [];
@@ -208,31 +250,37 @@ onAudioRawInputCapture
         return result;
     };
     
-    this.calculateElapsedTime = function(evt)
+    service.calculateElapsedTime = function(evt)
     {
         var curr_ts = evt.timeStamp;
-        if (!window.audioserver_manager.audioserver.firstTS)
+        if (!service.firstTS)
         {
             // first packet !! get elapsed in the "global" TS system
             var now_ts_ms   = new Date().getTime();
-            var elapsed     = now_ts_ms - window.audioserver_manager.audioserver.firstGetTime;
+            var elapsed     = now_ts_ms - service.firstGetTime;
 
             // remove from local (assuming they could be different) TS system
-            window.audioserver_manager.audioserver.firstTS = curr_ts - elapsed;
-            window.audioserver_manager.audioserver.lastTS = window.audioserver_manager.audioserver.firstTS;
+            service.firstTS = curr_ts - elapsed;
+            service.lastTS = service.firstTS;
         }
 
-        window.audioserver_manager.audioserver.deltaPackets = curr_ts - window.audioserver_manager.audioserver.lastTS;
-        window.audioserver_manager.audioserver.lastTS = curr_ts;
+        service.deltaPackets = curr_ts - service.lastTS;
+        service.lastTS = curr_ts;
 
         // time elapsed since capture start
-        window.audioserver_manager.audioserver.captureElapsedTime = Math.round (curr_ts - window.audioserver_manager.audioserver.firstTS)/1000;                
+        service.captureElapsedTime = Math.round (curr_ts - service.firstTS)/1000;                
 
-        window.audioserver_manager.audioserver.packetsNumber++;
-        window.audioserver_manager.audioserver.totalReceivedData += evt.data.length; // in FFT capturing: received packets are N/2 long. so I simulate the real number of data read by 2*data
-        window.audioserver_manager.audioserver.bitRate = Math.round((window.audioserver_manager.audioserver.totalReceivedData/window.audioserver_manager.audioserver.captureElapsedTime));
+        service.packetsNumber++;
+        service.totalReceivedData += evt.data.length; // in FFT capturing: received packets are N/2 long. so I simulate the real number of data read by 2*data
+        service.bitRate = Math.round((service.totalReceivedData/service.captureElapsedTime));
 
     };
+    
+    service.changeVolume = function(newvol)
+    {
+        if (service.captureCfg.captureMode == 1)
+            audioinput._micGainNode.gain.value = newvol;
+    }
     
     /**
     * Called when a plugin error happens.
@@ -242,13 +290,13 @@ onAudioRawInputCapture
         alert("onAudioInputError event received: " + JSON.stringify(error));
     };
     
-    this.getStdCaptureCfg = function()
+    service.getStdCaptureCfg = function()
     {
-        return this.standardCaptureCfg;
+        return service.standardCaptureCfg;
     };
     //=============================================   
     // convert  a = {gigi:aaa, bimbo:bbb}  ->  b = [{label:gigi, value:aaa}, {label:bimbo, value:bbb}]
-    this.Obj2ArrJSON = function(obj)
+    service.Obj2ArrJSON = function(obj)
     {
         var arr = [];
         for (item in obj)
@@ -256,7 +304,7 @@ onAudioRawInputCapture
         return arr;
     }
     
-    this.getSource = function() 
+    service.getSource = function() 
     {
         if (ionic.Platform.isAndroid()) {
             source = 'android_asset/www/' + source;
@@ -269,22 +317,24 @@ onAudioRawInputCapture
     // ==  G E T   A U D I O I N P U T     C O N S T A N T S ==========================
     // ================================================================================
     // ================================================================================
-    this.getInputSources = function()
+    service.getInputSources = function()
     {
-        return this.Obj2ArrJSON(window.audioinput.AUDIOSOURCE_TYPE);
+        return service.Obj2ArrJSON(window.audioinput.AUDIOSOURCE_TYPE);
     };
-    this.getSamplingFrequencies = function()
+    service.getSamplingFrequencies = function()
     {
-        return this.Obj2ArrJSON(window.audioinput.SAMPLERATE);        
+        return service.Obj2ArrJSON(window.audioinput.SAMPLERATE);        
     };   
-    this.getCaptureBuffers = function()
+    service.getCaptureBuffers = function()
     {
-        return this.Obj2ArrJSON(window.audioinput.BUFFER_SIZES);        
+        return service.Obj2ArrJSON(window.audioinput.BUFFER_SIZES);        
     };   
+    return service;
     // ================================================================================
 }
 
 // main_module.service('cpAISrv', cpAISrv);
+ main_module.factory('cpAISrv', cpAISrv);
  
  
  
@@ -292,42 +342,42 @@ onAudioRawInputCapture
   * 
     
 //    // Define function called by getUserMedia 
-//    this.onVoiceStart = function()
+//    service.onVoiceStart = function()
 //    {
 //        console.log('voice_start'); 
-////        this.controller_scope.vad_status = "ON";
+////        service.controller_scope.vad_status = "ON";
 //    };
-//    this.onVoiceStop = function()
+//    service.onVoiceStop = function()
 //    {
 //        console.log('voice_stop');
-////        this.controller_scope.vad_status = "OFF";
+////        service.controller_scope.vad_status = "OFF";
 //    };
-//    this.onVolumeChange = function(volume)
+//    service.onVolumeChange = function(volume)
 //    {
 //        console.log('volume: '+volume);
 //    };
     
-//    // in this callback, this is: $window
-//    this.startUserMedia = function(stream) 
+//    // in service callback, service is: $window
+//    service.startUserMedia = function(stream) 
 //    {
 //        // Create MediaStreamAudioSourceNode
-//        this.audioserver_manager.source = this.audioserver_manager.audiocontext.createMediaStreamSource(stream);
+//        service.audioserver_manager.source = service.audioserver_manager.audiocontext.createMediaStreamSource(stream);
 //
 //        var options = {};
 //        var speech = hark(stream, options);
-//        speech.on('speaking', this.audioserver_manager.audioserver.onVoiceStart);
-//        speech.on('stopped_speaking', this.audioserver_manager.audioserver.onVoiceStop);          
-//        speech.on('volume_change', this.audioserver_manager.audioserver.onVolumeChange);     
+//        speech.on('speaking', service.audioserver_manager.audioserver.onVoiceStart);
+//        speech.on('stopped_speaking', service.audioserver_manager.audioserver.onVoiceStop);          
+//        speech.on('volume_change', service.audioserver_manager.audioserver.onVolumeChange);     
 //        
 //        var options = 
 //        {
-//            source              : this.audioserver_manager.source,
-//            voice_stop          : this.audioserver_manager.audioserver.onVoiceStop, 
-//            voice_start         : this.audioserver_manager.audioserver.onVoiceStart,
-//            controller_scope    : this.audioserver_manager.controller
+//            source              : service.audioserver_manager.source,
+//            voice_stop          : service.audioserver_manager.audioserver.onVoiceStop, 
+//            voice_start         : service.audioserver_manager.audioserver.onVoiceStart,
+//            controller_scope    : service.audioserver_manager.controller
 //        }; 
 //        // Create VAD
-//        this.audioserver_manager.vad = new VAD(options);                           
+//        service.audioserver_manager.vad = new VAD(options);                           
 //    };  
 
 
