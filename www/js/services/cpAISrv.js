@@ -3,9 +3,8 @@
  */
 
 
-function cpAISrv()
+function cpAISrv2()
 {
-
     this.clearCounters = function()
     {  
         this.lastTS             = 0;
@@ -64,7 +63,7 @@ function cpAISrv()
 
                 $window.addEventListener('audioinput', this.onAudioRawInputCapture, false);
                 $window.addEventListener('audioinputerror', this.onAudioInputError, false);
-
+onAudioRawInputCapture
                 $window.audioinput.start(captureCfg);
                 this.firstGetTime = new Date().getTime();
                 console.log("Microphone input started!");
@@ -285,7 +284,7 @@ function cpAISrv()
     // ================================================================================
 }
 
- main_module.service('cpAISrv', cpAISrv);
+// main_module.service('cpAISrv', cpAISrv);
  
  
  

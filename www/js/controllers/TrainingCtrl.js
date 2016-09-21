@@ -4,10 +4,11 @@
  * and open the template in the editor.
  */
 
-function TrainingCtrl($scope, VocabularySrv)
+function TrainingCtrl($scope, vocabulary)
 {
 
-    $scope.vocabulary = VocabularySrv.getVocabulary();
+//    $scope.vocabulary = VocabularySrv.getVocabulary();
+    $scope.vocubulary = vocabulary;
     
     $scope.deselectAll = function()
     {

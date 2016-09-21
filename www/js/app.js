@@ -7,7 +7,7 @@ main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ion
 
 main_module.run(function($ionicPlatform) 
                 {
-                    $ionicPlatform.ready(function(VocabularySrv) 
+                    $ionicPlatform.ready(function() 
                     {
                       if(window.cordova && window.cordova.plugins.Keyboard) 
                       {
@@ -19,9 +19,26 @@ main_module.run(function($ionicPlatform)
                         // from snapping when text inputs are focused. Ionic handles this internally for
                         // a much nicer keyboard experience.
                         cordova.plugins.Keyboard.disableScroll(true);
-                        
-//                        VocabularySrv.init();
-                        
+                       
+//                            var servicesToBeInitizialize = [VocabularyService, OtherService, AnotherService];
+//                            var initFns = servicesToBeInitizialize.map(s => s.init)
+//                            AuthService.login()
+//                                    .then(Promise.all(initFns))
+//                                    .then(_ => IonicRouter.state('Home'))
+//                            
+//                            
+////                        VocabularySrv.init();
+////                            AuthService.login()
+//                                    Promise.resolve(5)
+//                                    .then(function(x) {return 4;})
+//                                    .then(function(y) { return 3;})
+//                                    .then(VocabularyService.init)
+//                                    .then(x => OtherService.init(x))
+//                                    .then(function(x) {
+//                                        return OtherService.init(x);
+//                                    })
+//                                    .then(_ => IonicRouter.state('Home'))
+                            
                       }
                       if(window.StatusBar) {
                         StatusBar.styleDefault();
@@ -44,7 +61,8 @@ main_module.run(function($ionicPlatform)
                         $ionicHistory.goBack();
                     }
                 }, 100);
-            });                
+            });  
+            
 
 main_module.config(function($stateProvider, $urlRouterProvider) {
   
@@ -71,10 +89,10 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
         templateUrl: 'templates/training.html',
         controller: 'TrainingCtrl',
         resolve:{
-                    'MyServiceData':function(VocabularySrv)
+                    vocabulary :function(VocabularySrv)
                     {
                         // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
-                        return VocabularySrv.promise; 
+                        return VocabularySrv.getVocabulary(); 
                     }
                 }
     })

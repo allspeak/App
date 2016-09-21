@@ -3,12 +3,14 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/data/CODE/ionic/AllSpeak/App/platforms/android/android.json</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/plugins/android.json</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/plugins/fetch.json</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/platforms/android/platform_www/cordova_plugins.js</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/package.json</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/platforms/platforms.json</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/index.html</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/app.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/templates/home.html</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/services/cpAISrv.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/controllers/SetupAudioInputCtrl.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/services/VocabularySrv.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/services/cpAISrv2.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/services/HWSrv.js</file>
         </group>
     </open-files>
 </project-private>

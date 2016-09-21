@@ -6,17 +6,19 @@
 main_module.service('VocabularySrv', function($http) {
     var vocabulary = null;
 
-    var promise = $http.get('./json/vocabulary.json').success(function (data) {
-      vocabulary = data;
-    });
+//    var promise = $http.get('./json/vocabulary.json').success(function (data) {
+//      vocabulary = data;
+//    });
 
     return {
-      promise:promise,
+      //promise:promise,
       setVocabulary: function (data) {
           vocabulary = data;
       },
       getVocabulary: function () {
-          return vocabulary.vocabulary;
+          return $http.get('./json/vocabulary.json').then(function(data){
+              return data.data});
+//          return vocabulary.vocabulary;
       }
     };
 });
