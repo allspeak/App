@@ -11,6 +11,9 @@ main_module.run(function($ionicPlatform)
                     {
                       if(window.cordova && window.cordova.plugins.Keyboard) 
                       {
+                          
+                          VocabularySrv.getVocabulary()
+                                  .then();
                         // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
                         // for form inputs)
                         cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);

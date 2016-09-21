@@ -4,32 +4,44 @@
  * and open the template in the editor.
  */
 
-function TrainingCtrl($scope, vocabulary)
+//1 function TrainingCtrl($scope, vocabulary) ....use resolve 
+function TrainingCtrl($scope, VocabularySrv)
 {
 
-//    $scope.vocabulary = VocabularySrv.getVocabulary();
-    $scope.vocabulary = vocabulary;
-    
-    $scope.deselectAll = function()
+//  2  $scope.vocabulary = VocabularySrv.getVocabularyAsynch();
+//  1  $scope.vocabulary = vocabulary;
+    $scope.status = 'Loading';
+    VocabularySrv.getVocabulary()
+            .then(function (v) {
+                $scope.vocabulary = v;
+                $scope.status = 'Ready';
+            })
+            .catch(function () {
+                $scope.status = 'Error';
+            })
+
+    $scope.deselectAll = function ()
     {
-        for (var i=0; i < $scope.vocabulary.length; i++) {
-          $scope.vocabulary[i].checked = 0;
-          $scope.vocabulary[i].selected = 0;
-        };        
+        for (var i = 0; i < $scope.vocabulary.length; i++) {
+            $scope.vocabulary[i].checked = 0;
+            $scope.vocabulary[i].selected = 0;
+        }
+        ;
     };
-    
-    $scope.selectAll = function()
+
+    $scope.selectAll = function ()
     {
-        for (var i=0; i < $scope.vocabulary.length; i++) {
-          $scope.vocabulary[i].checked = 1;
-          $scope.vocabulary[i].selected = 1;
-        };        
+        for (var i = 0; i < $scope.vocabulary.length; i++) {
+            $scope.vocabulary[i].checked = 1;
+            $scope.vocabulary[i].selected = 1;
+        }
+        ;
     };
-    
-    $scope.startTraining = function()
+
+    $scope.startTraining = function ()
     {
-        
+
     }
-    
- }
-controllers_module.controller('TrainingCtrl', TrainingCtrl)   
+
+}
+controllers_module.controller('TrainingCtrl', TrainingCtrl)

@@ -13,10 +13,17 @@ main_module.service('VocabularySrv', function($http) {
     return {
       //promise:promise,
       setVocabulary: function (data) {
-          vocabulary = data;
+          $http.post('vocabulary.json', data);
+      },
+      getVocabularySynch: function () {
+          if (vocabulary)
+              return vocabulary;
       },
       getVocabulary: function () {
+          if (vocabulary)
+              return Promise.resolve(vocabulary);
           return $http.get('./json/vocabulary.json').then(function(res){
+              vocabulary = res.data.vocabulary;
               return res.data.vocabulary;
           });
       }
