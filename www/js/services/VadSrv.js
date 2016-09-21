@@ -7,7 +7,7 @@ function VadSrv($cordovaNativeAudio, $cordovaMediaCapture)
 {
     this.controller_scope       = {};
     this.window                 = {};
-    this.audioContext           = new AudioContext();
+//    this.audioContext           = new AudioContext();
     
     
     // Define function called by getUserMedia 

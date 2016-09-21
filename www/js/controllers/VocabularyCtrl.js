@@ -4,12 +4,11 @@
  * and open the template in the editor.
  */
 
-function VocabularyCtrl($scope, $location, VocabularySrv, AudioSrv)
+function VocabularyCtrl($scope, $http, $location, VocabularySrv, AudioSrv)
 {
 
-    $scope.vocabulary = VocabularySrv.vocabulary;
-    
-    $scope.selectedItemId = -1;
+    $scope.vocabulary       = VocabularySrv.getVocabulary();
+    $scope.selectedItemId   = -1;
     $scope.selectedSentence = {};
     
     $scope.play = function(index, id)

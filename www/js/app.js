@@ -7,7 +7,7 @@ main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ion
 
 main_module.run(function($ionicPlatform) 
                 {
-                    $ionicPlatform.ready(function() 
+                    $ionicPlatform.ready(function(VocabularySrv) 
                     {
                       if(window.cordova && window.cordova.plugins.Keyboard) 
                       {
@@ -19,6 +19,9 @@ main_module.run(function($ionicPlatform)
                         // from snapping when text inputs are focused. Ionic handles this internally for
                         // a much nicer keyboard experience.
                         cordova.plugins.Keyboard.disableScroll(true);
+                        
+//                        VocabularySrv.init();
+                        
                       }
                       if(window.StatusBar) {
                         StatusBar.styleDefault();
@@ -66,12 +69,26 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
     .state('training', {
         url: '/training',
         templateUrl: 'templates/training.html',
-        controller: 'TrainingCtrl'
+        controller: 'TrainingCtrl',
+        resolve:{
+                    'MyServiceData':function(VocabularySrv)
+                    {
+                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
+                        return VocabularySrv.promise; 
+                    }
+                }
     })
     .state('vocabulary', {
         url: '/vocabulary',
         templateUrl: 'templates/vocabulary.html',
-        controller: 'VocabularyCtrl'
+        controller: 'VocabularyCtrl',
+        resolve:{
+                    'MyServiceData':function(VocabularySrv)
+                    {
+                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
+                        return VocabularySrv.promise; 
+                    }
+                }
     })
     .state('sentence_train', {
         url: '/train/:sentenceId',
@@ -129,22 +146,29 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
 });
  
  
- main_module.filter('secondsToDateTime', function() 
- {
-    return function (duration) 
-    {
-        var milliseconds = parseInt((duration%1000)/10)
-        , seconds = parseInt((duration/1000)%60)
-        , minutes = parseInt((duration/(1000*60))%60);
-//        , hours = parseInt((duration/(1000*60*60))%24);
 
-//        hours = (hours < 10) ? "0" + hours : hours;
-        minutes = (minutes < 10) ? "0" + minutes : minutes;
-        seconds = (seconds < 10) ? "0" + seconds : seconds;
-        milliseconds = (milliseconds < 10) ? "0" + milliseconds : milliseconds;
-
-//        return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
-        return minutes + ":" + seconds + "." + milliseconds;
-    }
-
-});
+//
+//main_module.provider('getvocabulary', function($http) {
+//  var text = 'Hello, ';
+//
+//  this.init = function() {
+//    $http.get('./json/vocabulary.json').success(function (data) {
+//      vocabulary = data;
+//    });
+//  };
+//
+//  this.$get = function() {
+//    return function() {
+//      alert(vocabulary);
+//    };
+//  };
+//});
+//
+//main_module.config(function(getvocabularyProvider) {
+//  getvocabularyProvider.init();
+//});
+//
+//main_module.run(function(getvocabulary) {
+//  getvocabulary();
+//});
+//
