@@ -66,13 +66,16 @@ function cpAISrv()
                 service.clearCounters();
                 service.controller_scope = $scope;    
                 
+//                $window.AudioContext = window.AudioContext || window.webkitAudioContext;                
+//                service.captureCfg.audioContext = new window.AudioContext();
+                
                 service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.WAAPLAY_MODE;
                 service.captureCfg.streamToWebAudio = true;
 
                 $window.addEventListener('audioinput', service.onAudioRawInputCapture, false);
                 $window.addEventListener('audioinputerror', service.onAudioInputError, false);
 
-                $window.audioinput.start(captureCfg);
+                $window.audioinput.start(service.captureCfg);
                 service.firstGetTime        = new Date().getTime();
                 console.log("Microphone input started!");
             }
@@ -230,7 +233,6 @@ function cpAISrv()
         service.subsamplingFactor = factor;
     };
     
-
     service.subsampleData = function(data, factor)
     {
         var l       = data.length;

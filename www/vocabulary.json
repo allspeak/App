@@ -1,5 +1,0 @@
-{
-   { "title": "Ho fame", "id": 1, "label": "ho_fame", "filename": "ho_fame.wav"},
-   { "title": "Ho sete", "id": 2, "label": "ho_sete", "filename": "ho_sete.wav" },
-   { "title": "Chiudi la porta", "id": 3, "label": "chiudi_porta", "filename" : "chiudi_porta.wav"}
-}

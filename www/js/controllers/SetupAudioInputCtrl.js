@@ -163,9 +163,7 @@ function SetupAudioInputCtrl($scope, cpAISrv, $window)
     // top indicates if set a global maximum, top_value represents that value
     $scope.scaleData = function(chart_obj, top, top_value)
     {
-        
         var allpos = (chart_obj.min_data >= 0 ? 1 : 0);
-        //var range = [];
         if (allpos)
         {
             if (top)
@@ -189,8 +187,6 @@ function SetupAudioInputCtrl($scope, cpAISrv, $window)
                 chart_obj.yScale    = 2*max;
                 chart_obj.y0        = max;            
             }
-                
-            
         }
     };    
         

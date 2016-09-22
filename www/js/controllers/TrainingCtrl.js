@@ -3,22 +3,21 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
-//1 function TrainingCtrl($scope, vocabulary) ....use resolve 
-function TrainingCtrl($scope, VocabularySrv)
+//function TrainingCtrl($scope, VocabularySrv)
+function TrainingCtrl($scope, vocabulary)  //....use resolve 
 {
 
 //  2  $scope.vocabulary = VocabularySrv.getVocabularyAsynch();
-//  1  $scope.vocabulary = vocabulary;
+    $scope.vocabulary = vocabulary;
     $scope.status = 'Loading';
-    VocabularySrv.getVocabulary()
-            .then(function (v) {
-                $scope.vocabulary = v;
-                $scope.status = 'Ready';
-            })
-            .catch(function () {
-                $scope.status = 'Error';
-            })
+//    VocabularySrv.getVocabulary()
+//            .then(function (v) {
+//                $scope.vocabulary = v;
+//                $scope.status = 'Ready';
+//            })
+//            .catch(function () {
+//                $scope.status = 'Error';
+//            })
 
     $scope.deselectAll = function ()
     {

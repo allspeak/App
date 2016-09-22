@@ -12,8 +12,7 @@ main_module.run(function($ionicPlatform)
                       if(window.cordova && window.cordova.plugins.Keyboard) 
                       {
                           
-                          VocabularySrv.getVocabulary()
-                                  .then();
+
                         // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
                         // for form inputs)
                         cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
@@ -23,6 +22,10 @@ main_module.run(function($ionicPlatform)
                         // a much nicer keyboard experience.
                         cordova.plugins.Keyboard.disableScroll(true);
                        
+//                                                 VocabularySrv.getVocabulary()
+//                                  .then();
+//                       
+//                       
 //                            var servicesToBeInitizialize = [VocabularyService, OtherService, AnotherService];
 //                            var initFns = servicesToBeInitizialize.map(s => s.init)
 //                            AuthService.login()
@@ -72,8 +75,8 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
     $stateProvider
     .state('home', {
         url: '/',
-        templateUrl: 'templates/home.html',
-        controller: 'HomeCtrl'
+        templateUrl: 'templates/home.html'
+//        ,     controller: 'HomeCtrl'
     })
     .state('login', {
         url: '/login',

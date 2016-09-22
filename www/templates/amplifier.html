@@ -9,7 +9,7 @@
         <label class="item">adjust microphone threshold <span class="badge">{{volume}}</span></label>
         <div class="item range">
             <i class="icon ion-volume-low"></i>
-                <input type="range" name="volume" ng-model="volume" ng-change="onChangeVolume()">
+            <input type="range" name="volume" ng-model="volume" ng-change="onChangeVolume()" ng-disabled="!isRunning">
             <i class="icon ion-volume-high"></i>
         </div>
   </ion-content>

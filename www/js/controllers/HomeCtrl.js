@@ -7,7 +7,7 @@
 
 
  
-function HomeCtrl($scope, $state, $ionicPopup, $ionicHistory)
+function HomeCtrl($scope, $ionicPopup, $ionicHistory)
 {
     $scope.$on('$ionicView.enter', function(){
         $ionicHistory.clearHistory();
@@ -19,12 +19,12 @@ function HomeCtrl($scope, $state, $ionicPopup, $ionicHistory)
         {
             if (res){  ionic.Platform.exitApp();  }
         });
-    }
+    };
 };
 
 
 
 controllers_module = angular.module('controllers_module', [])
 
-.controller('HomeCtrl',HomeCtrl);
+.controller('HomeCtrl', HomeCtrl);
  
