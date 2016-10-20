@@ -3,7 +3,7 @@
  */
 
 
-function cpAISrv()
+function cpAISrv($cordovaFile)
 {
     var service = {};
 //    var self = service;
@@ -60,14 +60,30 @@ function cpAISrv()
         else
             service.captureCfg = captureCfg;
         
+        service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.WAAPLAY_MODE;
+        service.captureCfg.streamToWebAudio = true;        
+        service.startRaw(service.captureCfg, $scope, $window);
+    }
+    
+    service.startRawCapture = function (captureCfg, $scope, $window) 
+    {
+        if (captureCfg == null)
+            service.captureCfg = service.standardCaptureCfg;
+        else
+            service.captureCfg = captureCfg;    
+        
+        service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.RAWDATA_MODE;
+        service.captureCfg.streamToWebAudio = false;        
+        service.startRaw(service.captureCfg, $scope, $window);
+    }    
+    
+    service.startRaw = function ($scope, $window) 
+    {
         try {
             if ($window.audioinput && !$window.audioinput.isCapturing()) 
             {
                 service.clearCounters();
                 service.controller_scope = $scope;    
-                
-//                $window.AudioContext = window.AudioContext || window.webkitAudioContext;                
-//                service.captureCfg.audioContext = new window.AudioContext();
                 
                 service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.WAAPLAY_MODE;
                 service.captureCfg.streamToWebAudio = true;
@@ -85,7 +101,7 @@ function cpAISrv()
         }
     };
     
-    service.startRawCapture = function (captureCfg, $scope, $window) 
+    service.startFFTCapture = function (captureCfg, scope, $window) 
     {
         if (captureCfg == null)
             service.captureCfg = service.standardCaptureCfg;
@@ -96,36 +112,7 @@ function cpAISrv()
             if ($window.audioinput && !$window.audioinput.isCapturing()) 
             {
                 service.clearCounters();
-                service.controller_scope = $scope;    
-                
-                service.captureCfg.captureMode = $window.audioinput.CAPTURE_MODES.RAWDATA_MODE;
-                service.captureCfg.streamToWebAudio = false;
-
-                $window.addEventListener('audioinput', service.onAudioRawInputCapture, false);
-                $window.addEventListener('audioinputerror', service.onAudioInputError, false);
-
-                $window.audioinput.start(captureCfg);
-                service.firstGetTime = new Date().getTime();
-                console.log("Microphone input started!");
-            }
-        }
-        catch (e) {
-            alert("startCapture exception: " + e);
-        }
-    };
-    
-    service.startFFTCapture = function (captureCfg, $scope, $window) 
-    {
-        if (captureCfg == null)
-            service.captureCfg = service.standardCaptureCfg;
-        else
-            service.captureCfg = captureCfg;
-        
-        try {
-            if ($window.audioinput && !$window.audioinput.isCapturing()) 
-            {
-                service.clearCounters();
-                service.controller_scope            = $scope;    
+                service.controller_scope            = scope;    
                 
                 service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.FFTDATA_MODE;
                 service.captureCfg.streamToWebAudio = false;
@@ -158,8 +145,14 @@ function cpAISrv()
     };
     
     // don't need Web Audio API support
+    service.save2Wave = function(filename)
+    {
+       service.saveArray2Wave(service.captureCfg, service.audioRawDataQueue, filename);
+    };
+    
     service.saveArray2Wave = function(captureCfg, data_array, filename)
     {
+        service.sentencesAudioFolder = cordova.file.DataDirectory;        
         console.log("Encoding WAV...");
         var encoder = new WavAudioEncoder(captureCfg.sampleRate, captureCfg.channels);
         encoder.encode([data_array]);
@@ -168,15 +161,38 @@ function cpAISrv()
 
         var blob = encoder.finish("audio/wav");
         console.log("BLOB created");
-
-        window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function (dir) 
+        if (filename == null)
         {
-            dir.getFile(filename, {create: true}, function (file) 
+            window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function (dir) 
             {
-                file.createWriter(function (fileWriter) { fileWriter.write(blob);},
-                                  function () { alert("FileWriter error!"); });
-            });
-        });        
+                dir.getFile(filename, {create: true}, function (file) 
+                {
+                    file.createWriter(function (fileWriter) { fileWriter.write(blob);},
+                                      function () { alert("FileWriter error!"); });
+                });
+            });        
+        }
+        else
+        {
+//            $cordovaFile.checkFile(service.sentencesAudioFolder, filename).then(
+//                function(success) {
+//                    if (success)
+//                        $cordovaFile.createFile(service.sentencesAudioFolder, filename);
+//                }, function(error){
+//                    console.log(error);
+//                });
+                    
+                    
+            $cordovaFile.writeFile(service.sentencesAudioFolder, filename, blob, true).then(
+                    function(res){
+                        console.log(res);
+                    },
+                    function(err){
+                        console.log(err);
+
+                    });
+                        
+        }
     };
     /**
      * Called continuously while Raw Audio Input capture is running.

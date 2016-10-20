@@ -7,15 +7,18 @@
 
 
  
-function AmplifierCtrl($scope, cpAISrv, $window)
+function RecordCtrl($scope, cpAISrv, $window, $ionicPopup)
 {
     $scope.volume           = 50;
-    $scope.bLabelStart      = "AVVIA";
+    $scope.bLabelStart      = "REGISTRA";
     $scope.bLabelStop       = "STOP";
     
     $scope.isRunning        = 0;
     $scope.buttonLabel      = ($scope.isRunning ? $scope.bLabelStop : $scope.bLabelStart);
     
+    $scope.DO_SAVE          = 2;
+    
+    $scope.wavName          = "test.wav";
         //// capture params
 //    $scope.captureCfg       = cpAISrv.getStdCaptureCfg();
       
@@ -26,24 +29,56 @@ function AmplifierCtrl($scope, cpAISrv, $window)
         $scope.buttonLabel      = ($scope.isRunning ? $scope.bLabelStop : $scope.bLabelStart);        
         if ($scope.isRunning)
         {
-            cpAISrv.startRawPlayback(null, $scope, $window);
+            cpAISrv.startRawCapture(null, $scope, $window);
             $scope.vm_raw_label = $scope.vm_raw_label_stop;
         }
         else
         {
             cpAISrv.stopCapture();
             $scope.spectrum     = [];
+            $scope.showPopup();
         }
     };
   
    
     
-   $scope.onChangeVolume = function()
-   {
+    $scope.onChangeVolume = function()
+    {
        cpAISrv.changeVolume($scope.volume);
-   };
+    };
    
    
+    $scope.showPopup = function() 
+    {
+        var myPopup = $ionicPopup.show({
+            title: 'Salva la frase',
+            subTitle: 'Sei soddisfatto della registrazione?, vuoi salvarla?',
+            scope: $scope,
+            buttons: [
+                        {text: 'Cancella' },
+                        {text: '<b>Salva</b>',
+                         type: 'button-positive',
+                         onTap: function(e) {
+                            return 2;
+                            }
+                        },
+                        {text: '<b>Riascolta</b>',
+                         type: 'button-positive',
+                         onTap: function(e) {
+                            e.preventDefault();
+                            }
+                        },
+                    ]
+        });
+        myPopup.then(function(res) {
+            if (res == $scope.DO_SAVE) 
+            {
+                cpAISrv.save2Wave($scope.wavName);
+            }
+        });        
+    }   
+
+    // ============================================================================================
     // ============================================================================================
     // charting
     $scope.chart = {width : 300,
@@ -92,13 +127,11 @@ function AmplifierCtrl($scope, cpAISrv, $window)
             }
         }
     };     
-   
-   
+    // ============================================================================================
+    // ============================================================================================
 };
 
 
 
-controllers_module = angular.module('controllers_module')
-
-.controller('AmplifierCtrl', AmplifierCtrl);
+controllers_module.controller('RecordCtrl', RecordCtrl);
  

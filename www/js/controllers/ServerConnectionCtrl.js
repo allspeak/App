@@ -7,5 +7,5 @@
 function ServerConnectionCtrl($scope)
 {
 };
-controllers_module.controller('ServerConnectionCtrl', ServerConnectionCtrl)   
+controllers_module.controller('ServerConnectionCtrl', ServerConnectionCtrl);   
   

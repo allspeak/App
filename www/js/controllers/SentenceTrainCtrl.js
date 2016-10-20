@@ -14,6 +14,6 @@ function SentenceTrainCtrl($scope, $stateParams, VocabularySrv)
 }
 
  
-controllers_module.controller('SentenceTrainCtrl', SentenceTrainCtrl) 
+controllers_module.controller('SentenceTrainCtrl', SentenceTrainCtrl); 
 
   

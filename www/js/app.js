@@ -5,52 +5,30 @@
 // the 2nd parameter is an array of 'requires'
 main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native' ]);    // ,'ng-fusioncharts'
 
-main_module.run(function($ionicPlatform) 
+main_module.run(function($ionicPlatform, InitAppSrv, $state) 
+            {
+                $ionicPlatform.ready(function() 
                 {
-                    $ionicPlatform.ready(function() 
+                    if(window.cordova && window.cordova.plugins.Keyboard) 
                     {
-                      if(window.cordova && window.cordova.plugins.Keyboard) 
-                      {
-                          
-
-                        // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
-                        // for form inputs)
+                        // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard for form inputs)
                         cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
 
-                        // Don't remove this line unless you know what you are doing. It stops the viewport
-                        // from snapping when text inputs are focused. Ionic handles this internally for
-                        // a much nicer keyboard experience.
+                        // Don't remove this line unless you know what you are doing. It stops the viewport from snapping when text inputs are focused. 
+                        // Ionic handles this internally for a much nicer keyboard experience.
                         cordova.plugins.Keyboard.disableScroll(true);
-                       
-//                                                 VocabularySrv.getVocabulary()
-//                                  .then();
-//                       
-//                       
-//                            var servicesToBeInitizialize = [VocabularyService, OtherService, AnotherService];
-//                            var initFns = servicesToBeInitizialize.map(s => s.init)
-//                            AuthService.login()
-//                                    .then(Promise.all(initFns))
-//                                    .then(_ => IonicRouter.state('Home'))
-//                            
-//                            
-////                        VocabularySrv.init();
-////                            AuthService.login()
-//                                    Promise.resolve(5)
-//                                    .then(function(x) {return 4;})
-//                                    .then(function(y) { return 3;})
-//                                    .then(VocabularyService.init)
-//                                    .then(x => OtherService.init(x))
-//                                    .then(function(x) {
-//                                        return OtherService.init(x);
-//                                    })
-//                                    .then(_ => IonicRouter.state('Home'))
-                            
-                      }
-                      if(window.StatusBar) {
+                        
+                        InitAppSrv.init().then(function(success){
+                            $state.go('home');
+                        }).catch(function(error){
+                            console.log(error.message);
+                        })
+                    }
+                    if(window.StatusBar) {
                         StatusBar.styleDefault();
-                      }
-                    });
-                })
+                    }
+                });
+            })
             .run(function($ionicPlatform, $ionicHistory, $ionicPopup, $state) 
             {
                 $ionicPlatform.registerBackButtonAction(function()
@@ -73,8 +51,13 @@ main_module.run(function($ionicPlatform)
 main_module.config(function($stateProvider, $urlRouterProvider) {
   
     $stateProvider
-    .state('home', {
+    .state('init', {
         url: '/',
+        templateUrl: 'templates/init.html',
+        controller: 'InitCtrl'
+    })
+    .state('home', {
+        url: '/home',
         templateUrl: 'templates/home.html'
 //        ,     controller: 'HomeCtrl'
     })
@@ -95,6 +78,18 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
         url: '/training',
         templateUrl: 'templates/training.html',
         controller: 'TrainingCtrl',
+        resolve:{
+                    vocabulary :function(VocabularySrv)
+                    {
+                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
+                        return VocabularySrv.getVocabulary(); 
+                    }
+                }
+    })
+    .state('record', {
+        url: '/record',
+        templateUrl: 'templates/record.html',
+        controller: 'RecordCtrl',
         resolve:{
                     vocabulary :function(VocabularySrv)
                     {

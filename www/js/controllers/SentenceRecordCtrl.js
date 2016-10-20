@@ -13,5 +13,5 @@ function SentenceRecordCtrl($scope, $stateParams, VocabularySrv)
     
 }
 
-controllers_module.controller('SentenceRecordCtrl', SentenceRecordCtrl) 
+controllers_module.controller('SentenceRecordCtrl', SentenceRecordCtrl); 
   

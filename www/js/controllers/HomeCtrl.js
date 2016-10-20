@@ -24,7 +24,7 @@ function HomeCtrl($scope, $ionicPopup, $ionicHistory)
 
 
 
-controllers_module = angular.module('controllers_module', [])
+controllers_module = angular.module('controllers_module')
 
 .controller('HomeCtrl', HomeCtrl);
  

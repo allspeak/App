@@ -1,0 +1,31 @@
+<ion-view view-title="record">
+  <ion-content>
+
+      <br></br>
+        <button class="button button-block button-large button-positive" ng-click="start()">
+            {{buttonLabel}}
+        </button>       
+      <br></br>
+        <label class="item">adjust microphone threshold</label>
+        <label class="item">adjust microphone threshold <span class="badge">{{volume}}</span></label>
+        <div class="item range">
+            <i class="icon ion-volume-low"></i>
+            <input type="range" name="volume" ng-model="volume" ng-change="onChangeVolume()" ng-disabled="!isRunning">
+            <i class="icon ion-volume-high"></i>
+        </div>
+        
+        <div class="chart" style="width:100%; height:{{chart.height}}px; left:0px;">
+            <div class="bar" style="height:{{chart.mean_data * chart.height / chart.yScale}}px; width:40px; left:10px;"></div>
+            <!-- Labels -->
+<!--            <div class="y" style="width:{{chart.height}}px; left:10;">{{chart.yAxis}}</div>
+            <div class="x">{{chart.xAxis}}</div>-->
+            <!-- Data -->
+            <div ng-repeat="dot in chart.data track by $index" class="dot" style="bottom:{{(dot + chart.y0) * chart.height / chart.yScale}}px; left:{{($index + 0.5) / chart.data.length * chart.width + 60}}px;"></div>   
+            <!--<div ng-repeat="bar in spectrum track by $index" class="bar" style="height:{{bar / max_spectrum * height}}px; width:1px:; left:{{$index / spectrum.length * width}}px;"></div>    {{chart.width / chart.data.length - 65}}px -->
+            
+            <!--{{dot / chart.max_data * chart.height*chart.yScale}}px-->
+            
+        </div>         
+        
+  </ion-content>
+</ion-view>

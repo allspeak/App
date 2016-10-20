@@ -22,6 +22,7 @@ controllers_module.controller('LoginCtrl', function($scope, $ionicModal, $timeou
     $scope.modal.hide();
   };
 
+
   // Open the login modal
   $scope.login = function() {
     $scope.modal.show();

@@ -1,0 +1,132 @@
+
+//getting the list of connected audio devices?  API23
+
+ AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+        AudioDeviceInfo[] adi = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+    }
+
+
+if isBluetoothScoAvailableOffCall
+    if isBluetoothScoOn
+        ==== ok
+    else
+    startBluetoothSco
+    register callback to ACTION_SCO_AUDIO_STATE_UPDATED 
+else
+    if !isSpeakerphoneOn
+        setSpeakerphoneOn
+
+
+
+
+callback: if state = SCO_AUDIO_STATE_CONNECTED. 
+    setBluetoothScoOn
+
+
+
+isBluetoothA2dpOn
+
+startBluetoothSco
+
+
+
+                            if (maxAmplitude != 0) {
+                                db = 20.0 * Math.log10(maxAmplitude / 32767.0) + 90;
+}
+
+
+
+
+
+
+
+
+main_module.run
+
+
+//                        FileSystemSrv.getDataDirEntry()
+//                        .then(function(res){
+//                            console.log(res);
+//                        });
+//                        FileSystemSrv.createDir("audio", 0);
+//                        VocabularySrv.getVocabulary()
+//                        .then(function(res){
+//                            console.log(res);
+//                        });
+//                       
+//                       
+//                            var servicesToBeInitizialize = [VocabularyService, OtherService, AnotherService];
+//                            var initFns = servicesToBeInitizialize.map(s => s.init)
+//                            AuthService.login()
+//                                    .then(Promise.all(initFns))
+//                                    .then(_ => IonicRouter.state('Home'))
+//                            
+//                            
+////                        VocabularySrv.init();
+////                            AuthService.login()
+//                                    Promise.resolve(5)
+//                                    .then(function(x) {return 4;})
+//                                    .then(function(y) { return 3;})FileSystemSrv
+//                                    .then(VocabularyService.init)
+//                                    .then(x => OtherService.init(x))
+//                                    .then(function(x) {
+//                                        return OtherService.init(x);
+//                                    })
+//                                    .then(_ => IonicRouter.state('Home'))
+                        console.log('cordova.file.externalDataDirectory: ' + cordova.file.externalDataDirectory);
+                        console.log('cordova.file.DataDirectory: ' + cordova.file.dataDirectory);
+
+//                        FileSystemSrv.getDataDirEntry();
+
+//                        FileSystemSrv.init().then(function(success){
+//                            $state.go('home')
+//                        })
+//                        .catch(function(error){
+//                            console.log("createDir error: "+ error.message);
+//                        })
+//                        .then()
+//                        .then()
+//                        .then()
+//                        .then()
+//                        .catch(function(error){})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

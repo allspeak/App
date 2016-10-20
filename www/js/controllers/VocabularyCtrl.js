@@ -29,5 +29,5 @@ function VocabularyCtrl($scope, $http, $location, VocabularySrv, AudioSrv)
         $location.path("/train/"+id);
     };    
     
- }
-controllers_module.controller('VocabularyCtrl', VocabularyCtrl)   
+ };
+controllers_module.controller('VocabularyCtrl', VocabularyCtrl);   

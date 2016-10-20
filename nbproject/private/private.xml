@@ -3,15 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/controllers/AmplifierCtrl.js</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/.editorconfig</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/www/templates/amplifier.html</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/.gitignore</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/www/index.html</file>
             <file>file:/data/CODE/ionic/AllSpeak/App/www/js/app.js</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/services/cpAISrv.js</file>
-            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/controllers/SetupAudioInputCtrl.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/services/FileSystemSrv.js</file>
             <file>file:/data/CODE/ionic/AllSpeak/App/www/js/services/VocabularySrv.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/controllers/HomeCtrl.js</file>
         </group>
     </open-files>
 </project-private>
