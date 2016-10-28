@@ -15,10 +15,12 @@
  * 
  */
 
-function ChartCompCtrl ()
+function ChartCompCtrl ($scope)
 {
     var vm = this;
     
+    vm.static = {};
+    vm.dynamic = {};
     //default exogenous static values    
     vm.static.width         = 100;
     vm.static.height        = 100;
@@ -41,7 +43,7 @@ function ChartCompCtrl ()
     vm.yScale               = 0;    
     vm.y0                   = 0;  
     
-    vm.watch('dynamic', function (newvalue, oldvalue, scope){
+    $scope.watch('dynamic', function (newvalue, oldvalue, scope){
         vm.scaleData();
     });
     // top indicates if set a global maximum, top_value represents that value
@@ -87,5 +89,5 @@ var chartComp =
 };  
     
     
-components_module = angular.module('components_module', [])
-components_module.component('chartComp', chartComp)
+//components_module = angular.module('components_module', [])
+main_module.component('chartComp', chartComp)
