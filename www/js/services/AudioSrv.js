@@ -1,62 +1,64 @@
 /* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
+ * To change service license header, choose License Headers in Project Properties.
+ * To change service template file, choose Tools | Templates
  * and open the template in the editor.
  */
 
 
 function AudioSrv(HWSrv, $cordovaNativeAudio, $cordovaMediaCapture)
 {
-    this.playback_wrapper   = $cordovaNativeAudio;
-    this.rec_wrapper        = $cordovaMediaCapture;
-    this.rec_options        = { limit: 3, duration: 10 };
+    var service = {};
     
-    this.filename           = "";
-    this.hw                 = HWSrv;
-    this.isSoundLoaded      = 0;
+    service.rec_options        = { limit: 3, duration: 10 };
+    
+    service.filename           = "";
+    service.hw                 = HWSrv;
+    service.isSoundLoaded      = 0;
 
-    this.controller         = {};
+    service.controller         = {};
     //=============================================
     // PLAYBACK
-    this.playWav = function (filename)
+    service.playWav = function (filename)
     {
-        this.filename = filename;       
+        service.playback_wrapper   = $cordovaNativeAudio;
+        service.filename = filename;       
         console.log("play wav: " + filename );     
         
-        if(this.isSoundLoaded)
+        if(service.isSoundLoaded)
         {
-            this.playNativeSound('mySound');
+            service.playNativeSound('mySound');
         }
         else
         {
-            this.loadSound();
+            service.loadSound();
         }        
     };
-    this.stopWav = function ()
+    service.stopWav = function ()
     {
-        playback_wrapper.stop('mySound');
-        playback_wrapper.unload('mySound');
+        service.playback_wrapper.stop('mySound');
+        service.playback_wrapper.unload('mySound');
     };    
-    this.loadSound = function()
+    service.loadSound = function()
     {
-        this.audio_wrapper.preloadSimple('mySound', this.filename)
-          .then(function (msg) {
-          }, function (error) {
+        service.playback_wrapper.preloadSimple('mySound', service.filename)
+        .then(function (msg) {
+        }, function (error) {
             alert(error);
-          });
-        this.isSoundLoaded = true;
-        this.playNativeSound('mySound');
+        });
+        service.isSoundLoaded = true;
+        service.playNativeSound('mySound');
     };
-    this.playNativeSound = function(name)
+    service.playNativeSound = function(name)
     {
-        playback_wrapper.play(name);
+        service.playback_wrapper.play(name);
     };    
     //=============================================
     // RECORDING  
-    this.recWav = function (filename)
+    service.recWav = function (filename)
     {
-        this.filename = filename;
-        this.rec_wrapper.captureAudio(this.rec_options).then(
+        service.rec_wrapper = $cordovaMediaCapture;        
+        service.filename    = filename;
+        service.rec_wrapper.captureAudio(service.rec_options).then(
         function(audioData) 
         {
             // Success! Audio data is here
@@ -66,6 +68,8 @@ function AudioSrv(HWSrv, $cordovaNativeAudio, $cordovaMediaCapture)
              // An error occurred. Show a message to the user
         });        
     }; 
+    
+    return service;
 }
 
  main_module.service('AudioSrv', AudioSrv);

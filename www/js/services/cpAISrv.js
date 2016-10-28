@@ -3,7 +3,7 @@
  */
 
 
-function cpAISrv($cordovaFile)
+function cpAISrv(FileSystemSrv)
 {
     var service = {};
 //    var self = service;
@@ -60,10 +60,10 @@ function cpAISrv($cordovaFile)
         else
             service.captureCfg = captureCfg;
         
-        service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.WAAPLAY_MODE;
+        service.captureCfg.captureMode      = window.audioinput.CAPTURE_MODES.WAAPLAY_MODE;
         service.captureCfg.streamToWebAudio = true;        
         service.startRaw(service.captureCfg, $scope, $window);
-    }
+    };
     
     service.startRawCapture = function (captureCfg, $scope, $window) 
     {
@@ -72,21 +72,18 @@ function cpAISrv($cordovaFile)
         else
             service.captureCfg = captureCfg;    
         
-        service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.RAWDATA_MODE;
+        service.captureCfg.captureMode      = window.audioinput.CAPTURE_MODES.RAWDATA_MODE;
         service.captureCfg.streamToWebAudio = false;        
         service.startRaw(service.captureCfg, $scope, $window);
     }    
     
-    service.startRaw = function ($scope, $window) 
+    service.startRaw = function (captureCfg, $scope, $window) 
     {
         try {
-            if ($window.audioinput && !$window.audioinput.isCapturing()) 
+            if (window.audioinput && !window.audioinput.isCapturing()) 
             {
                 service.clearCounters();
                 service.controller_scope = $scope;    
-                
-                service.captureCfg.captureMode      = $window.audioinput.CAPTURE_MODES.WAAPLAY_MODE;
-                service.captureCfg.streamToWebAudio = true;
 
                 $window.addEventListener('audioinput', service.onAudioRawInputCapture, false);
                 $window.addEventListener('audioinputerror', service.onAudioInputError, false);
@@ -109,7 +106,7 @@ function cpAISrv($cordovaFile)
             service.captureCfg = captureCfg;
         
         try {
-            if ($window.audioinput && !$window.audioinput.isCapturing()) 
+            if (window.audioinput && !window.audioinput.isCapturing()) 
             {
                 service.clearCounters();
                 service.controller_scope            = scope;    
@@ -145,56 +142,25 @@ function cpAISrv($cordovaFile)
     };
     
     // don't need Web Audio API support
-    service.save2Wave = function(filename)
+    service.save2Wave = function(filename, overwrite)
     {
-       service.saveArray2Wave(service.captureCfg, service.audioRawDataQueue, filename);
+       return service.saveArray2Wave(service.captureCfg, service.audioRawDataQueue, filename, overwrite);
     };
     
-    service.saveArray2Wave = function(captureCfg, data_array, filename)
+    service.saveArray2Wave = function(captureCfg, data_array, filename, overwrite)
     {
-        service.sentencesAudioFolder = cordova.file.DataDirectory;        
         console.log("Encoding WAV...");
         var encoder = new WavAudioEncoder(captureCfg.sampleRate, captureCfg.channels);
         encoder.encode([data_array]);
-
         console.log("Encoding WAV finished");
 
         var blob = encoder.finish("audio/wav");
         console.log("BLOB created");
-        if (filename == null)
-        {
-            window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function (dir) 
-            {
-                dir.getFile(filename, {create: true}, function (file) 
-                {
-                    file.createWriter(function (fileWriter) { fileWriter.write(blob);},
-                                      function () { alert("FileWriter error!"); });
-                });
-            });        
-        }
-        else
-        {
-//            $cordovaFile.checkFile(service.sentencesAudioFolder, filename).then(
-//                function(success) {
-//                    if (success)
-//                        $cordovaFile.createFile(service.sentencesAudioFolder, filename);
-//                }, function(error){
-//                    console.log(error);
-//                });
-                    
-                    
-            $cordovaFile.writeFile(service.sentencesAudioFolder, filename, blob, true).then(
-                    function(res){
-                        console.log(res);
-                    },
-                    function(err){
-                        console.log(err);
-
-                    });
-                        
-        }
+        
+        return FileSystemSrv.saveFile(filename, blob, overwrite)
+        .then(function(){return 1});
     };
-    /**
+   /**
      * Called continuously while Raw Audio Input capture is running.
      * service is global
      */

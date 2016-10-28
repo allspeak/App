@@ -6,10 +6,14 @@
 
 function DeviceCtrl($scope, HWSrv)
 {
-    ionic.Platform.ready(function()
+    $scope.device = null;
+    $scope.$on("$ionicView.enter", function(event, data)
     {
-        $scope.device   = HWSrv.getDevice();        
-        $scope.ready    = true; // will execute when device is ready, or immediately if the device is already ready.
+        if ($scope.device ==  undefined)
+        {
+            $scope.device   = HWSrv.device;    
+            $scope.fillDevice();
+    }
     });    
     
     $scope.device_item_to_be_shown    = [ {label:"model", value:""},  
@@ -19,14 +23,17 @@ function DeviceCtrl($scope, HWSrv)
                                         {label:"version", value:""}];
     var len_dev = $scope.device_item_to_be_shown.length;
     
-    if (typeof $scope.device !== "undefined")
+    $scope.fillDevice = function()
     {
-        for (d=0; d<len_dev; d++)
+        if (typeof $scope.device !== "undefined")
         {
-            lab                                         = $scope.device_item_to_be_shown[d].label;
-            $scope.device_item_to_be_shown[d].value     = $scope.device[lab];
+            for (d=0; d<len_dev; d++)
+            {
+                lab                                         = $scope.device_item_to_be_shown[d].label;
+                $scope.device_item_to_be_shown[d].value     = $scope.device[lab];
+            }
+            //$scope.inputsources = HWSrv.getInputSources();
         }
-        //$scope.inputsources = HWSrv.getInputSources();
     }
 };
 controllers_module.controller('DeviceCtrl', DeviceCtrl)   

@@ -1,0 +1,46 @@
+<ion-view view-title="Audio Input Settings">
+    
+    <ion-nav-buttons side="left">
+        <button class="button button-clear" ui-sref="home"><i class="icon ion-arrow-left-c" ></i>Home</button>
+    </ion-nav-buttons>
+    
+    <ion-content>
+        <div class="list">
+            <label class="item item-input item-select">
+                <div class="input-label">S. Frequency</div>
+                <select ng-model="selectedFrequency" ng-change="updateFrequency(selectedFrequency)">
+                    <option ng-selected="{{item.value == captureCfg.sampleRate}}" ng-repeat="item in sampling_frequencies" value="{{item.value}}">{{item.label}}</option>
+                </select>            
+            </label>     
+
+            <label class="item item-input item-select">
+                <div class="input-label">CaptureBuffer</div>
+                <select ng-model="selectedCaptureBuffer" ng-change="updateCaptureBuffer(selectedCaptureBuffer)">
+                    <option ng-selected="{{item.value == captureCfg.bufferSize}}" ng-repeat="item in capture_buffer" value="{{item.value}}">{{item.label}}</option>
+                </select>            
+            </label>     
+
+            <label class="item">Data received : <span class="badge">{{totalReceivedData}}</span> </label>   
+            <label class="item">Elapsed Time : <span class="badge">{{elapsedTime*1000 | secondsToDateTime }}</span></label>      
+            <label class="item">bitrate : <span class="badge">{{bitRate}}</span></label>        
+
+            <button class="button button-block button-positive" ng-disabled="iscapturing_fft" ng-click="startRawMonitoring()">{{vm_raw_label}}</button> 
+            <button class="button button-block button-assertive" ng-disabled="iscapturing" ng-click="startFFTMonitoring()">{{vm_fft_label}}</button> 
+
+            <label class="item item-input item-select">
+                <div class="input-label">SubSampling</div>
+
+                <select ng-model="selectedSSF" ng-change="updateSubsamplingFactor(selectedSSF)">
+                    <option ng-selected="{{item.value == 0}}" ng-repeat="item in subsampling_factors" value="{{item.value}}">{{item.label}}</option>
+                </select>            
+            </label> 
+
+            <chart-comp static_data="chart_static_data" dynamic_data="chart_dynamic_data"></chart-comp>
+            <!--<chart-comp height="chart_height" width="chart_width" yScale="chart_yScale" data="chart_data" top_value="chart_top_value"></chart-comp>-->
+<!--            <div class="chart" style="width:100%; height:{{chart.height}}px; left:0px;">
+                <div class="bar" style="height:{{chart.mean_data * chart.height / chart.yScale}}px; width:40px; left:10px;"></div>
+                <div ng-repeat="dot in chart.data track by $index" class="dot" style="bottom:{{(dot + chart.y0) * chart.height / chart.yScale}}px; left:{{($index + 0.5) / chart.data.length * chart.width + 60}}px;"></div>   
+            </div>        -->
+        </div>      
+    </ion-content>
+</ion-view>

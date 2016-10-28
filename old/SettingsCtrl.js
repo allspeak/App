@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function SettingsCtrl($scope, $window, $ionicPlatform, AudioSrv, VadSrv, HarkSrv, cpAISrv, HWSrv)
+function SettingsCtrl($scope, $window, $ionicPlatform, InitAppSrv, cpAISrv, HWSrv)
 {
     
 //    $ionicPlatform.ready(function() 
@@ -22,7 +22,7 @@ function SettingsCtrl($scope, $window, $ionicPlatform, AudioSrv, VadSrv, HarkSrv
                                         {label:"version", value:""}];
     var len_dev = $scope.device_item_to_be_shown.length;
     
-    $scope.device       = HWSrv.getDevice();
+    $scope.device       = HWSrv.device;
     
     for (d=0; d<len_dev; d++)
     {

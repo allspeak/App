@@ -3,30 +3,40 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-main_module.service('VocabularySrv', function($http) {
+main_module.service('VocabularySrv', function($http, FileSystemSrv) {
     var vocabulary = null;
-
-//    var promise = $http.get('./json/vocabulary.json').success(function (data) {
-//      vocabulary = data;
-//    });
-
+    var vocabulary_json_path = ""; //'./json/vocabulary.json';
     return {
-      //promise:promise,
-      setVocabulary: function (data) {
-          $http.post('vocabulary.json', data);
-      },
-      getVocabularySynch: function () {
-          if (vocabulary)
-              return vocabulary;
-      },
-      getVocabulary: function () {
-          if (vocabulary)
-              return Promise.resolve(vocabulary);
-          return $http.get('./json/vocabulary.json').then(function(res){
-              vocabulary = res.data.vocabulary;
-              return res.data.vocabulary;
-          });
-      }
+        //promise:promise,
+        setVocabulary: function (data) {
+            return $http.post(vocabulary_json_path, data)
+            .then( function (success){
+                return 1;
+            });
+        },
+        getVocabularySynch: function () {
+            if (vocabulary)
+                return vocabulary;
+        },
+        getVocabulary: function (path) {
+            if (path)
+                vocabulary_json_path = path;
+            
+            if (vocabulary)
+                return Promise.resolve(vocabulary);
+            return $http.get(vocabulary_json_path).then(function(res){
+                vocabulary = res.data.vocabulary;
+                return res.data.vocabulary;
+            });
+        },
+        checkAudioPresence: function () {
+            return getVocabulary()
+            .then( function (voc){
+                for (voc in vocabulary){
+                  
+                }
+            })
+        }
     };
 });
 

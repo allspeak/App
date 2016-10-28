@@ -13,10 +13,11 @@
     <link href="css/style.css" rel="stylesheet">
 
     <script src="lib/ionic/js/ionic.bundle.js"></script>
-    <!--<script src="lib/ngCordova/dist/ng-cordova.js"></script>-->  
     <script src="lib/ionic-native/ionic.native.js"></script>     
-    <script src="lib/vad/vad.js"></script>
-    <script src="lib/hark/hark.bundle.js"></script>
+    <script src="lib/ng-elif/elif.js"></script>     
+    <!--<script src="lib/vad/vad.js"></script>-->
+    <!--<script src="lib/hark/hark.bundle.js"></script>-->
+    <!--<script src="lib/ngCordova/dist/ng-cordova.js"></script>-->  
     
     <!-- cordova script (this will be a 404 during development) -->
     <script src="cordova.js"></script>
@@ -29,8 +30,10 @@
     
     <script src="js/services/InitAppSrv.js"></script>    
     <script src="js/services/HWSrv.js"></script>    
-    <script src="js/services/AudioSrv.js"></script>    
+    <script src="js/services/RemoteSrv.js"></script>    
+    <!--<script src="js/services/AudioSrv.js"></script>-->    
     <script src="js/services/cpAISrv.js"></script>    
+    <script src="js/services/IonicNativeMediaSrv.js"></script>    
     <script src="js/services/VocabularySrv.js"></script>      
     <script src="js/services/FileSystemSrv.js"></script>
     
@@ -42,6 +45,8 @@
     <!--<script src="js/services/TrainingSrv.js"></script>-->      
 
 
+    <script src="js/components/ChartCmp.js"></script>
+    
     <script src="js/controllers/InitCtrl.js"></script>    
     <script src="js/controllers/HomeCtrl.js"></script>    
     <script src="js/controllers/AmplifierCtrl.js"></script>    
@@ -50,7 +55,8 @@
     <script src="js/controllers/VocabularyCtrl.js"></script>  
     <script src="js/controllers/TrainingCtrl.js"></script>  
     <script src="js/controllers/DeviceCtrl.js"></script>  
-    <script src="js/controllers/SetupAudioInputCtrl.js"></script>  
+    <script src="js/controllers/SetupAudioInputCompCtrl.js"></script>  
+    <!--<script src="js/controllers/SetupAudioInputCtrl.js"></script>-->  
     <script src="js/controllers/ServerConnectionCtrl.js"></script>  
 
     <script src="js/utility/WavAudioEncoder.min.js"></script>      

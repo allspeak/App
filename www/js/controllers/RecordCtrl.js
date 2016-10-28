@@ -7,77 +7,141 @@
 
 
  
-function RecordCtrl($scope, cpAISrv, $window, $ionicPopup)
+function RecordCtrl($scope, $window, cpAISrv, InitAppSrv, IonicNativeMediaSrv) //, $ionicPopup)
+//function RecordCtrl($scope, cpAISrv, $window, InitAppSrv, $cordovaMedia) //, $ionicPopup)
 {
+    $scope.sentence         = "test";
+    
+    // PLAY
+    $scope.isPlaying        = 0;
+    $scope.isPaused         = 0;
+    $scope.playback_file    = null;
     $scope.volume           = 50;
+
+    // REC
+    $scope.isRecording      = 0;
+    $scope.something2save   = 0;
     $scope.bLabelStart      = "REGISTRA";
-    $scope.bLabelStop       = "STOP";
+    $scope.bLabelStop       = "STOP";    
+    $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);
+
+    $scope.wavName          = "giovani2.mp3";
+    $scope.relwavpath       = ""; 
     
-    $scope.isRunning        = 0;
-    $scope.buttonLabel      = ($scope.isRunning ? $scope.bLabelStop : $scope.bLabelStart);
-    
-    $scope.DO_SAVE          = 2;
-    
-    $scope.wavName          = "test.wav";
-        //// capture params
+    //// capture params
 //    $scope.captureCfg       = cpAISrv.getStdCaptureCfg();
       
 
-    $scope.start = function()
+    $scope.startRecordingINMP = function()
     {
-        $scope.isRunning        = !$scope.isRunning;
-        $scope.buttonLabel      = ($scope.isRunning ? $scope.bLabelStop : $scope.bLabelStart);        
-        if ($scope.isRunning)
+        $scope.audioFolder      = InitAppSrv.appData.file_system.audio_folder; 
+        $scope.relwavpath       = $scope.audioFolder + "/" + $scope.wavName;
+        $scope.isRecording      = !$scope.isRecording;
+        $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);        
+        if ($scope.isRecording)
+        {
+            IonicNativeMediaSrv.recordAudio(InitAppSrv.appData.file_system.resolved_odp + $scope.relwavpath);
+            $scope.something2save   = 0;
+            $scope.vm_raw_label     = $scope.vm_raw_label_stop;
+        }
+        else
+        {
+            IonicNativeMediaSrv.stopRecordAudio();
+            $scope.something2save   = 1;
+            $scope.spectrum         = [];
+        }
+    };
+    
+    $scope.startRecording = function()
+    {
+        $scope.audioFolder      = InitAppSrv.appData.file_system.audio_folder; 
+        $scope.relwavpath          = $scope.audioFolder + "/" + $scope.wavName;
+        $scope.isRecording      = !$scope.isRecording;
+        $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);        
+        if ($scope.isRecording)
         {
             cpAISrv.startRawCapture(null, $scope, $window);
-            $scope.vm_raw_label = $scope.vm_raw_label_stop;
+            $scope.something2save   = 0;
+            $scope.vm_raw_label     = $scope.vm_raw_label_stop;
         }
         else
         {
             cpAISrv.stopCapture();
-            $scope.spectrum     = [];
-            $scope.showPopup();
+            $scope.something2save   = 1;
+            $scope.spectrum         = [];
         }
     };
   
    
     
-    $scope.onChangeVolume = function()
+    $scope.onChangeVolume = function(vol)
     {
-       cpAISrv.changeVolume($scope.volume);
+        $scope.volume = vol;
+        if ($scope.playback_file)
+            $scope.playback_file.setVolume($scope.volume/100);
     };
-   
-   
-    $scope.showPopup = function() 
+    
+    $scope.saveAudio = function()
     {
-        var myPopup = $ionicPopup.show({
-            title: 'Salva la frase',
-            subTitle: 'Sei soddisfatto della registrazione?, vuoi salvarla?',
-            scope: $scope,
-            buttons: [
-                        {text: 'Cancella' },
-                        {text: '<b>Salva</b>',
-                         type: 'button-positive',
-                         onTap: function(e) {
-                            return 2;
-                            }
-                        },
-                        {text: '<b>Riascolta</b>',
-                         type: 'button-positive',
-                         onTap: function(e) {
-                            e.preventDefault();
-                            }
-                        },
-                    ]
-        });
-        myPopup.then(function(res) {
-            if (res == $scope.DO_SAVE) 
-            {
-                cpAISrv.save2Wave($scope.wavName);
-            }
-        });        
-    }   
+        cpAISrv.save2Wave($scope.relwavpath, 0)
+        .then(function(){
+            console.log("ok");
+        })
+    };
+    
 
+    $scope.playAudio = function()
+    {
+        if (!$scope.isPlaying)
+        {
+            var volume          = $scope.volume/100;
+            $scope.isPlaying    = 1;
+            IonicNativeMediaSrv.playAudio(InitAppSrv.appData.file_system.resolved_odp + $scope.relwavpath, volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
+        }
+        else
+        {
+            if($scope.isPaused)
+            {
+                IonicNativeMediaSrv.resumeAudio();
+                $scope.isPaused = 0; 
+            }
+        }
+    };
+    
+    $scope.OnPlaybackCompleted = function(success)
+    {
+        $scope.resetFlags();
+    };
+    
+    $scope.OnPlaybackError = function(error)
+    {
+        $scope.resetFlags();
+    };
+    
+    $scope.stopAudio = function()
+    {
+        if ($scope.isPlaying)
+        {
+            IonicNativeMediaSrv.stopAudio();
+            $scope.resetFlags();
+        }        
+    };
+    
+    $scope.pauseAudio = function()
+    {
+        if ($scope.isPlaying)
+        {
+            IonicNativeMediaSrv.pauseAudio();
+            $scope.isPaused = 1;
+        }    
+    };    
+    
+    $scope.resetFlags = function()
+    {
+        $scope.playback_file    = null;
+        $scope.isPlaying        = 0; 
+        $scope.isPaused         = 0;       
+    }
     // ============================================================================================
     // ============================================================================================
     // charting
@@ -131,7 +195,58 @@ function RecordCtrl($scope, cpAISrv, $window, $ionicPopup)
     // ============================================================================================
 };
 
-
-
 controllers_module.controller('RecordCtrl', RecordCtrl);
  
+ 
+ 
+    
+   
+//    $scope.showPopup = function() 
+//    {
+//        var myPopup = $ionicPopup.show({
+//            title: 'Salva la frase',
+//            subTitle: 'Sei soddisfatto della registrazione?, vuoi salvarla?',
+//            scope: $scope,
+//            buttons: [
+//                        {text: 'Cancella' },
+//                        {text: '<b>Salva</b>',
+//                         type: 'button-positive',
+//                         onTap: function(e) {
+//                            return 2;
+//                            }
+//                        },
+//                        {text: '<b>Riascolta</b>',
+//                         type: 'button-positive',
+//                         onTap: function(e) {
+//                            e.preventDefault();
+//                            }
+//                        },
+//                    ]
+//        });
+//        myPopup.then(function(res) {
+//            if (res == $scope.DO_SAVE) 
+//            {
+//                cpAISrv.save2Wave($scope.wavName);
+//            }
+//        });        
+//    }  
+ 
+ //    $scope.PlayAudio = function()
+//    {
+////        var media = $cordovaMedia.newMedia(InitAppSrv.appData.file_system.resolved_odp + $scope.relwavpath, function(success){
+//        var media = $cordovaMedia.newMedia(InitAppSrv.appData.file_system.resolved_odp + $scope.relwavpath, function(success){
+//           console.log("success: "+success); 
+//        }, function (error){
+//           console.log(error.message); 
+//        }, function (status){
+//           console.log(status); 
+//        });
+////        media.getDuration()
+//        media.play();
+//        
+////        media.getCurrentPosition().then(function (pos){
+////            console.log(pos);
+////        });
+//        
+//
+//     };

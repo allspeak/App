@@ -3,7 +3,8 @@
 // angular.module is a global place for creating, registering and retrieving Angular modules
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
-main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native' ]);    // ,'ng-fusioncharts'
+main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native' ]);    // 'components_module', 
+//main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ngCordova' ]);    // 'components_module', 
 
 main_module.run(function($ionicPlatform, InitAppSrv, $state) 
             {
@@ -58,8 +59,8 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
     })
     .state('home', {
         url: '/home',
-        templateUrl: 'templates/home.html'
-//        ,     controller: 'HomeCtrl'
+        templateUrl: 'templates/home.html',
+        controller: 'HomeCtrl'
     })
     .state('login', {
         url: '/login',
@@ -142,8 +143,10 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
         {
         'setupinput-settings' : 
             {
-                templateUrl: 'templates/settings_setup_audioinput_debug.html',
-                controller: 'SetupAudioInputCtrl'
+//                templateUrl: 'templates/settings_setup_audioinput_debug.html',
+//                controller: 'SetupAudioInputCtrl'
+                templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
+                controller: 'SetupAudioInputCompCtrl'
             }
         }
     })

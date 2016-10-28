@@ -1,0 +1,6 @@
+
+
+<div class="chart" style="width:100%; height:{{static.height}}px; left:0px;">
+    <div class="bar" style="height:{{dynamic.mean * static.height / yScale}}px; width:40px; left:10px;"></div>
+    <div ng-repeat="dot in dynamic.data track by $index" class="dot" style="bottom:{{(dot + y0) * static.height / yScale}}px; left:{{($index + 0.5) / dynamic.data.length * static.width + 60}}px;"></div>   
+</div>

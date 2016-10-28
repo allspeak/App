@@ -7,29 +7,65 @@
 
 function HWSrv($cordovaDevice)
 {
+ 
+    var service         = {};   
     
     //======= A U D I O ============
- 
+    service.connectBluetoothDevices = function()
+    {
+        return 1;
+    };
+    
+    service.setAudioInputSource = function()
+    {
+        return 1;
+    };
+    
+    service.getAudioInputSource = function()
+    {
+        return 1;
+    };
+    
+    
     
     //======= D E V I C E    I N F O ============
-    this.device_item_to_be_pooled = ["model",  "manufactures" , "platform" , "serial",  "uuid" , "version", "cordova"];
+    service.device                      = {};
+    service.device_item_to_be_pooled    = ["model",  "manufacturer" , "platform" , "serial",  "uuid" , "version", "cordova"];
     
    
-    this.getDevice = function()
+    service.getDevice = function()
     {
         if (typeof $cordovaDevice !== "undefined")
         {
-            this.device         = $cordovaDevice.device;
-            dev_len = this.device_item_to_be_pooled.length;
+            var device          = $cordovaDevice.device;
+            dev_len             = service.device_item_to_be_pooled.length;
             for (i=0; i<dev_len; i++)
             {
-                lab= this.device_item_to_be_pooled[i];
-                this[lab] = this.device[lab];
+                lab                 = service.device_item_to_be_pooled[i];
+                service.device[lab] = device[lab];
             }
-            return this.device;
+            return service.device;
         }
         return {};
     };
-}
+    
+    service.getNGDevice = function()
+    {
+        if (typeof $cordovaDevice !== "undefined")
+        {
+            var device          = $cordovaDevice.getDevice();
+            dev_len             = service.device_item_to_be_pooled.length;
+            for (i=0; i<dev_len; i++)
+            {
+                lab                 = service.device_item_to_be_pooled[i];
+                service.device[lab] = device[lab];
+            }
+            return service.device;
+        }
+        return {};
+    };
+    
+    return service;    
+};
 
- main_module.service('HWSrv', HWSrv);
+main_module.service('HWSrv', HWSrv);

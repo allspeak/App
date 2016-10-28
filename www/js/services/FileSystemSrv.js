@@ -1,90 +1,107 @@
-function FileSystemSrv($cordovaFile)
+function FileSystemSrv($cordovaFile, $ionicPopup)
 {
-    
     var service = {}; 
-
-    service.outputDataRoot = "externalDataDirectory";
     
-    service.init = function()
+    service.init = function(file_system_app_data)
     {
-        return service.createDir("audio_sentences", 0)
-        .then()
-    }
-//    service.init = function()
-//    {
-//        return $cordovaFile.checkDir(cordova.file[service.outputDataRoot], "audio_sentences").then(
-//                function(res){
-//                    if(!res)
-//                    {
-//                        $cordovaFile.createDir(cordova.file[service.outputDataRoot], "audio_sentences", true).then(
-//                            function(success){
-//                                if(success){
-//                                   return 1; 
-//                                }
-//                            },
-//                            function(error){
-//                               console.log("createDir error: "+ error.message);
-//                               throw error;
-//                            });
-//                    }
-//                },
-//                function(error){
-//                    console.log("checkDir error: "+ error.message);
-//                   throw error;
-//                }
-//                );
-//    };
-    
-    service.getDataDirEntry = function()
-    {
-        window.resolveLocalFileSystemURL(cordova.file.dataDirectory, 
-                    function(dir) {
-                        service.dataDirectory = dir;
-                    }, 
-                    function(error) {console.log("error accessing dataDirectory folder", error.message);}
-                    );
+        service.output_data_root    = file_system_app_data.output_data_root;
+        service.audio_folder        = file_system_app_data.audio_folder;
+        return service.createDir(service.audio_folder, 0)
+        .then(function(success){
+            return 1;
+        });
     };
-    
-    
+
     service.createDir = function(relative_path, force)
     {
         service.forceDirCreation = force;
         if (!force)
         {
-            return $cordovaFile.checkDir(cordova.file[service.outputDataRoot], relative_path)
-                    .then(function (success) {
-                            if (!success) {
-                                //console.log("directory to be created already exist", dirEntry);
-                                return 1;
-                            }
-                        }
-                        ,function (error) {
-                            $cordovaFile.createDir(cordova.file[service.outputDataRoot], relative_path, true).then(
+            return $cordovaFile.checkDir(cordova.file[service.output_data_root], relative_path)
+                    .then(function (success) {return 1;}
+                         ,function (error)   {
+                            $cordovaFile.createDir(cordova.file[service.output_data_root], relative_path, true).then(
                                     function (success) {
                                         if (success) {
-                                            console.log("created directory", cordova.file[service.outputDataRoot]+ relative_path);
+                                            console.log("created directory", cordova.file[service.output_data_root]+ relative_path);
                                             return 1;
                                         }
                                     },
                                     function (error) {
                                         console.log("createDir error: " + error.message);
+                                        return 0;
                                     });                            
                         });   
         }
         else
         {
-            $cordovaFile.createDir(cordova.file[service.outputDataRoot], relative_path, true).then(
+            $cordovaFile.createDir(cordova.file[service.output_data_root], relative_path, true).then(
                     function (success) {
                         if (success) {
-                            console.log("created directory", cordova.file[service.outputDataRoot]+ relative_path);
+                            console.log("created directory", cordova.file[service.output_data_root]+ relative_path);
                             return 1;
                         }
                     },
                     function (error) {
                         console.log("createDir error: " + error.message);
+                        return 0;                        
                     });             
         }
     };
+    
+    service.showConfirm = function(title, text) 
+    {
+        return confirmPopup = $ionicPopup.confirm({
+            title: title,
+            template: text
+        });
+
+        confirmPopup.then(function(res) {
+            return res;
+        });
+    };
+    
+    service.getResolvedOutDataFolder = function()
+    {
+        return cordova.file[service.output_data_root];
+    }
+    
+    service.saveFile = function(relative_path, content, overwrite)
+    {
+            return $cordovaFile.checkFile(cordova.file[service.output_data_root], relative_path)
+                    .then(
+                        function() {
+                            if(!overwrite)
+                            {
+                                return service.showConfirm("Il file audio esiste gia", "Vuoi sovrascrivere il file?")
+                                .then(function(res){
+                                    if(res)
+                                       return $cordovaFile.createFile(cordova.file[service.output_data_root], relative_path);
+                                    else
+                                       return 0;
+                                })
+                            }
+                            else    return $cordovaFile.createFile(cordova.file[service.output_data_root], relative_path);
+                        },
+                        function(error){
+                            return $cordovaFile.createFile(cordova.file[service.output_data_root], relative_path);
+                        }
+                    )
+                    .then(function (do_write){
+                            if (do_write)
+                            {
+                                return $cordovaFile.writeFile(cordova.file[service.output_data_root], relative_path, content, true)
+                                .then(function(){
+                                        return 1;
+                                    },
+                                    function(err){
+                                        console.log(err);
+                                    });
+                            }
+                        }
+                    );
+    };
+    
     return service;
 }
 
@@ -92,9 +109,97 @@ function FileSystemSrv($cordovaFile)
  
  
  
- //                        console.log('cordova.file.externalDataDirectory: ' + cordova.file.externalDataDirectory);
-//                        console.log('cordova.file.DataDirectory: ' + cordova.file.dataDirectory);
 // 
+//        if (filename == null)
+//        {
+//            window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function (dir) 
+//            {
+//                dir.getFile(filename, {create: true}, function (file) 
+//                {
+//                    file.createWriter(function (fileWriter) { fileWriter.write(blob);},
+//                                      function () { alert("FileWriter error!"); });
+//                });
+//            });        
+//        }
+//        else
+//        {
+////            $cordovaFile.checkFile(service.sentencesAudioFolder, filename).then(
+////                function(success) {
+////                    if (success)
+////                        $cordovaFile.createFile(service.sentencesAudioFolder, filename);
+////                }, function(error){
+////                    console.log(error);
+////                });
+//                    
+//                    
+//            $cordovaFile.writeFile(service.sentencesAudioFolder, filename, blob, true).then(
+//                    function(res){
+//                        console.log(res);
+//                    },
+//                    function(err){
+//                        console.log(err);
+//
+//                    });
+//                        
+//        }
+//    };
+//  
+ 
+ 
+//    service.getDataDirEntry = function()
+//    {
+//        window.resolveLocalFileSystemURL(cordova.file.dataDirectory, 
+//                    function(dir) {
+//                        service.dataDirectory = dir;
+//                    }, 
+//                    function(error) {console.log("error accessing dataDirectory folder", error.message);}
+//                    );
+//    };
+
+ 
+ 
+ 
+//     service.createDir = function(relative_path, force)
+//    {
+//        service.forceDirCreation = force;
+//        return $cordovaFile.checkDir(cordova.file[service.outputDataRoot], relative_path)
+//            .then(function (){
+//                if (service.forceDirCreation)
+//                {
+//                    //cancella e 
+//                }
+//            
+//            })
+//            .catch(function (error) 
+//            {
+//                return $cordovaFile.createDir(cordova.file[service.outputDataRoot], relative_path, true);
+//            })
+//            .then(function (success) {
+//                console.log("created directory", cordova.file[service.outputDataRoot]+ relative_path);
+//                return 1;
+//            });
+//    };
+//    return service;
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
 // main_module.service('FileSystemSrv', function() {
 //    var dataDirEntry = null;
 //    return {

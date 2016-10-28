@@ -1,16 +1,23 @@
 <ion-view view-title="record">
-  <ion-content>
+    <ion-content>
 
-      <br></br>
-        <button class="button button-block button-large button-positive" ng-click="start()">
-            {{buttonLabel}}
-        </button>       
-      <br></br>
-        <label class="item">adjust microphone threshold</label>
-        <label class="item">adjust microphone threshold <span class="badge">{{volume}}</span></label>
+        <label class="item">{{sentence}}</label>
+        <div class="button-bar">        
+            <button class="button button-block button-large button-positive icon icon-left ion-mic-a" ng-click="startRecordingINMP()">{{recButtonLabel}}</button>       
+            <button class="button button-block button-large button-assertive icon icon-left ion-record" ng-disabled="!something2save" ng-click="saveAudio()">SALVA</button>       
+        </div> 
+        
+        <div class="button-bar">        
+            <button class="button button-block button button-balanced icon icon-only ion-play" ng-disabled="(isPlaying && !isPaused) || !something2save" ng-click="playAudio()"/>
+            <button class="button button-block button button-energized icon icon-only ion-pause" ng-disabled="!isPlaying || isPaused" ng-click="pauseAudio()"/>
+            <button class="button button-block button button-royal icon icon-only ion-stop" ng-disabled="!isPlaying" ng-click="stopAudio()"/>
+        </div>             
+      
+        <label class="item">VOLUME<span class="badge">{{volume}}</span></label>
         <div class="item range">
             <i class="icon ion-volume-low"></i>
-            <input type="range" name="volume" ng-model="volume" ng-change="onChangeVolume()" ng-disabled="!isRunning">
+            <!--<input type="range" name="volume" ng-model="volume" ng-change="onChangeVolume()" ng-disabled="!isRunning">-->
+            <input type="range" name="volume" ng-model="volume" ng-change="onChangeVolume(volume)">
             <i class="icon ion-volume-high"></i>
         </div>
         
