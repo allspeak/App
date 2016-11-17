@@ -60,6 +60,9 @@
         </label>        -->
 
         <label class="item">bitrate : <span class="badge">{{bitRate}}</span></label>        
+        
+        
+        <label class="item">is Speaking : <span class="badge">{{isSpeaking}}</span></label>        
 
 <!--        <label class="item">
           Voice is : <span class="badge">{{vad_status}}</span>
@@ -67,6 +70,7 @@
 
         <button class="button button-block button-positive" ng-click="startVoiceMonitoring()">{{vm_raw_label}}</button> 
         <button class="button button-block button-assertive" ng-click="startVoiceMonitoringDebug()">{{vm_fft_label}}</button> 
+        <button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}}</button> 
 
         <label class="item item-input item-select">
             <div class="input-label">SubSampling</div>

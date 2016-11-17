@@ -7,8 +7,8 @@
 
 
  
-function RecordCtrl($scope, $window, cpAISrv, InitAppSrv, IonicNativeMediaSrv) //, $ionicPopup)
-//function RecordCtrl($scope, cpAISrv, $window, InitAppSrv, $cordovaMedia) //, $ionicPopup)
+function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNativeMediaSrv) //, $ionicPopup)
+//function RecordCtrl($scope, SpeechDetectionSrv, $window, InitAppSrv, $cordovaMedia) //, $ionicPopup)
 {
     $scope.sentence         = "test";
     
@@ -25,11 +25,11 @@ function RecordCtrl($scope, $window, cpAISrv, InitAppSrv, IonicNativeMediaSrv) /
     $scope.bLabelStop       = "STOP";    
     $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);
 
-    $scope.wavName          = "giovani2.mp3";
+    $scope.wavName          = "ttt.wav";
     $scope.relwavpath       = ""; 
     
     //// capture params
-//    $scope.captureCfg       = cpAISrv.getStdCaptureCfg();
+//    $scope.captureCfg       = SpeechDetectionSrv.getStdCaptureCfg();
       
 
     $scope.startRecordingINMP = function()
@@ -60,13 +60,13 @@ function RecordCtrl($scope, $window, cpAISrv, InitAppSrv, IonicNativeMediaSrv) /
         $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);        
         if ($scope.isRecording)
         {
-            cpAISrv.startRawCapture(null, $scope, $window);
+            SpeechDetectionSrv.startRawCapture(null, $scope, $window);
             $scope.something2save   = 0;
             $scope.vm_raw_label     = $scope.vm_raw_label_stop;
         }
         else
         {
-            cpAISrv.stopCapture();
+            SpeechDetectionSrv.stopCapture();
             $scope.something2save   = 1;
             $scope.spectrum         = [];
         }
@@ -83,7 +83,7 @@ function RecordCtrl($scope, $window, cpAISrv, InitAppSrv, IonicNativeMediaSrv) /
     
     $scope.saveAudio = function()
     {
-        cpAISrv.save2Wave($scope.relwavpath, 0)
+        SpeechDetectionSrv.save2Wave($scope.relwavpath, 0)
         .then(function(){
             console.log("ok");
         })
@@ -142,6 +142,23 @@ function RecordCtrl($scope, $window, cpAISrv, InitAppSrv, IonicNativeMediaSrv) /
         $scope.isPlaying        = 0; 
         $scope.isPaused         = 0;       
     }
+    
+    $scope.refreshMonitoring = function(received_data, elapsed, npackets, bitrate, data_params, data)
+    {    
+//        $scope.totalReceivedData    = received_data;
+//        $scope.elapsedTime          = elapsed;
+//        $scope.packetsNumber        = npackets;
+//        $scope.bitRate              = bitrate;
+        
+        $scope.chart.min_data       = data_params[0];
+        $scope.chart.max_data       = data_params[1];
+        $scope.chart.mean_data      = data_params[2];
+        $scope.chart.data           = data;
+
+        $scope.scaleData($scope.chart, 1, $scope.chart.top_value);  // scale chart to fit into its window
+       
+        $scope.$apply();
+    };     
     // ============================================================================================
     // ============================================================================================
     // charting
@@ -163,7 +180,7 @@ function RecordCtrl($scope, $window, cpAISrv, InitAppSrv, IonicNativeMediaSrv) /
     $scope.chart.top_value  = $scope.chart.top_value_time; 
      
     // top indicates if set a global maximum, top_value represents that value
-    $scope.scaleData = function(chart_obj, top, top_value)
+    $scope.scaleData = function(chart_obj, top, top_value)                                            
     {
         var allpos = (chart_obj.min_data >= 0 ? 1 : 0);
         if (allpos)
@@ -226,7 +243,7 @@ controllers_module.controller('RecordCtrl', RecordCtrl);
 //        myPopup.then(function(res) {
 //            if (res == $scope.DO_SAVE) 
 //            {
-//                cpAISrv.save2Wave($scope.wavName);
+//                SpeechDetectionSrv.save2Wave($scope.wavName);
 //            }
 //        });        
 //    }  

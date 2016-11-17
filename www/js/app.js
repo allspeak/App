@@ -68,7 +68,8 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
     })
     .state('recognition', {
         url: '/recognition',
-        templateUrl: 'templates/recognition.html'
+        templateUrl: 'templates/recognition.html',
+        controller: 'RecognitionCtrl'
     })
     .state('amplifier', {
         url: '/amplifier',
@@ -111,16 +112,16 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
                     }
                 }
     })
-    .state('sentence_train', {
-        url: '/train/:sentenceId',
-        templateUrl: 'templates/sentence_train.html',
-        controller: 'SentenceTrainCtrl'
-    })      
-    .state('sentence_record', {
-        url: '/record/:sentenceId',
-        templateUrl: 'templates/sentence_rec.html',
-        controller: 'SentenceRecordCtrl'
-    })     
+//    .state('sentence_train', {
+//        url: '/train/:sentenceId',
+//        templateUrl: 'templates/sentence_train.html',
+//        controller: 'SentenceTrainCtrl'
+//    })      
+//    .state('sentence_record', {
+//        url: '/record/:sentenceId',
+//        templateUrl: 'templates/sentence_rec.html',
+//        controller: 'SentenceRecordCtrl'
+//    })     
     .state('settings', {
         url: '/settings',
         abstract: 'true',
@@ -143,10 +144,10 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
         {
         'setupinput-settings' : 
             {
-//                templateUrl: 'templates/settings_setup_audioinput_debug.html',
-//                controller: 'SetupAudioInputCtrl'
-                templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
-                controller: 'SetupAudioInputCompCtrl'
+                templateUrl: 'templates/settings_setup_audioinput_debug.html',
+                controller: 'SetupAudioInputCtrl'
+//                templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
+//                controller: 'SetupAudioInputCompCtrl'
             }
         }
     })

@@ -1,3 +1,6 @@
+//      /storage/emulated/0/Android/data/com.ionicframework.allspeak/files/audio_sentences
+
+
 function FileSystemSrv($cordovaFile, $ionicPopup)
 {
     var service = {}; 
@@ -68,38 +71,45 @@ function FileSystemSrv($cordovaFile, $ionicPopup)
     
     service.saveFile = function(relative_path, content, overwrite)
     {
-            return $cordovaFile.checkFile(cordova.file[service.output_data_root], relative_path)
-                    .then(
-                        function() {
-                            if(!overwrite)
-                            {
-                                return service.showConfirm("Il file audio esiste gia", "Vuoi sovrascrivere il file?")
-                                .then(function(res){
-                                    if(res)
-                                       return $cordovaFile.createFile(cordova.file[service.output_data_root], relative_path);
-                                    else
-                                       return 0;
-                                })
-                            }
-                            else    return $cordovaFile.createFile(cordova.file[service.output_data_root], relative_path);
-                        },
-                        function(error){
-                            return $cordovaFile.createFile(cordova.file[service.output_data_root], relative_path);
-                        }
-                    )
-                    .then(function (do_write){
-                            if (do_write)
-                            {
-                                return $cordovaFile.writeFile(cordova.file[service.output_data_root], relative_path, content, true)
-                                .then(function(){
-                                        return 1;
-                                    },
-                                    function(err){
-                                        console.log(err);
-                                    });
-                            }
-                        }
-                    );
+        return $cordovaFile.writeFile(cordova.file[service.output_data_root], relative_path, content, overwrite)
+        .then(function(){
+                return 1;
+            },
+            function(err){
+                console.log(err);
+            });
+//            return $cordovaFile.checkFile(cordova.file[service.output_data_root], relative_path)
+//                    .then(
+//                        function() {
+//                            if(!overwrite)
+//                            {
+//                                return service.showConfirm("Il file audio esiste gia", "Vuoi sovrascrivere il file?")
+//                                .then(function(res){
+//                                    if(res)
+//                                       return $cordovaFile.createFile(cordova.file[service.output_data_root], relative_path);
+//                                    else
+//                                       return 0;
+//                                })
+//                            }
+//                            else    return $cordovaFile.createFile(cordova.file[service.output_data_root], relative_path);
+//                        },
+//                        function(error){
+//                            return $cordovaFile.createFile(cordova.file[service.output_data_root], relative_path);
+//                        }
+//                    )
+//                    .then(function (do_write){
+//                            if (do_write)
+//                            {
+//                                return $cordovaFile.writeFile(cordova.file[service.output_data_root], relative_path, content, true)
+//                                .then(function(){
+//                                        return 1;
+//                                    },
+//                                    function(err){
+//                                        console.log(err);
+//                                    });
+//                            }
+//                        }
+//                    );
     };
     
     return service;

@@ -36,27 +36,36 @@ function cpAISrv(FileSystemSrv)
     
     // set standard Capture Configuration
     service.standardCaptureCfg = {};
-    if (window.audioinput)
+    
+    
+    service.getStandardCaptureCfg = function()
     {
-        service.standardCaptureCfg = {
-                    sampleRate: window.audioinput.SAMPLERATE["TELEPHONE_8000Hz"],
-                    bufferSize: 512, //window.audioinput.DEFAULT["BUFFER_SIZE"], 
-                    channels: window.audioinput.DEFAULT["CHANNELS"],
-                    format: window.audioinput.DEFAULT["FORMAT"],
-                    audioSourceType: window.audioinput.AUDIOSOURCE_TYPE["DEFAULT"],
-                    streamToWebAudio: window.audioinput.DEFAULT["STREAM_TO_WEBAUDIO"],
-                    fftSize: window.audioinput.DEFAULT["FFT_SIZES"],
-                    captureMode: window.audioinput.DEFAULT["FFT_SIZES"],
-                    fftWindow: window.audioinput.DEFAULT["fftWindow"],
-                    fftAvg: window.audioinput.DEFAULT["fftAvg"],
-                    fftAvgParams: window.audioinput.DEFAULT["fftAvgParams"]
-        };
+        if (window.audioinput)
+        {        
+            service.standardCaptureCfg = {
+                        sampleRate: window.audioinput.SAMPLERATE["TELEPHONE_8000Hz"],
+                        bufferSize: 512, //window.audioinput.DEFAULT["BUFFER_SIZE"], 
+                        channels: window.audioinput.DEFAULT["CHANNELS"],
+                        format: window.audioinput.DEFAULT["FORMAT"],
+                        audioSourceType: window.audioinput.AUDIOSOURCE_TYPE["DEFAULT"],
+                        streamToWebAudio: window.audioinput.DEFAULT["STREAM_TO_WEBAUDIO"],
+                        fftSize: window.audioinput.DEFAULT["FFT_SIZES"],
+                        captureMode: window.audioinput.DEFAULT["FFT_SIZES"],
+                        fftWindow: window.audioinput.DEFAULT["fftWindow"],
+                        fftAvg: window.audioinput.DEFAULT["fftAvg"],
+                        fftAvgParams: window.audioinput.DEFAULT["fftAvgParams"]
+            };
+        }
+        else
+            service.standardCaptureCfg = {}
+
+        return service.standardCaptureCfg;
     }
    
     service.startRawPlayback = function (captureCfg, $scope, $window) 
     {
         if (captureCfg == null)
-            service.captureCfg = service.standardCaptureCfg;
+            service.captureCfg = service.getStandardCaptureCfg();
         else
             service.captureCfg = captureCfg;
         
@@ -68,7 +77,7 @@ function cpAISrv(FileSystemSrv)
     service.startRawCapture = function (captureCfg, $scope, $window) 
     {
         if (captureCfg == null)
-            service.captureCfg = service.standardCaptureCfg;
+            service.captureCfg = service.getStandardCaptureCfg();
         else
             service.captureCfg = captureCfg;    
         
@@ -149,17 +158,21 @@ function cpAISrv(FileSystemSrv)
     
     service.saveArray2Wave = function(captureCfg, data_array, filename, overwrite)
     {
-        console.log("Encoding WAV...");
+        //console.log("Encoding WAV...");
         var encoder = new WavAudioEncoder(captureCfg.sampleRate, captureCfg.channels);
         encoder.encode([data_array]);
-        console.log("Encoding WAV finished");
+        //console.log("Encoding WAV finished");
 
         var blob = encoder.finish("audio/wav");
-        console.log("BLOB created");
+        //console.log("BLOB created");
+        
+//        blob.lastModifiedDate = new Date();
+//        blob.name = fileName;
         
         return FileSystemSrv.saveFile(filename, blob, overwrite)
         .then(function(){return 1});
     };
+    
    /**
      * Called continuously while Raw Audio Input capture is running.
      * service is global
@@ -171,7 +184,7 @@ function cpAISrv(FileSystemSrv)
             {
                 service.calculateElapsedTime(evt);
 
-                service.audioRawDataQueue.push(evt.data);
+                service.audioRawDataQueue = service.audioRawDataQueue.concat(evt.data);
                 var subsampled_data = service.subsampleData(evt.data, service.subsamplingFactor);
                 
                 service.controller_scope.refreshMonitoring( service.totalReceivedData, 

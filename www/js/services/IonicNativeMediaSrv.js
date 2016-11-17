@@ -1,7 +1,5 @@
 /* 
- * To change service license header, choose License Headers in Project Properties.
- * To change service template file, choose Tools | Templates
- * and open the template in the editor.
+Use the ionic-native MediaPlugin
  */
 
 
@@ -21,17 +19,11 @@ function IonicNativeMediaSrv($cordovaMediaPlugin, $cordovaMediaCapture, HWSrv)
             service.playback_file.release();
             onSuccess(success);
         }, function (error){
-            if (error != null){
-                if (error.code)
-                {
-                    // BUG ???????  immediately returns error = {code:0}, I ignore it !!! bad thing !!
-                    onError(error);
-                    console.log("ERROR...code: " + error.code + ", message: " + error.message);
-                }
-            }
+            onError(error);
+            console.log("ERROR...code: " + error.code + ", message: " + error.message);
         });
-        service.setVolume(volume);
         service.playback_file.play();     
+        service.setVolume(volume);
     };
     
     service.stopAudio = function ()

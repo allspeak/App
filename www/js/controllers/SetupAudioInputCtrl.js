@@ -4,14 +4,14 @@
  * and open the template in the editor.
  */
 
-function SetupAudioInputCtrl($scope, cpAISrv, $window)
+function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
 {
     ionic.Platform.ready(function()
     {
         $scope.ready = true; // will execute when device is ready, or immediately if the device is already ready.
-        $scope.input_sources        = cpAISrv.getInputSources();
-        $scope.capture_buffer       = cpAISrv.getCaptureBuffers();
-        $scope.sampling_frequencies = cpAISrv.getSamplingFrequencies();
+        $scope.input_sources        = SpeechDetectionSrv.getInputSources();
+        $scope.capture_buffer       = SpeechDetectionSrv.getCaptureBuffers();
+        $scope.sampling_frequencies = SpeechDetectionSrv.getSamplingFrequencies();
         
         $scope.selectedSourceType   = $scope.input_sources[0].value;
         $scope.selectedFrequency    = $scope.sampling_frequencies[0].value;
@@ -19,11 +19,27 @@ function SetupAudioInputCtrl($scope, cpAISrv, $window)
         });      
 
     // capture params
-    $scope.captureCfg           = cpAISrv.getStdCaptureCfg();
+    $scope.captureCfg           = SpeechDetectionSrv.getStdCaptureCfg();
+
+    $scope.speech_status_codes = {
+        SPEECH_STARTED: 1,
+        SPEECH_STOPPED: 2,
+        SPEECH_ERROR: 3,
+        CAPTURE_STARTED: 4,
+        CAPTURE_STOPPED: 5,
+        CAPTURE_ERROR: 6,
+        ENCODING_ERROR: 7,
+        SPEECH_MAX_LENGTH: 8,
+        SPEECH_MIN_LENGTH: 9
+    };
+    $scope.speech_status_label = [ "", "SPEECH_STARTED", "SPEECH_STOPPED","SPEECH_ERROR", 
+                                    "CAPTURE_STARTED", "CAPTURE_STOPPED", "CAPTURE_ERROR", "ENCODING_ERROR",
+                                    "SPEECH_MAX_LENGTH", "SPEECH_MIN_LENGTH"];
 
     // monitoring
     $scope.iscapturing          = 0;
     $scope.iscapturing_fft      = 0;
+    $scope.isvoicemonitoring    = 0;
         
     $scope.initMonitoringCounters = function()
     {
@@ -41,8 +57,12 @@ function SetupAudioInputCtrl($scope, cpAISrv, $window)
     $scope.vm_fft_label_start   = "Start FFT Voice Monitoring";
     $scope.vm_fft_label_stop    = "Stop FFT Voice Monitoring";
     
+    $scope.vm_voice_label_start   = "Start Voice Activity Monitoring";
+    $scope.vm_voice_label_stop    = "Stop Voice Activity Monitoring";
+    
     $scope.vm_raw_label         = $scope.vm_raw_label_start;
     $scope.vm_fft_label         = $scope.vm_fft_label_start;
+    $scope.vm_voice_label       = $scope.vm_voice_label_start;
 
     // charting
     $scope.chart = {width : 300,
@@ -67,7 +87,7 @@ function SetupAudioInputCtrl($scope, cpAISrv, $window)
     $scope.selectedSSF          = 32; //subsampling factor for visualization: regulates how many data are sent here from the service
     
     // VAD
-    $scope.vad_status           = "OFF";
+    $scope.isSpeaking           = "OFF";
     $scope.voicedetection       = { volume : 95 };
     
     $scope.data2bewritten       = 0;
@@ -77,19 +97,19 @@ function SetupAudioInputCtrl($scope, cpAISrv, $window)
     // called from DOM
     $scope.startVoiceMonitoring = function()
     {
-        if ($scope.iscapturing_fft) return;
+        if ($scope.iscapturing_fft || $scope.isvoicemonitoring) return;
         
         $scope.initMonitoringCounters();        
         $scope.iscapturing=!$scope.iscapturing;
         if ($scope.iscapturing)
         {
             $scope.chart.top_value = $scope.chart.top_value_time;            
-            cpAISrv.startRawCapture($scope.captureCfg, $scope, $window);
+            SpeechDetectionSrv.startRawCapture($scope.captureCfg, $scope.refreshMonitoring, $window);
             $scope.vm_raw_label = $scope.vm_raw_label_stop;
         }
         else
         {
-            cpAISrv.stopCapture();
+            SpeechDetectionSrv.stopCapture();
             $scope.vm_raw_label = $scope.vm_raw_label_start;
             $scope.volume       = 0;
             $scope.spectrum     = [];
@@ -98,23 +118,72 @@ function SetupAudioInputCtrl($scope, cpAISrv, $window)
     
     $scope.startVoiceMonitoringDebug = function()
     {
-        if ($scope.iscapturing) return;
+        if ($scope.iscapturing || $scope.isvoicemonitoring) return;
 
         $scope.initMonitoringCounters();
         $scope.iscapturing_fft = !$scope.iscapturing_fft;
         if ($scope.iscapturing_fft)
         {
             $scope.chart.top_value = $scope.chart.top_value_spectrum;            
-            cpAISrv.startFFTCapture($scope.captureCfg, $scope, $window);
+            SpeechDetectionSrv.startFFTCapture($scope.captureCfg, $scope.refreshMonitoring, $window);
             $scope.vm_fft_label = $scope.vm_fft_label_stop;
         }
         else
         {
-            cpAISrv.stopCapture();
+            SpeechDetectionSrv.stopCapture();
             $scope.vm_fft_label = $scope.vm_fft_label_start;
             $scope.volume       = 0;
             $scope.spectrum     = [];             
         }
+    };
+    
+    $scope.startVoiceActivityMonitoring = function()
+    {
+        if ($scope.iscapturing || $scope.iscapturing_fft) return;
+
+        $scope.initMonitoringCounters();
+        $scope.isvoicemonitoring = !$scope.isvoicemonitoring;
+        if ($scope.isvoicemonitoring)
+        {
+//            $scope.chart.top_value = $scope.chart.top_value_spectrum;            
+//            SpeechDetectionSrv.startSpeechDetection($scope.captureCfg, $window, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus);
+            SpeechDetectionSrv.startSpeechDetection($scope.captureCfg, $window, null, $scope.onSpeechError, $scope.onSpeechStatus);
+            $scope.vm_voice_label = $scope.vm_voice_label_stop;
+        }
+        else
+        {
+            SpeechDetectionSrv.stopCapture();
+            $scope.vm_voice_label = $scope.vm_voice_label_start;
+            $scope.volume       = 0;
+            $scope.spectrum     = [];             
+        }
+    };
+    //==================================================================================
+    // CALLBACKS
+    $scope.onSpeechCaptured = function(wavblob)
+    {    
+        
+    };
+    
+    $scope.onSpeechError = function(error)
+    {    
+        
+    };
+    
+    $scope.onSpeechStatus = function(code)
+    {    
+
+        if(code == $scope.speech_status_codes.SPEECH_STARTED){
+            $scope.isSpeaking = "ON"
+//            console.log("SPEAKING");
+            $scope.$apply();
+        }
+        else if(code == $scope.speech_status_codes.SPEECH_STOPPED){
+            $scope.isSpeaking = "OFF"
+//            console.log("NOT   SPEAKING");
+            $scope.$apply();
+        }
+        console.log($scope.speech_status_label[code]);
     };
     
     $scope.refreshMonitoring = function(received_data, elapsed, npackets, bitrate, data_params, data)
@@ -157,7 +226,7 @@ function SetupAudioInputCtrl($scope, cpAISrv, $window)
     $scope.updateSubsamplingFactor = function(selSSF)
     {
         $scope.selectedSSF        = parseInt(selSSF);
-        cpAISrv.setSubSamplingFactor($scope.selectedSSF);
+        SpeechDetectionSrv.setSubSamplingFactor($scope.selectedSSF);
     }; 
     // ============================================================================================
     // top indicates if set a global maximum, top_value represents that value

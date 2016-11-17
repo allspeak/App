@@ -4,14 +4,14 @@
  * and open the template in the editor.
  */
 
-function SetupAudioInputCompCtrl($scope, cpAISrv, $window)
+function SetupAudioInputCompCtrl($scope, SpeechDetectionSrv, $window)
 {
     ionic.Platform.ready(function()
     {
         $scope.ready = true; // will execute when device is ready, or immediately if the device is already ready.
-        $scope.input_sources        = cpAISrv.getInputSources();
-        $scope.capture_buffer       = cpAISrv.getCaptureBuffers();
-        $scope.sampling_frequencies = cpAISrv.getSamplingFrequencies();
+        $scope.input_sources        = SpeechDetectionSrv.getInputSources();
+        $scope.capture_buffer       = SpeechDetectionSrv.getCaptureBuffers();
+        $scope.sampling_frequencies = SpeechDetectionSrv.getSamplingFrequencies();
         
         $scope.selectedSourceType   = $scope.input_sources[0].value;
         $scope.selectedFrequency    = $scope.sampling_frequencies[0].value;
@@ -39,7 +39,7 @@ function SetupAudioInputCompCtrl($scope, cpAISrv, $window)
     
     
     // capture params
-    $scope.captureCfg           = cpAISrv.getStdCaptureCfg();
+    $scope.captureCfg           = SpeechDetectionSrv.getStdCaptureCfg();
 
     // monitoring
     $scope.iscapturing          = 0;
@@ -89,12 +89,12 @@ function SetupAudioInputCompCtrl($scope, cpAISrv, $window)
         if ($scope.iscapturing)
         {
             $scope.setChartType($scope.CHART_TYPE.time);
-            cpAISrv.startRawCapture($scope.captureCfg, $scope, $window);
+            SpeechDetectionSrv.startRawCapture($scope.captureCfg, $scope, $window);
             $scope.vm_raw_label = $scope.vm_raw_label_stop;
         }
         else
         {
-            cpAISrv.stopCapture();
+            SpeechDetectionSrv.stopCapture();
             $scope.vm_raw_label = $scope.vm_raw_label_start;
             $scope.volume       = 0;
             $scope.spectrum     = [];
@@ -110,12 +110,12 @@ function SetupAudioInputCompCtrl($scope, cpAISrv, $window)
         if ($scope.iscapturing_fft)
         {
             $scope.setChartType($scope.CHART_TYPE.spectrum);
-            cpAISrv.startFFTCapture($scope.captureCfg, $scope, $window);
+            SpeechDetectionSrv.startFFTCapture($scope.captureCfg, $scope, $window);
             $scope.vm_fft_label = $scope.vm_fft_label_stop;
         }
         else
         {
-            cpAISrv.stopCapture();
+            SpeechDetectionSrv.stopCapture();
             $scope.vm_fft_label = $scope.vm_fft_label_start;
             $scope.volume       = 0;
             $scope.spectrum     = [];             
@@ -162,7 +162,7 @@ function SetupAudioInputCompCtrl($scope, cpAISrv, $window)
     $scope.updateSubsamplingFactor = function(selSSF)
     {
         $scope.selectedSSF        = parseInt(selSSF);
-        cpAISrv.setSubSamplingFactor($scope.selectedSSF);
+        SpeechDetectionSrv.setSubSamplingFactor($scope.selectedSSF);
     }; 
     // ============================================================================================
 };

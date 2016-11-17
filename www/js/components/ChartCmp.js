@@ -17,61 +17,61 @@
 
 function ChartCompCtrl ($scope)
 {
-    var vm = this;
+//    var $scope = this;
     
-    vm.static = {};
-    vm.dynamic = {};
+    $scope.static = {};
+    $scope.dynamic = {};
     //default exogenous static values    
-    vm.static.width         = 100;
-    vm.static.height        = 100;
-    vm.static.yAxis         = "Power";
-    vm.static.xAxis         = "Frequencies";
-    vm.static.autoscale     = 1;      // scale data according to : 0) a predefined global maximum, 1) current maximum         
-    vm.static.all_pos       = 0;    
-    vm.static.max_volume    = 500;
+    $scope.static.width         = 100;
+    $scope.static.height        = 100;
+    $scope.static.yAxis         = "Power";
+    $scope.static.xAxis         = "Frequencies";
+    $scope.static.autoscale     = 1;      // scale data according to : 0) a predefined global maximum, 1) current maximum         
+    $scope.static.all_pos       = 0;    
+    $scope.static.max_volume    = 500;
     
     // with autoscale 0...u have to define
-    vm.static.top_value     = 100;
+    $scope.static.top_value     = 100;
 
     // exogenous
-    vm.dynamic.mean         = 0;    
-    vm.dynamic.max          = -Infinity;
-    vm.dynamic.min          = Infinity;
-    vm.dynamic.data         = [];
+    $scope.dynamic.mean         = 0;    
+    $scope.dynamic.max          = -Infinity;
+    $scope.dynamic.min          = Infinity;
+    $scope.dynamic.data         = [];
 
     // endogenous, calculated online
-    vm.yScale               = 0;    
-    vm.y0                   = 0;  
+    $scope.yScale               = 0;    
+    $scope.y0                   = 0;  
     
-    $scope.watch('dynamic', function (newvalue, oldvalue, scope){
-        vm.scaleData();
-    });
+    $scope.watch('dynamic', function (newvalue, oldvalue, $scope){
+        $scope.scaleData();
+    }, true);
     // top indicates if set a global maximum, top_value represents that value
-    vm.scaleData = function()
+    $scope.scaleData = function()
     {
-//        var allpos = (vm.min_data >= 0 ? 1 : 0);
-        if (vm.static.allpos)
+//        var allpos = ($scope.min_data >= 0 ? 1 : 0);
+        if ($scope.static.allpos)
         {
-            if (vm.static.autoscale)
-                vm.yScale    = vm.dynamic.max;
+            if ($scope.static.autoscale)
+                $scope.yScale    = $scope.dynamic.max;
             else
-                vm.yScale    = vm.static.top_value;
+                $scope.yScale    = $scope.static.top_value;
             
-            vm.y0        = 0;
+            $scope.y0        = 0;
         }
         else
         {
-            var max             = Math.max(Math.abs(vm.dynamic.min, Math.abs(vm.dynamic.max)));
+            var max             = Math.max(Math.abs($scope.dynamic.min, Math.abs($scope.dynamic.max)));
             
-            if (vm.static.autoscale)            
+            if ($scope.static.autoscale)            
             {
-                vm.yScale    = 2*max;
-                vm.y0        = max;            
+                $scope.yScale    = 2*max;
+                $scope.y0        = max;            
             }
             else
             {
-                vm.yScale    = 2*vm.static.top_value;
-                vm.y0        = vm.static.top_value;            
+                $scope.yScale    = 2*$scope.static.top_value;
+                $scope.y0        = $scope.static.top_value;            
             }        
         }
     };    
@@ -81,7 +81,7 @@ var chartComp =
 {
     templateUrl: 'templates/chartComp.html',
     controller: ChartCompCtrl,
-    controllerAs: 'vm',  
+//    controllerAs: '$scope',  
     bindings: {
         static: '<',
         dynamic: '<'

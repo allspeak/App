@@ -7,7 +7,7 @@
 
 
  
-function AmplifierCtrl($scope, cpAISrv, $window)
+function AmplifierCtrl($scope, SpeechDetectionSrv, $window)
 {
     $scope.volume           = 50;
     $scope.bLabelStart      = "AVVIA";
@@ -17,7 +17,7 @@ function AmplifierCtrl($scope, cpAISrv, $window)
     $scope.buttonLabel      = ($scope.isRunning ? $scope.bLabelStop : $scope.bLabelStart);
     
         //// capture params
-//    $scope.captureCfg       = cpAISrv.getStdCaptureCfg();
+//    $scope.captureCfg       = SpeechDetectionSrv.getStdCaptureCfg();
       
 
     $scope.start = function()
@@ -26,12 +26,12 @@ function AmplifierCtrl($scope, cpAISrv, $window)
         $scope.buttonLabel      = ($scope.isRunning ? $scope.bLabelStop : $scope.bLabelStart);        
         if ($scope.isRunning)
         {
-            cpAISrv.startRawPlayback(null, $scope, $window);
+            SpeechDetectionSrv.startRawPlayback(null, $scope, $window);
             $scope.vm_raw_label = $scope.vm_raw_label_stop;
         }
         else
         {
-            cpAISrv.stopCapture();
+            SpeechDetectionSrv.stopCapture();
             $scope.spectrum     = [];
         }
     };
@@ -40,7 +40,7 @@ function AmplifierCtrl($scope, cpAISrv, $window)
     
    $scope.onChangeVolume = function()
    {
-       cpAISrv.changeVolume($scope.volume);
+       SpeechDetectionSrv.changeVolume($scope.volume);
    };
    
    

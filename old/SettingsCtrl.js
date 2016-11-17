@@ -4,7 +4,8 @@
  * and open the template in the editor.
  */
 
-function SettingsCtrl($scope, $window, $ionicPlatform, InitAppSrv, cpAISrv, HWSrv)
+//function SettingsCtrl($scope, $window, $ionicPlatform, InitAppSrv, SpeechDetectionSrv, HWSrv)
+function SettingsCtrl($scope, $window, $ionicPlatform, InitAppSrv, SpeechDetectionSrv, HWSrv)
 {
     
 //    $ionicPlatform.ready(function() 
@@ -47,7 +48,7 @@ function SettingsCtrl($scope, $window, $ionicPlatform, InitAppSrv, cpAISrv, HWSr
         $scope.ismonitoring=!$scope.ismonitoring;
         if ($scope.ismonitoring)
         {
-            cpAISrv.monitorVoice($window, $scope);
+            SpeechDetectionSrv.monitorVoice($window, $scope);
             $scope.voicemon_label=$scope.vm_label_stop;
         }
         else
