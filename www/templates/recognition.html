@@ -1,5 +1,33 @@
 <ion-view view-title="Recognition">
+    
   <ion-content>
-    <h1>Recognition</h1>
+    <div class="list">
+        
+
+        <label class="item item-input item-select">
+            <div class="input-label">S. Frequency</div>
+            
+            <select ng-model="selectedFrequency" ng-change="updateFrequency(selectedFrequency)">
+                <option ng-selected="{{item.value == captureCfg.sampleRate}}" ng-repeat="item in sampling_frequencies" value="{{item.value}}">{{item.label}}</option>
+            </select>            
+        </label>     
+
+        <label class="item item-input item-select">
+            <div class="input-label">CaptureBuffer</div>
+            
+            <select ng-model="selectedCaptureBuffer" ng-change="updateCaptureBuffer(selectedCaptureBuffer)">
+                <option ng-selected="{{item.value == captureCfg.bufferSize}}" ng-repeat="item in capture_buffer" value="{{item.value}}">{{item.label}}</option>
+            </select>            
+        </label>     
+
+        <label class="item">Data received : <span class="badge">{{totalReceivedData}}</span> </label>   
+        <label class="item">Elapsed Time : <span class="badge">{{elapsedTime*1000 | secondsToDateTime }}</span></label>      
+        <label class="item">bitrate : <span class="badge">{{bitRate}}</span></label>        
+        <label class="item">is Speaking : <span class="badge">{{isSpeaking}}</span></label>        
+
+        <button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}}</button> 
+      
+        
+    </div>      
   </ion-content>
 </ion-view>

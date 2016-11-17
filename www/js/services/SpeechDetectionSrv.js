@@ -77,7 +77,7 @@ function SpeechDetectionSrv(FileSystemSrv)
     
     service.getStandardCaptureCfg = function()
     {
-        if (window.audioinput )
+        if (window.audioinput)
         {        
             service.standardCaptureCfg = {
                         //audioinput
@@ -89,7 +89,7 @@ function SpeechDetectionSrv(FileSystemSrv)
                         streamToWebAudio: window.audioinput.DEFAULT["STREAM_TO_WEBAUDIO"],
                         
                         //audioinput extension
-                        captureMode: window.audioinput.DEFAULT["FFT_SIZES"],
+                        captureMode: window.audioinput.DEFAULT["CAPTURE_MODES"],
                         fftSize: window.audioinput.DEFAULT["FFT_SIZES"],
                         fftWindow: window.audioinput.DEFAULT["fftWindow"],
                         fftAvg: window.audioinput.DEFAULT["fftAvg"],
@@ -180,7 +180,7 @@ function SpeechDetectionSrv(FileSystemSrv)
                 $window.addEventListener('audiofftinput', service.onAudioFFTInputCapture, false);
                 $window.addEventListener('audioinputerror', service.onAudioInputError, false);
 
-                $window.audioinput.start(captureCfg);
+                $window.audioinput.start(service.captureCfg);
                 service.firstGetTime = new Date().getTime();
                 console.log("Microphone input started!");
             }
@@ -190,11 +190,29 @@ function SpeechDetectionSrv(FileSystemSrv)
         }
     };
 
-    service.stopCapture = function () 
+    service.stopRawCapture = function () 
     {
         try {
             if (window.audioinput && window.audioinput.isCapturing()) 
             {
+                window.audioinput.stop();
+                window.removeEventListener('audioinput', service.onAudioRawInputCapture, false);
+                window.removeEventListener('audioinputerror', service.onAudioInputError, false);                 
+                console.log("Stopped");
+            }
+        }
+        catch (e) {
+            alert("stopCapture exception: " + e);
+        }
+    };   
+    
+    service.stopFFTCapture = function () 
+    {
+        try {
+            if (window.audioinput && window.audioinput.isCapturing()) 
+            {
+                window.removeEventListener('audiofftinput', service.onAudioFFTInputCapture, false);
+                window.removeEventListener('audioinputerror', service.onAudioInputError, false);                
                 window.audioinput.stop();
                 console.log("Stopped");
             }
@@ -310,13 +328,23 @@ function SpeechDetectionSrv(FileSystemSrv)
                 break;
         }
         service.speechStatusCB(code);
-    }   
+    } ;  
     
     service.onSpeechError = function (error) {
         service.totalNoOfSpeechErrors++;
 //        alert("onSpeechError event recieved: " + JSON.stringify(error));
         service.speechErrorCB(error);
-    }
+    };
+    
+    service.stopSpeechCapture = function () 
+    {
+        try {
+            speechcapture.stop();
+        }
+        catch (e) {
+            alert("stopCapture exception: " + e);
+        }
+    };     
     //====================================================================================
     //====================================================================================
   

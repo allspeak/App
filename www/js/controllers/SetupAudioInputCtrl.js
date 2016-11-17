@@ -6,20 +6,34 @@
 
 function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
 {
-    ionic.Platform.ready(function()
+    $scope.$on("$ionicView.enter", function(event, data)
     {
-        $scope.ready = true; // will execute when device is ready, or immediately if the device is already ready.
+        if ($scope.captureCfg == null)
+            $scope.captureCfg           = SpeechDetectionSrv.getStandardCaptureCfg();
+        
         $scope.input_sources        = SpeechDetectionSrv.getInputSources();
         $scope.capture_buffer       = SpeechDetectionSrv.getCaptureBuffers();
         $scope.sampling_frequencies = SpeechDetectionSrv.getSamplingFrequencies();
         
-        $scope.selectedSourceType   = $scope.input_sources[0].value;
-        $scope.selectedFrequency    = $scope.sampling_frequencies[0].value;
-        $scope.selectedCaptureBuffer= $scope.capture_buffer[0].value;
+        $scope.selectedSourceType   = $scope.selectObjByValue($scope.captureCfg.audioSourceType, $scope.input_sources);
+        $scope.selectedFrequency    = $scope.selectObjByValue($scope.captureCfg.sampleRate, $scope.sampling_frequencies);
+        $scope.selectedCaptureBuffer= $scope.selectObjByValue($scope.captureCfg.bufferSize, $scope.capture_buffer);
+        $scope.selectedSSF          = $scope.subsampling_factors[1]; //subsampling factor for visualization: regulates how many data are sent here from the service
+
         });      
 
-    // capture params
-    $scope.captureCfg           = SpeechDetectionSrv.getStdCaptureCfg();
+    $scope.captureCfg = null;
+    
+    $scope.selectObjByValue = function(value, objarray)
+    {
+        var len = objarray.length;
+        for (i=0; i<len; i++) 
+           if(objarray[i].value == value)
+               return objarray[i];
+    }
+
+
+    $scope.subsampling_factors  = [{label: "%4", value:4},{label: "%8", value:8},{label: "%16", value:16},{label: "%32", value:32}];
 
     $scope.speech_status_codes = {
         SPEECH_STARTED: 1,
@@ -83,8 +97,6 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
     // FFT
     $scope.spectrum             = [];
     $scope.max_spectrum         = 2000;
-    $scope.subsampling_factors  = [{label: "%1", value:1},{label: "%2", value:2},{label: "%4", value:4},{label: "%8", value:8},{label: "%16", value:16},{label: "%32", value:32}];
-    $scope.selectedSSF          = 32; //subsampling factor for visualization: regulates how many data are sent here from the service
     
     // VAD
     $scope.isSpeaking           = "OFF";
@@ -109,7 +121,7 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
         }
         else
         {
-            SpeechDetectionSrv.stopCapture();
+            SpeechDetectionSrv.stopRawCapture();
             $scope.vm_raw_label = $scope.vm_raw_label_start;
             $scope.volume       = 0;
             $scope.spectrum     = [];
@@ -130,7 +142,7 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
         }
         else
         {
-            SpeechDetectionSrv.stopCapture();
+            SpeechDetectionSrv.stopFFTCapture();
             $scope.vm_fft_label = $scope.vm_fft_label_start;
             $scope.volume       = 0;
             $scope.spectrum     = [];             
@@ -152,7 +164,7 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
         }
         else
         {
-            SpeechDetectionSrv.stopCapture();
+            SpeechDetectionSrv.stopSpeechCapture();
             $scope.vm_voice_label = $scope.vm_voice_label_start;
             $scope.volume       = 0;
             $scope.spectrum     = [];             
@@ -183,7 +195,7 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
 //            console.log("NOT   SPEAKING");
             $scope.$apply();
         }
-        console.log($scope.speech_status_label[code]);
+        console.log("code: " + code + " = " +$scope.speech_status_label[code]);
     };
     
     $scope.refreshMonitoring = function(received_data, elapsed, npackets, bitrate, data_params, data)
@@ -207,26 +219,26 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
     // callback from ng-DOM
     $scope.updateSourceType = function(selDevice)
     {
-        $scope.selectedSourceType           = parseInt(selDevice);
-        $scope.captureCfg.audioSourceType   = $scope.selectedSourceType;
+        $scope.selectedSourceType           = selDevice;
+        $scope.captureCfg.audioSourceType   = parseInt($scope.selectedSourceType.value);
     };
 
     $scope.updateFrequency = function(selFreq)
     {
-        $scope.selectedFrequency        = parseInt(selFreq);
-        $scope.captureCfg.sampleRate    = $scope.selectedFrequency;
+        $scope.selectedFrequency            = selFreq;
+        $scope.captureCfg.sampleRate        = parseInt($scope.selectedFrequency.value);
     };    
     
     $scope.updateCaptureBuffer = function(selCaptBuf)
     {
-        $scope.selectedCaptureBuffer    = parseInt(selCaptBuf);
-        $scope.captureCfg.BUFFER_SIZES  = $scope.selectedCaptureBuffer;
+        $scope.selectedCaptureBuffer        = selCaptBuf;
+        $scope.captureCfg.bufferSize        = parseInt($scope.selectedCaptureBuffer.value);
     };    
 
     $scope.updateSubsamplingFactor = function(selSSF)
     {
-        $scope.selectedSSF        = parseInt(selSSF);
-        SpeechDetectionSrv.setSubSamplingFactor($scope.selectedSSF);
+        $scope.selectedSSF        = selSSF;
+        SpeechDetectionSrv.setSubSamplingFactor(parseInt($scope.selectedSSF.value));
     }; 
     // ============================================================================================
     // top indicates if set a global maximum, top_value represents that value
