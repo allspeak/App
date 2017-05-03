@@ -37,12 +37,11 @@ function HWSrv($cordovaDevice)
     {
         if (typeof $cordovaDevice !== "undefined")
         {
-            var device          = $cordovaDevice.device;
             dev_len             = service.device_item_to_be_pooled.length;
             for (i=0; i<dev_len; i++)
             {
                 lab                 = service.device_item_to_be_pooled[i];
-                service.device[lab] = device[lab];
+                service.device[lab] = $cordovaDevice[lab];
             }
             return service.device;
         }

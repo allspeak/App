@@ -4,20 +4,36 @@
  * and open the template in the editor.
  */
 
-function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
+function SetupAudioInputCtrl($scope, SpeechDetectionSrv, MfccSrv)
 {
+    $scope.captureProfile   = "recognition";
+    $scope.captureParams    = {"sampleRate": 8000,
+                                "audioSourceType": 6, //android voice recognition
+                                "bufferSize": 1024};
+               
+    $scope.initVadParams    = null;
+    $scope.initMfccParams   = null;
+    
+    $scope.Cfg              = null;
+    $scope.captureCfg       = null;
+    $scope.vadCfg           = null;    
+    $scope.mfccCfg          = null;   
+    
     $scope.$on("$ionicView.enter", function(event, data)
     {
-        if ($scope.captureCfg == null)
-            $scope.captureCfg           = SpeechDetectionSrv.getStandardCaptureCfg();
-        
+        // get standard capture params + overwrite some selected
+        $scope.Cfg                  = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
+        $scope.captureCfg           = $scope.Cfg.captureCfg;
+        $scope.vadCfg               = $scope.Cfg.vadCfg;
+        $scope.mfccCfg              = MfccSrv.init($scope.initMfccParams).mfccCfg;
+
         $scope.input_sources        = SpeechDetectionSrv.getInputSources();
         $scope.capture_buffer       = SpeechDetectionSrv.getCaptureBuffers();
         $scope.sampling_frequencies = SpeechDetectionSrv.getSamplingFrequencies();
         
-        $scope.selectedSourceType   = $scope.selectObjByValue($scope.captureCfg.audioSourceType, $scope.input_sources);
-        $scope.selectedFrequency    = $scope.selectObjByValue($scope.captureCfg.sampleRate, $scope.sampling_frequencies);
-        $scope.selectedCaptureBuffer= $scope.selectObjByValue($scope.captureCfg.bufferSize, $scope.capture_buffer);
+        $scope.selectedSourceType   = $scope.selectObjByValue($scope.captureCfg.nAudioSourceType, $scope.input_sources);
+        $scope.selectedFrequency    = $scope.selectObjByValue($scope.captureCfg.nSsampleRate, $scope.sampling_frequencies);
+        $scope.selectedCaptureBuffer= $scope.selectObjByValue($scope.captureCfg.nBbufferSize, $scope.capture_buffer);
         $scope.selectedSSF          = $scope.subsampling_factors[1]; //subsampling factor for visualization: regulates how many data are sent here from the service
 
         });      
@@ -30,7 +46,8 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
         for (i=0; i<len; i++) 
            if(objarray[i].value == value)
                return objarray[i];
-    }
+    };    
+
 
 
     $scope.subsampling_factors  = [{label: "%4", value:4},{label: "%8", value:8},{label: "%16", value:16},{label: "%32", value:32}];
@@ -116,7 +133,7 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
         if ($scope.iscapturing)
         {
             $scope.chart.top_value = $scope.chart.top_value_time;            
-            SpeechDetectionSrv.startRawCapture($scope.captureCfg, $scope.refreshMonitoring, $window);
+            SpeechDetectionSrv.startRawCapture($scope.captureCfg, $scope.refreshMonitoring);
             $scope.vm_raw_label = $scope.vm_raw_label_stop;
         }
         else
@@ -137,7 +154,7 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
         if ($scope.iscapturing_fft)
         {
             $scope.chart.top_value = $scope.chart.top_value_spectrum;            
-            SpeechDetectionSrv.startFFTCapture($scope.captureCfg, $scope.refreshMonitoring, $window);
+            SpeechDetectionSrv.startFFTCapture($scope.captureCfg, $scope.refreshMonitoring);
             $scope.vm_fft_label = $scope.vm_fft_label_stop;
         }
         else
@@ -158,8 +175,8 @@ function SetupAudioInputCtrl($scope, SpeechDetectionSrv, $window)
         if ($scope.isvoicemonitoring)
         {
 //            $scope.chart.top_value = $scope.chart.top_value_spectrum;            
-//            SpeechDetectionSrv.startSpeechDetection($scope.captureCfg, $window, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus);
-            SpeechDetectionSrv.startSpeechDetection($scope.captureCfg, $window, null, $scope.onSpeechError, $scope.onSpeechStatus);
+            SpeechDetectionSrv.startSpeechDetection($scope.captureCfg, $scope.vadCfg, null, $scope.onSpeechError, $scope.onSpeechStatus, saveFullSpeechData);
+
             $scope.vm_voice_label = $scope.vm_voice_label_stop;
         }
         else

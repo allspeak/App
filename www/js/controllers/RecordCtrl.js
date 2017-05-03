@@ -10,6 +10,27 @@
 function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNativeMediaSrv) //, $ionicPopup)
 //function RecordCtrl($scope, SpeechDetectionSrv, $window, InitAppSrv, $cordovaMedia) //, $ionicPopup)
 {
+    $scope.captureProfile = "record";    
+    $scope.captureParams = {"sampleRate": 8000,
+                                "audioSourceType": 6, //android voice recognition
+                                "bufferSize": 1024};
+                            
+    $scope.initMfccParams = null;  //use defaults                              
+                  
+    $scope.Cfg          = null;
+    $scope.captureCfg   = null;
+    $scope.vadCfg       = null;    
+    $scope.mfccCfg      = null;   
+    
+    $scope.$on("$ionicView.enter", function(event, data)
+    {
+        // get standard capture params + overwrite some selected
+        $scope.Cfg                  = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
+        $scope.captureCfg           = $scope.Cfg.captureCfg;
+        $scope.mfccCfg              = MfccSrv.init($scope.initMfccParams).mfccCfg;
+    });     
+    
+    
     $scope.sentence         = "test";
     
     // PLAY
@@ -28,30 +49,6 @@ function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNative
     $scope.wavName          = "ttt.wav";
     $scope.relwavpath       = ""; 
     
-    //// capture params
-//    $scope.captureCfg       = SpeechDetectionSrv.getStdCaptureCfg();
-      
-
-    $scope.startRecordingINMP = function()
-    {
-        $scope.audioFolder      = InitAppSrv.appData.file_system.audio_folder; 
-        $scope.relwavpath       = $scope.audioFolder + "/" + $scope.wavName;
-        $scope.isRecording      = !$scope.isRecording;
-        $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);        
-        if ($scope.isRecording)
-        {
-            IonicNativeMediaSrv.recordAudio(InitAppSrv.appData.file_system.resolved_odp + $scope.relwavpath);
-            $scope.something2save   = 0;
-            $scope.vm_raw_label     = $scope.vm_raw_label_stop;
-        }
-        else
-        {
-            IonicNativeMediaSrv.stopRecordAudio();
-            $scope.something2save   = 1;
-            $scope.spectrum         = [];
-        }
-    };
-    
     $scope.startRecording = function()
     {
         $scope.audioFolder      = InitAppSrv.appData.file_system.audio_folder; 
@@ -60,20 +57,29 @@ function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNative
         $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);        
         if ($scope.isRecording)
         {
-            SpeechDetectionSrv.startRawCapture(null, $scope, $window);
+            // new call is : $scope.captureCfg, $scope.refreshMonitoring, $scope.onStopCapture, $scope.onCaptureError, $scope.mfccCfg
+            SpeechDetectionSrv.startRawCapture($scope.captureCfg, $scope.refreshMonitoring, $scope.onStopCapture, $scope.onCaptureError);
             $scope.something2save   = 0;
             $scope.vm_raw_label     = $scope.vm_raw_label_stop;
         }
         else
         {
-            SpeechDetectionSrv.stopCapture();
+            SpeechDetectionSrv.stopRawCapture();
             $scope.something2save   = 1;
             $scope.spectrum         = [];
         }
     };
-  
-   
     
+    $scope.onStopCapture = function()
+    {
+        
+    };
+    
+    $scope.onCaptureError = function(error) 
+    {
+        
+    };    
+  
     $scope.onChangeVolume = function(vol)
     {
         $scope.volume = vol;
@@ -83,13 +89,12 @@ function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNative
     
     $scope.saveAudio = function()
     {
-        SpeechDetectionSrv.save2Wave($scope.relwavpath, 0)
+        SpeechDetectionSrv.saveData2Wav($scope.relwavpath, 1)
         .then(function(){
             console.log("ok");
-        })
+        });
     };
     
-
     $scope.playAudio = function()
     {
         if (!$scope.isPlaying)
@@ -141,7 +146,8 @@ function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNative
         $scope.playback_file    = null;
         $scope.isPlaying        = 0; 
         $scope.isPaused         = 0;       
-    }
+        $scope.$apply();
+    };
     
     $scope.refreshMonitoring = function(received_data, elapsed, npackets, bitrate, data_params, data)
     {    
@@ -267,3 +273,28 @@ controllers_module.controller('RecordCtrl', RecordCtrl);
 //        
 //
 //     };
+
+
+/*
+ *       
+
+    $scope.startRecordingINMP = function()
+    {
+        $scope.audioFolder      = InitAppSrv.appData.file_system.audio_folder; 
+        $scope.relwavpath       = $scope.audioFolder + "/" + $scope.wavName;
+        $scope.isRecording      = !$scope.isRecording;
+        $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);        
+        if ($scope.isRecording)
+        {
+            IonicNativeMediaSrv.recordAudio(InitAppSrv.appData.file_system.resolved_odp + $scope.relwavpath);
+            $scope.something2save   = 0;
+            $scope.vm_raw_label     = $scope.vm_raw_label_stop;
+        }
+        else
+        {
+            IonicNativeMediaSrv.stopRecordAudio();
+            $scope.something2save   = 1;
+            $scope.spectrum         = [];
+        }
+    };
+ */

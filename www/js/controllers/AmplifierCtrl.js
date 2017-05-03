@@ -1,14 +1,18 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-
-
- 
-function AmplifierCtrl($scope, SpeechDetectionSrv, $window)
+function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
 {
+    // reference to the plugin js interface
+    pluginInterfaceName     = InitAppSrv.appData.plugin_interface_name;
+    pluginInterface         = null;       
+    
+    $scope.captureProfile   = "amplifier";   
+    $scope.captureParams    = { "nSampleRate": 8000,
+                                "nAudioSourceType": 6, //android voice recognition
+                                "nBufferSize": 256};
+
+    $scope.Cfg              = null;
+    $scope.captureCfg       = null;
+    $scope.vadCfg           = null;    
+    
     $scope.volume           = 50;
     $scope.bLabelStart      = "AVVIA";
     $scope.bLabelStop       = "STOP";
@@ -16,89 +20,64 @@ function AmplifierCtrl($scope, SpeechDetectionSrv, $window)
     $scope.isRunning        = 0;
     $scope.buttonLabel      = ($scope.isRunning ? $scope.bLabelStop : $scope.bLabelStart);
     
-        //// capture params
-//    $scope.captureCfg       = SpeechDetectionSrv.getStdCaptureCfg();
-      
+    $scope.$on("$ionicView.enter", function(event, data)
+    {
+        pluginInterface         = eval(pluginInterfaceName);            
+        
+        $scope.captureParams.nDataDest          = pluginInterface.ENUM.RETURN.CAPTURE_DATADEST_JS_DB;        
+        // get standard capture params + overwrite some selected
+        $scope.Cfg              = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
+        $scope.captureCfg       = $scope.Cfg.captureCfg;
+    });        
 
     $scope.start = function()
     {
-        $scope.isRunning        = !$scope.isRunning;
-        $scope.buttonLabel      = ($scope.isRunning ? $scope.bLabelStop : $scope.bLabelStart);        
-        if ($scope.isRunning)
-        {
-            SpeechDetectionSrv.startRawPlayback(null, $scope, $window);
-            $scope.vm_raw_label = $scope.vm_raw_label_stop;
-        }
-        else
-        {
-            SpeechDetectionSrv.stopCapture();
-            $scope.spectrum     = [];
-        }
+        if (!$scope.isRunning)  SpeechDetectionSrv.startMicPlayback($scope.captureCfg, $scope.onStartCapture, $scope.onStopCapture, $scope.onCaptureError);
+        else                    SpeechDetectionSrv.stopCapture();
     };
   
-   
-    
-   $scope.onChangeVolume = function()
+   $scope.onChangeVolume = function(volume)
    {
-       SpeechDetectionSrv.changeVolume($scope.volume);
+       console.log("@@@@ " + volume.toString());
+       SpeechDetectionSrv.setPlayBackPercVol(volume);
    };
    
-   
-    // ============================================================================================
-    // charting
-    $scope.chart = {width : 300,
-                    height : 100,
-                    yAxis : "Power",
-                    xAxis : "Frequencies",
-                    yScale : 10000,
-                    data : [],
-                    max_data : -Infinity,
-                    min_data : Infinity,
-                    mean_data : 0,
-                    max_volume : 500,
-                    all_pos : 0,
-                    top_value_time : 0.1,
-                    top_value_spectrum : 500000
-                };       
-                
-    $scope.chart.top_value  = $scope.chart.top_value_time; 
-     
-    // top indicates if set a global maximum, top_value represents that value
-    $scope.scaleData = function(chart_obj, top, top_value)
+    //==================================================================================
+    // PLUGIN CALLBACKS
+    //==================================================================================
+    $scope.onStartCapture = function()
     {
-        var allpos = (chart_obj.min_data >= 0 ? 1 : 0);
-        if (allpos)
-        {
-            if (top)
-                chart_obj.yScale    = chart_obj.top_value;
-            else
-                chart_obj.yScale    = chart_obj.max_scale;
-            
-            chart_obj.y0        = 0;
-        }
-        else
-        {
-            var max             = Math.max(Math.abs(chart_obj.min_data, Math.abs(chart_obj.max_data)));
-            
-            if (top)            
-            {
-                chart_obj.yScale    = 2*top_value;
-                chart_obj.y0        = top_value;            
-            }
-            else
-            {
-                chart_obj.yScale    = 2*max;
-                chart_obj.y0        = max;            
-            }
-        }
-    };     
+        window.addEventListener('audiometer', $scope.onDBMETER);
+        
+        $scope.isRunning        = true; 
+        $scope.buttonLabel      = $scope.bLabelStop;         
+        $scope.$apply();
+    };
+    
+    $scope.onStopCapture = function()
+    {
+        window.removeEventListener('audiometer', $scope.onDBMETER);
+        
+        $scope.isRunning        = false;        
+        $scope.buttonLabel      = $scope.bLabelStart;    
+        $scope.voiceDB          = 0;        
+        $scope.$apply();
+    };   
+    
+   $scope.onCaptureError = function(error)
+   {
+       $scope.onStopCapture();
+   };
    
-   
+    // called by plugin interface _pluginEvent::cordova.fireWindowEvent("audiometer",...
+    $scope.onDBMETER = function(event)
+    {    
+        $scope.voiceDB = event.data;
+        $scope.$apply();
+    };
+   //==================================================================================
 };
 
-
-
 controllers_module = angular.module('controllers_module')
-
 .controller('AmplifierCtrl', AmplifierCtrl);
  

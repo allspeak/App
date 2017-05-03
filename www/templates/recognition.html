@@ -1,32 +1,46 @@
-<ion-view view-title="Recognition">
+<ion-view view-title="Audio Input Settings">
     
+   
   <ion-content>
     <div class="list">
+<!--        <label class="item item-input item-select">
+            <div class="input-label">Source Type</div>
+            <select ng-model="selectedSourceType" ng-change="updateSourceType(selectedSourceType)" ng-options="item.label for item in input_sources track by item.value"></select>            
+        </label>     -->
         
-
         <label class="item item-input item-select">
             <div class="input-label">S. Frequency</div>
-            
-            <select ng-model="selectedFrequency" ng-change="updateFrequency(selectedFrequency)">
-                <option ng-selected="{{item.value == captureCfg.sampleRate}}" ng-repeat="item in sampling_frequencies" value="{{item.value}}">{{item.label}}</option>
-            </select>            
+            <select ng-model="selectedFrequency" ng-change="updateFrequency(selectedFrequency)" ng-options="item.label for item in sampling_frequencies track by item.value"></select>            
         </label>     
 
         <label class="item item-input item-select">
-            <div class="input-label">CaptureBuffer</div>
-            
-            <select ng-model="selectedCaptureBuffer" ng-change="updateCaptureBuffer(selectedCaptureBuffer)">
-                <option ng-selected="{{item.value == captureCfg.bufferSize}}" ng-repeat="item in capture_buffer" value="{{item.value}}">{{item.label}}</option>
-            </select>            
+            <div class="input-label">Capture Buffer</div>
+            <select ng-model="selectedCaptureBuffer" ng-change="updateCaptureBuffer(selectedCaptureBuffer)" ng-options="item.label for item in capture_buffer track by item.value"></select>            
         </label>     
-
-        <label class="item">Data received : <span class="badge">{{totalReceivedData}}</span> </label>   
-        <label class="item">Elapsed Time : <span class="badge">{{elapsedTime*1000 | secondsToDateTime }}</span></label>      
-        <label class="item">bitrate : <span class="badge">{{bitRate}}</span></label>        
+        
+<!--        <label class="item">Data received : <span class="badge">{{totalReceivedData}}</span> </label>   
+        <label class="item">Elapsed Time : <span class="badge">{{elapsedTime*1000 | secondsToDateTime }}</span></label>      -->
+        <label class="item"># chunks : <span class="badge">{{totalNoOfSpeechCaptured}}</span></label>        
         <label class="item">is Speaking : <span class="badge">{{isSpeaking}}</span></label>        
+        <label class="item">Voice Intensity : <span class="badge">{{voiceDB}}</span></label>        
 
         <button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}}</button> 
-      
+        
+        <ion-list>
+            <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
+                <div class="buttons">
+                    
+                    <button class="button button-clear button-balanced" ng-click="playAudio(chunk)">
+                        <i class="icon ion-play"></i>
+                    </button>
+                    
+                    <button class="button button-clear button-assertive" ng-click="deleteAudio(chunk)">
+                        <i class="icon ion-trash-a"></i>
+                    </button>
+                    
+                </div>                
+            </ion-item>
+        </ion-list>
         
     </div>      
   </ion-content>

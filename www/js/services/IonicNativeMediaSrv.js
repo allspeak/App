@@ -3,7 +3,7 @@ Use the ionic-native MediaPlugin
  */
 
 
-function IonicNativeMediaSrv($cordovaMediaPlugin, $cordovaMediaCapture, HWSrv)
+function IonicNativeMediaSrv($cordovaMediaPlugin)
 {
     var service = {};
     
@@ -15,10 +15,12 @@ function IonicNativeMediaSrv($cordovaMediaPlugin, $cordovaMediaCapture, HWSrv)
     service.playAudio = function (filename, volume, onSuccess, onError)
     {
         service.playback_file = new $cordovaMediaPlugin(filename);
-        service.playback_file.init.then(function (success){
+        service.playback_file.init
+        .then(function (success){
             service.playback_file.release();
             onSuccess(success);
-        }, function (error){
+        })
+        .catch(function (error){
             onError(error);
             console.log("ERROR...code: " + error.code + ", message: " + error.message);
         });

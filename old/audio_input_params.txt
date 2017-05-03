@@ -1,0 +1,42 @@
+//audioinput
+
+sampleRate: window.audioinput.SAMPLERATE["TELEPHONE_8000Hz"],
+bufferSize: 512, //window.audioinput.DEFAULT["BUFFER_SIZE"], 
+channels: window.audioinput.DEFAULT["CHANNELS"],
+format: window.audioinput.DEFAULT["FORMAT"],
+audioSourceType: window.audioinput.AUDIOSOURCE_TYPE["DEFAULT"],
+streamToWebAudio: window.audioinput.DEFAULT["STREAM_TO_WEBAUDIO"],
+
+//audioinput extension
+
+captureMode: window.audioinput.DEFAULT["FFT_SIZES"],
+fftSize: window.audioinput.DEFAULT["FFT_SIZES"],
+fftWindow: window.audioinput.DEFAULT["fftWindow"],
+fftAvg: window.audioinput.DEFAULT["fftAvg"],
+fftAvgParams: window.audioinput.DEFAULT["fftAvgParams"],
+
+// speech capture library
+
+audioResultType: window.speechcapture.DEFAULT["AUDIO_RESULT_TYPE"], // WAV_BLOB
+speechDetectionThreshold: window.speechcapture.DEFAULT["SPEECH_DETECTION_THRESHOLD"],
+speechDetectionMinimum: window.speechcapture.DEFAULT["SPEECH_DETECTION_MIN_LENGTH"],
+speechDetectionMaximum: window.speechcapture.DEFAULT["SPEECH_DETECTION_MAX_LENGTH"],
+speechDetectionAllowedDelay: window.speechcapture.DEFAULT["SPEECH_DETECTION_ALLOWED_DELAY"],
+analysisChunkLength: window.speechcapture.DEFAULT["SPEECH_DETECTION_ANALYSIS_CHUNK_LENGTH"],
+compressPauses: window.speechcapture.DEFAULT["SPEECH_DETECTION_COMPRESS_PAUSES"],
+preferGUM: window.speechcapture.DEFAULT["PREFER_GET_USER_MEDIA"],
+detectOnly: window.speechcapture.DEFAULT["DETECT_ONLY"],
+debugAlerts: window.speechcapture.DEFAULT["DEBUG_ALERTS"], // Just for debug
+debugConsole: window.speechcapture.DEFAULT["DEBUG_CONSOLE"] // Just for debug   
+
+
+
+//MFCC
+
+int nNumberofFilters = 24;
+int nLifteringCoefficient = 22;
+boolean bIsLifteringEnabled  = true;
+boolean bCalculate0ThCoeff  = false;
+int nNumberOfMFCCParameters = 12; //without considering 0-th
+double dSamplingFrequency = 8000.0;
+int nFFTLength = 512;

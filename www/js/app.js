@@ -1,15 +1,13 @@
-// Ionic Starter App
 
-// angular.module is a global place for creating, registering and retrieving Angular modules
-// 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
-// the 2nd parameter is an array of 'requires'
-main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native' ]);    // 'components_module', 
-//main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ngCordova' ]);    // 'components_module', 
 
-main_module.run(function($ionicPlatform, InitAppSrv, $state) 
+
+main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native', "checklist-model"]);
+
+main_module.run(function($ionicPlatform, InitAppSrv, $state, $rootScope) 
             {
                 $ionicPlatform.ready(function() 
                 {
+//                    $cordovaSplashscreen.show();
                     if(window.cordova && window.cordova.plugins.Keyboard) 
                     {
                         // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard for form inputs)
@@ -19,12 +17,36 @@ main_module.run(function($ionicPlatform, InitAppSrv, $state)
                         // Ionic handles this internally for a much nicer keyboard experience.
                         cordova.plugins.Keyboard.disableScroll(true);
                         
-                        InitAppSrv.init().then(function(success){
-                            $state.go('home');
-                        }).catch(function(error){
-                            console.log(error.message);
+                        // useful to inform the registered controllers that the App is active again (e.g. after having managed OS popup, like enabling Bluetooth.)
+                        document.addEventListener("resume", function() {
+                            $rootScope.$broadcast("onAppResume", []);
+                        }, false);                        
+                        
+                        // load init params, other json files, and init services. check if plugin is present
+                        InitAppSrv.init()
+                        .then(function(success)
+                        {
+//                            $cordovaSplashscreen.hide();   
+                            var plugin = eval(InitAppSrv.appData.plugin_interface_name);
+                            if(plugin == null)
+                            {
+                                alert("audioinput plugin " + InitAppSrv.init_data.plugin_interface_name + " is not present");
+                                ionic.Platform.exitApp();
+                            }
+                            // qui potrei inizializzare il plugin chiamando una sua funzione..in modo da avere una callback con eventuali errori
+                            else  $state.go('home');
+                            
+                            
                         })
+                        .catch(function(error){
+                            console.log(error.message);
+                        });
                     }
+                    else
+                    {
+                        alert("cordova and/or cordova.plugins.Keyboard is not present");
+                        ionic.Platform.exitApp();
+                    }                        
                     if(window.StatusBar) {
                         StatusBar.styleDefault();
                     }
@@ -34,19 +56,24 @@ main_module.run(function($ionicPlatform, InitAppSrv, $state)
             {
                 $ionicPlatform.registerBackButtonAction(function()
                 {
+                    // delete history once in the home and 
+                    // ask for user confirm after pressing back (thus trying to exit from the App)
                     if($state.current.name == "home") 
                     {
-                        $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'}).then(function(res) {
-                              if (res) {
-                                  ionic.Platform.exitApp();
-                              }
-                              else{   event.preventDefault();}
-                          });
-                    }else{
-                        $ionicHistory.goBack();
+                        $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
+                        .then(function(res) {
+                            if (res) ionic.Platform.exitApp();
+                        });
                     }
+                    else        $ionicHistory.goBack();
                 }, 100);
-            });  
+            })
+            .run(function($ionicPlatform) {
+                $ionicPlatform.ready(function() 
+                {
+
+                });
+            });            
             
 
 main_module.config(function($stateProvider, $urlRouterProvider) {
@@ -112,16 +139,6 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
                     }
                 }
     })
-//    .state('sentence_train', {
-//        url: '/train/:sentenceId',
-//        templateUrl: 'templates/sentence_train.html',
-//        controller: 'SentenceTrainCtrl'
-//    })      
-//    .state('sentence_record', {
-//        url: '/record/:sentenceId',
-//        templateUrl: 'templates/sentence_rec.html',
-//        controller: 'SentenceRecordCtrl'
-//    })     
     .state('settings', {
         url: '/settings',
         abstract: 'true',
@@ -144,10 +161,19 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
         {
         'setupinput-settings' : 
             {
-                templateUrl: 'templates/settings_setup_audioinput_debug.html',
-                controller: 'SetupAudioInputCtrl'
-//                templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
-//                controller: 'SetupAudioInputCompCtrl'
+                templateUrl: 'templates/settings_setup_audioinput_debug.html',  // templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
+                controller: 'SetupAudioInputCtrl'                               // controller: 'SetupAudioInputCompCtrl'
+            }
+        }
+    })
+    .state('settings.bluetooth', {
+        url: '/bluetooth',
+        views: 
+        {
+        'bluetooth-settings' : 
+            {
+                templateUrl: 'templates/settings_bluetooth.html',
+                controller: 'BluetoothCtrl'
             }
         }
     })
@@ -161,38 +187,20 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
                 controller: 'ServerConnectionCtrl'
             }
         }
-    })    
-    
-    ;
+    });
   
   $urlRouterProvider.otherwise("/");
   
 });
- 
- 
 
-//
-//main_module.provider('getvocabulary', function($http) {
-//  var text = 'Hello, ';
-//
-//  this.init = function() {
-//    $http.get('./json/vocabulary.json').success(function (data) {
-//      vocabulary = data;
-//    });
-//  };
-//
-//  this.$get = function() {
-//    return function() {
-//      alert(vocabulary);
-//    };
-//  };
-//});
-//
-//main_module.config(function(getvocabularyProvider) {
-//  getvocabularyProvider.init();
-//});
-//
-//main_module.run(function(getvocabulary) {
-//  getvocabulary();
-//});
-//
+
+//    .state('sentence_train', {
+//        url: '/train/:sentenceId',
+//        templateUrl: 'templates/sentence_train.html',
+//        controller: 'SentenceTrainCtrl'
+//    })      
+//    .state('sentence_record', {
+//        url: '/record/:sentenceId',
+//        templateUrl: 'templates/sentence_rec.html',
+//        controller: 'SentenceRecordCtrl'
+//    }) 

@@ -1,80 +1,85 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
+
 main_module.service('VocabularySrv', function($http, FileSystemSrv) {
-    var vocabulary = null;
-    var vocabulary_json_path = ""; //'./json/vocabulary.json';
+    var vocabulary              = null;
+    var vocabulary_json_relpath = ""; //'./json/vocabulary.json';
+    
+    getVocabulary = function (path) {
+        if (path)
+            vocabulary_json_relpath = path;
+
+        if (vocabulary)
+            return Promise.resolve(vocabulary);
+        return FileSystemSrv.readJSON(vocabulary_json_relpath)
+        .then(function(content){
+            vocabulary = content.vocabulary;
+            return vocabulary;
+        });
+    };
+    
+    getHttpVocabulary = function (path) {
+        return $http.get(path)
+        .then(function(res){
+            return res.data.vocabulary;
+        });
+    };
+    
+    getSentence = function(sentence_id) {
+        return getVocabulary()
+        .then(function(vocabulary){
+            var len_voc = vocabulary.length;
+            for(v=0; v<len_voc;v++){
+                if(sentence_id == vocabulary[v].id)
+                    return vocabulary[v];
+            }
+            return null;
+        });
+    }
+    
+    getSentencesSynch = function(sentence_id) {
+        var len = vocabulary.length;
+        if (len){
+            for(v=0; v<len;v++){
+                if(sentence_id == vocabulary[v].id)
+                    return vocabulary[v];
+            }
+            return null;
+        }
+        else return null;
+    }
+
     return {
         //promise:promise,
         setVocabulary: function (data) {
-            return $http.post(vocabulary_json_path, data)
+            return $http.post(vocabulary_json_relpath, data)
             .then( function (success){
                 return 1;
             });
         },
-        getVocabularySynch: function () {
-            if (vocabulary)
-                return vocabulary;
+        getVocabulary: getVocabulary,
+        
+        getHttpVocabulary: getHttpVocabulary,
+                
+        getSentence: getSentence,
+        
+        getSentencesSynch: getSentencesSynch,
+        
+        getSentences: function(sentences_ids) {
+            var arr = [];
+            var len = sentences_ids.length;
+            for (s=0; s<len; s++){
+                arr.push(getSentence(sentences_ids[s]));
+            }
+            return arr;
         },
-        getVocabulary: function (path) {
-            if (path)
-                vocabulary_json_path = path;
-            
-            if (vocabulary)
-                return Promise.resolve(vocabulary);
-            return $http.get(vocabulary_json_path).then(function(res){
-                vocabulary = res.data.vocabulary;
-                return res.data.vocabulary;
-            });
-        },
+        
         checkAudioPresence: function () {
             return getVocabulary()
-            .then( function (voc){
-                for (voc in vocabulary){
+            .then(function (voc){
+                for(voc in vocabulary){
                   
                 }
-            })
+            });
         }
     };
 });
-
-
-
-
-//
-//
-//function VocabularySrv($http)
-//{
-////    this.vocabulary = [
-////      { title: 'Ho fame', id: 1, label: 'ho_fame', filename: 'ho_fame.wav'},
-////      { title: 'Ho sete', id: 2, label: 'ho_sete', filename: 'ho_sete.wav' },
-////      { title: 'Chiudi la porta', id: 3, label: 'chiudi_porta', filename: 'chiudi_porta.wav' }
-////    ];    
-////    this.getVocabulary = function($http)
-////    {
-//   
-////    };  
-//    this.init = function()
-//    {
-//        $http.get('./json/vocabulary.json')
-//           .success(function (data) {
-//               // The json data will now be in scope.
-//               this.vocabulary = data;
-//           });        
-//    };
-//
-//    
-//    this.getSource = function() 
-//    {
-//        if (ionic.Platform.isAndroid()) {
-//            source = 'android_asset/www/' + source;
-//            return source;
-//        }
-//        else {   return source;  }
-//    };    
-//}
-
-// main_module.service('VocabularySrv', [ '$http', VocabularySrv]);
-// main_module.service('VocabularySrv', VocabularySrv);

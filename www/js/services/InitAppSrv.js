@@ -6,26 +6,26 @@
  * 5)   if assisted => login server, post stats/measures, get instructions
  */
 
-function InitAppSrv($http, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
+function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
 {
     var service = {}; 
     
     service.appData                = {};
-    service.init_json_path          = "./json/init.json";
+    service.init_json_www_path     = "./json/init.json";
     service.vocabulary_json_path    = "";
     service.outputDataRoot          = "";
     service.audio_folder            = "";
+    service.json_folder             = "";
+    
     
     service.init = function()
     {
         return service.loadInit()
-        .then(function(init_data) {
-            service.appData =  init_data;
+        .then(function() {
             return service.initFileSystem(service.appData.file_system);
         })
         .then( function(){
-            service.appData.file_system.resolved_odp = FileSystemSrv.getResolvedOutDataFolder();
-            return service.getVocabulary(service.appData.vocabulary_json_path);
+            return service.getVocabulary(service.appData.vocabulary_filerel_path);
         })
         .then( function(){
             return service.checkAudioPresence();
@@ -46,29 +46,76 @@ function InitAppSrv($http, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         .catch(function(error){
             return $q.reject(error);
         });
-
-    }
+    };
     //==========================================================================
     //==========================================================================
     // load json containing init info
     service.loadInit = function()
     {
-        return $http.get(service.init_json_path).then(function(res){
+        return $http.get(service.init_json_www_path)
+        .then(function(res){
             service.appData        = res.data.init_data;       
             service.appData.device = HWSrv.getDevice();
+            
+            service.audio_folder    = service.appData.file_system.audio_folder;            
             return service.appData;
         });        
-    }
+    };
  // get vocabulary list
-    service.getVocabulary = function(vocabulary_json_path)
+    service.getVocabulary = function(vocabulary_filerel_path)
     {
-        return VocabularySrv.getVocabulary(vocabulary_json_path);
+        return VocabularySrv.getVocabulary(vocabulary_filerel_path);
     }; 
-    // create (if not existent) the audio sentence folder
+    
+    // create (if not existent) the App folder and its audio sentence and json subfolders 
+    // and the subjects and vocabulary files
     service.initFileSystem = function(file_system)
     {
-        return FileSystemSrv.init(file_system);
+        service.appData.file_system.resolved_odp = FileSystemSrv.setUnresolvedOutDataFolder(file_system.output_data_root);
+            return FileSystemSrv.createDir(file_system.app_folder, false)
+        .then(function(){        
+            return FileSystemSrv.createDir(file_system.audio_folder, false);
+        })
+        .then(function(){
+            return FileSystemSrv.createDir(file_system.audio_temp_folder);
+        })
+        .then(function(){
+            return FileSystemSrv.createDir(file_system.json_folder, false);
+        })
+        .then(function(){
+            // create file:///app_folder/output_data_root/json/vocabulary.json if absent.
+            return service.createVocabularyFile(service.appData.vocabulary_filerel_path, service.appData.vocabulary_www_path);
+        })
+        .catch(function(error){
+            return $q.reject(error);
+        });        
     };     
+
+    // if vocabulary.json is not present in file:/// , create it from www_path
+    service.createVocabularyFile = function(vocabulary_filerel_path, vocabulary_www_path)
+    {
+        return FileSystemSrv.existFile(vocabulary_filerel_path)
+        .then(function(exist){
+            if(exist)   return 1;
+            else{
+                // file://.../subject file does not exist, load content from www version and save it to file:///
+                return VocabularySrv.getHttpVocabulary(vocabulary_www_path)
+                .then(function(content){
+                    var voc = {"vocabulary" : content};
+                    return FileSystemSrv.createFile(vocabulary_filerel_path, JSON.stringify(voc)); 
+                });
+            }
+        })
+        .catch(function(error){ 
+            return $q.reject(error);              
+        });
+    };  
+    
+    // get vocabulary list
+    service.getVocabulary = function(vocabulary_filerel_path)
+    {
+        return VocabularySrv.getVocabulary(vocabulary_filerel_path);
+    }; 
     
     // check if sentences audio is present, update json file
     service.checkAudioPresence = function(vocabulary)
@@ -87,6 +134,11 @@ function InitAppSrv($http, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
     {
         return 1;
         return RemoteSrv.loginServer(remote);
+    }; 
+    
+    service.getAudioFolder = function()
+    {
+        return service.audio_folder;
     }; 
     //==========================================================================
     //==========================================================================

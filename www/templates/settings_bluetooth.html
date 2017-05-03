@@ -1,0 +1,55 @@
+<ion-view view-title="Bluetooth Settings">
+    
+    <ion-nav-buttons side="left">
+     <button class="button button-clear" ui-sref="home"><i class="icon ion-arrow-left-c" ></i>Home</button>
+    </ion-nav-buttons>
+    
+    <ion-nav-buttons side="right">
+        <button class="button" ng-click="refreshDevices()">
+            <i class="icon icon ion-refresh"></i>
+        </button>
+    </ion-nav-buttons>      
+    
+    <ion-content>
+        
+        <!--<ion-toggle ng-model="bluetoothEnabled" ng-checked="bluetoothEnabled" ng-change="onBluetoothChange(bluetoothEnabled)" toggle-class="toggle-calm">{{bluetoothLabel}}</ion-toggle>-->        
+        <ion-toggle ng-model="bluetoothEnabled" ng-checked="bluetoothEnabled" ng-click="onBluetoothChange($event, bluetoothEnabled)" toggle-class="toggle-calm">{{bluetoothLabel}}</ion-toggle>        
+        <ion-item class="item-button-right"> Reset Ignore list
+            <div class="buttons">
+                <button class="button button-clear button-assertive" ng-click="resetIgnoreList()">
+                    <i class="icon ion-close-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+        
+        <ion-item> PAIRED DEVICES</ion-item>        
+        <ion-list>
+            <ion-item class="item-button-right" ng-repeat="device in paired_devices track by $index"> {{device.name}}
+                <div class="buttons">
+                    <button class="button button-clear button-balanced" ng-disabled="device.connected" ng-click="connectDevice(device, $index)">
+                        <i class="icon ion-log-in"></i>
+                    </button>
+                    <button class="button button-clear button-assertive" ng-click="viewDevice(device, $index)">
+                        <i class="icon ion-eye"></i>
+                    </button>
+                    <button class="button button-clear button-assertive" ng-click="ignoreDevice(device, $index)">
+                        <i class="icon ion-close-round"></i>
+                    </button>
+                </div>                
+            </ion-item>        
+     </ion-list>
+        <ion-item>AVAILABLE DEVICES</ion-item>        
+        <ion-list>
+            <ion-item class="item-button-right" ng-repeat="device in unpaired_devices"> {{device.name}}
+                <div class="buttons">
+                    <button class="button button-clear button-balanced" ng-click="playAudio(file.label)">
+                        <i class="icon ion-play"></i>
+                    </button>
+                    <button class="button button-clear button-assertive" ng-click="deleteAudio(file.label)">
+                        <i class="icon ion-trash-a"></i>
+                    </button>
+                </div>                
+            </ion-item>        
+     </ion-list>
+    </ion-content>
+</ion-view>
