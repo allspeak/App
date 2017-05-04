@@ -6,7 +6,7 @@
 function TfSrv(ErrorSrv, InitAppSrv)
 {
     // reference to the plugin js interface
-    pluginInterfaceName   = InitAppSrv.appData.plugin_interface_name;
+    pluginInterfaceName   = InitAppSrv.getPluginName();
     pluginInterface       = null;
     
     // Management of default values:
@@ -31,39 +31,12 @@ function TfSrv(ErrorSrv, InitAppSrv)
         plugin_enum     = pluginInterface.ENUM.tf;
    
         
-        var cfg = _setTfCfg(tfCfg);
+        Cfg.tfCfg       = InitAppSrv.getTfCfg(tfCfg);
         return {
-                tfCfg         : cfg
+                tfCfg         : Cfg.tfCfg
                };
     };
     //--------------------------------------------------------------------------
-    // receive some cfg params and overwrite the standard values, returns full cfg object    
-    _setTfCfg = function (tfCfg)
-    {
-        Cfg.tfCfg = _getStandardTfCfg();
-        
-        if (tfCfg != null)
-        {
-            for (var item in tfCfg)
-                Cfg.tfCfg[item] = tfCfg[item];
-        }        
-        return Cfg.tfCfg;
-    };    
-
-    // first defaults from HERE DEFINED CONSTANT, then from App json
-    _getStandardTfCfg = function()
-    {
-        if(standardTfCfg == null) standardTfCfg = plugin_enum.DEFAULT;
-        
-        // InitAppSrv.appData could be modified at runtime
-        if(InitAppSrv.appData.tf != null)
-        {
-            for (var item in InitAppSrv.appData.tf)
-                standardTfCfg[item] = InitAppSrv.appData.tf[item];
-        }        
-        return standardTfCfg;
-    };
-
      // PUBLIC *************************************************************************************************
    getCfg = function()
     {

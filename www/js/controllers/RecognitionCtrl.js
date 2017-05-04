@@ -7,13 +7,13 @@
 function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv)
 {
     // reference to the plugin js interface
-    pluginInterfaceName             = InitAppSrv.appData.plugin_interface_name;
+    pluginInterfaceName             = InitAppSrv.getPluginName();
     pluginInterface                 = null;    
     
     $scope.captureProfile           = "recognition";
     $scope.captureParams            = { "nSampleRate"       : 8000,
                                         "nAudioSourceType"  : 1,  //android voice recognition
-                                        "nBufferSize"       : 1024}; 
+                                        "nBufferSize"       : 512}; 
                        
     $scope.initVadParams            = null;
     $scope.initMfccParams           = {nDataType: 2, nDataDest: 0};     // get MFFILTERS & write to file
@@ -21,8 +21,8 @@ function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSy
     
                     
     $scope.chunkSaveParams          = { "output_relpath":   null, // it takes it from InitAppSrv.appData.file_system.audio_temp_folder: "AllSpeak/audiofiles/temp"
-                                "chunks_root_name": "chunk_"
-                              };
+                                        "chunks_root_name": "chunk_"
+                                      };
                               
     $scope.saveFullSpeechData       = false;
                               
@@ -38,7 +38,7 @@ function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSy
         pluginInterface = eval(pluginInterfaceName);        
         
         $scope.captureParams.nDataDest          = pluginInterface.ENUM.RETURN.CAPTURE_DATADEST_JS_DB;
-        $scope.chunkSaveParams.output_relpath   = InitAppSrv.appData.file_system.audio_temp_folder; // "AllSpeak/audiofiles/temp"
+        $scope.chunkSaveParams.output_relpath   = InitAppSrv.getAudioTempFolder(); // "AllSpeak/audiofiles/temp"
         $scope.audio_files_resolved_root        = FileSystemSrv.getResolvedOutDataFolder() + $scope.chunkSaveParams.output_relpath;   // FileSystemSrv.getResolvedOutDataFolder() ends with a slash: "file:///storage/emulated/0/"
         $scope.relpath_root                     = $scope.chunkSaveParams.output_relpath;
 

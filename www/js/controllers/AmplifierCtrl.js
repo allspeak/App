@@ -1,7 +1,7 @@
 function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
 {
     // reference to the plugin js interface
-    pluginInterfaceName     = InitAppSrv.appData.plugin_interface_name;
+    pluginInterfaceName     = InitAppSrv.getPluginName();
     pluginInterface         = null;       
     
     $scope.captureProfile   = "amplifier";   

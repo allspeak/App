@@ -15,8 +15,7 @@ function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNative
                                 "audioSourceType": 6, //android voice recognition
                                 "bufferSize": 1024};
                             
-    $scope.initMfccParams = null;  //use defaults                              
-                  
+                
     $scope.Cfg          = null;
     $scope.captureCfg   = null;
     $scope.vadCfg       = null;    
@@ -27,7 +26,6 @@ function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNative
         // get standard capture params + overwrite some selected
         $scope.Cfg                  = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
         $scope.captureCfg           = $scope.Cfg.captureCfg;
-        $scope.mfccCfg              = MfccSrv.init($scope.initMfccParams).mfccCfg;
     });     
     
     

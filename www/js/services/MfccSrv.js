@@ -6,73 +6,38 @@
 function MfccSrv(ErrorSrv, InitAppSrv)
 {
     // reference to the plugin js interface
-    pluginInterfaceName   = InitAppSrv.appData.plugin_interface_name;
+    pluginInterfaceName   = InitAppSrv.getPluginName();
     pluginInterface       = null;
     
     // Management of default values:
-    // each time I call : init (captureCfg, captureProfile, output_chunks, vadCfg, mfccCfg)
-    // 1) take the values defined in window.audioinput (capture) & window.speechcapture (vad) & here
-    // 2) overwrite with App defaults (according to init.json)
-    // 3) overwrite with possible controllers defaults                 
+    // each time I call : init (mfccCfg)
+    // 1) take the values defined in InitAppSrv (according to config.json)
+    // 2) overwrite with possible controllers defaults (which are usually tests)              
     Cfg                     = {};
     Cfg.mfccCfg             = null;
     
     dataTypes               = {};
-    
-    // hold standard Capture Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
-    standardMfccCfg         = null;     
+  
 
     _successCB              = null  // used by mfcc
     _errorCB                = null; // used by all the processes
     
-    //==========================================================================
-    // DEFAULT CONFIG VALUES MANAGEMENT
-    //==========================================================================
-    //
     // PUBLIC ********************************************************************************************************
     init = function(mfccCfg)
     {  
-        pluginInterface = eval(pluginInterfaceName);
-        plugin_enum     = pluginInterface.ENUM.mfcc;
+        pluginInterface         = eval(pluginInterfaceName);
+        plugin_enum             = pluginInterface.ENUM.mfcc;
         
-        dataTypes.DATATYPE     = plugin_enum.DATATYPE;
-        dataTypes.DATAORIGIN   = plugin_enum.DATAORIGIN;
-        dataTypes.DATADEST     = plugin_enum.DATADEST;            
+        dataTypes.DATATYPE      = plugin_enum.DATATYPE;
+        dataTypes.DATAORIGIN    = plugin_enum.DATAORIGIN;
+        dataTypes.DATADEST      = plugin_enum.DATADEST;            
         
-        var cfg = _setMfccCfg(mfccCfg);
+        Cfg.mfccCfg             = InitAppSrv.getMfccCfg(mfccCfg);
         return {
-                mfccCfg         : cfg, 
+                mfccCfg         : Cfg.mfccCfg, 
                 dataTypes       : dataTypes
                };
     };
-    //--------------------------------------------------------------------------
-    // receive some cfg params and overwrite the standard values, returns full cfg object    
-    _setMfccCfg = function (mfccCfg)
-    {
-        Cfg.mfccCfg = _getStandardMfccCfg();
-        
-        if (mfccCfg != null)
-        {
-            for (var item in mfccCfg)
-                Cfg.mfccCfg[item] = mfccCfg[item];
-        }        
-        return Cfg.mfccCfg;
-    };    
-
-    // first defaults from HERE DEFINED CONSTANT, then from App json
-    _getStandardMfccCfg = function()
-    {
-        if(standardMfccCfg == null) standardMfccCfg = plugin_enum.DEFAULT;
-        
-        // InitAppSrv.appData could be modified at runtime
-        if(InitAppSrv.appData.mfcc != null)
-        {
-            for (var item in InitAppSrv.appData.mfcc)
-                standardMfccCfg[item] = InitAppSrv.appData.mfcc[item];
-        }        
-        return standardMfccCfg;
-    };
-
      // PUBLIC *************************************************************************************************
    getCfg = function()
     {
@@ -170,7 +135,7 @@ function MfccSrv(ErrorSrv, InitAppSrv)
             pluginInterface.getMFCC(currCfg, relpath_noext);
             return true;
         } 
-        else{
+            else{
             erroCB("ERROR in MfccSrv: one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong");
             return false;
         }

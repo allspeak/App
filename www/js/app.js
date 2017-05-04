@@ -1,7 +1,7 @@
 
 
 
-main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native', "checklist-model"]);
+main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native', 'checklist-model']);
 
 main_module.run(function($ionicPlatform, InitAppSrv, $state, $rootScope) 
             {
@@ -27,16 +27,14 @@ main_module.run(function($ionicPlatform, InitAppSrv, $state, $rootScope)
                         .then(function(success)
                         {
 //                            $cordovaSplashscreen.hide();   
-                            var plugin = eval(InitAppSrv.appData.plugin_interface_name);
+                            var plugin = eval(InitAppSrv.getPluginName());
                             if(plugin == null)
                             {
                                 alert("audioinput plugin " + InitAppSrv.init_data.plugin_interface_name + " is not present");
                                 ionic.Platform.exitApp();
                             }
-                            // qui potrei inizializzare il plugin chiamando una sua funzione..in modo da avere una callback con eventuali errori
+                            // qui potrei inizializzare il plugin chiamando una sua funzione..in modo da inizializzare il Service ed avere una callback con eventuali errori
                             else  $state.go('home');
-                            
-                            
                         })
                         .catch(function(error){
                             console.log(error.message);
@@ -155,14 +153,25 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
             }
         }
     })
-    .state('settings.setup_input', {
-        url: '/setup_input',
+//    .state('settings.setup_input', {
+//        url: '/setup_input',
+//        views: 
+//        {
+//        'setupinput-settings' : 
+//            {
+//                templateUrl: 'templates/settings_setup_audioinput_debug.html',  // templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
+//                controller: 'SetupAudioInputCtrl'                               // controller: 'SetupAudioInputCompCtrl'
+//            }
+//        }
+//    })
+    .state('settings.recognition', {
+        url: '/recognition_settings',
         views: 
         {
-        'setupinput-settings' : 
+        'recognition-settings' : 
             {
-                templateUrl: 'templates/settings_setup_audioinput_debug.html',  // templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
-                controller: 'SetupAudioInputCtrl'                               // controller: 'SetupAudioInputCompCtrl'
+                templateUrl: 'templates/settings_recognition.html',  
+                controller: 'SetupRecognitionCtrl'                               
             }
         }
     })

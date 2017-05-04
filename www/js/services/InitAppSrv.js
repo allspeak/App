@@ -1,45 +1,70 @@
 /* Service which initializes the App:
- * 1)   create (if not existent) the folder containing the sentences' audio
- * 2)   read vocabulary json file
- * 3)   check if the vocabulary items have their audio files, update json
- * 4)   find bluetooth input, set it
- * 5)   if assisted => login server, post stats/measures, get instructions
+ * 1)   load www/json/defaults.json containing all App defauls values...the most important is the path to the data.json file, containing appConfig & defaults
+ * 2)   init file system:
+ *          create (if not existent): the folder containing the sentences' audio
+ *                                  : the temp audio folder
+ *                                  : the json folder
+ *                                  : check if data.json exist in file:// , YES: read it, NO: create it, saving the content of the default file into the json folder (in order to update its content and modify scores
+ *                                  : create an empty vocabulary file
+ * 3)   read vocabulary json file
+ * 4)   check if the vocabulary items have their audio files, update json
+ * 5)   find bluetooth input, set it
+ * 6)   if assisted => login server, post stats/measures, get instructions
  */
+
+
+/* AUDIO PARAMS MANAGEMENT
+ * 
+ * Audio params (capture, vad, mfcc, tf) are managed according to the following principles:
+ * initial json file (init.json) contain two sections defining both current and default values for all these params.
+ * current params session can be edited by the user. Default one are read only and are used to override the current ones.
+ * In principle only the VAD params will be really edited by the user, but the mechanism was implemented for all of them.
+ * InitAppSrv 
+ */
+
 
 function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
 {
-    var service = {}; 
+    var service                     = {}; 
+    service.default_json_www_path   = "./json/defaults.json";
     
-    service.appData                = {};
-    service.init_json_www_path     = "./json/init.json";
-    service.vocabulary_json_path    = "";
-    service.outputDataRoot          = "";
-    service.audio_folder            = "";
-    service.json_folder             = "";
+    service.initConfigStructure = function()
+    {
+        service.config                  = {};
+        service.config.appConfig        = {};
+        service.config.appConfig.file_system            = {};
+        service.config.appConfig.audio_configurations   = {};
+        service.config.appConfig.bluetooth              = {};
+        service.config.appConfig.remote                 = {};
+        service.config.appConfig.device                 = {};
+        
+        service.config.defaults         = {};        
+    };
+    service.initConfigStructure();    
     
-    
+    //====================================================================================================================
     service.init = function()
     {
-        return service.loadInit()
-        .then(function() {
-            return service.initFileSystem(service.appData.file_system);
+        return service.loadDefaults()
+        .then( function() {
+            return service.initFileSystem(service.config.defaults.file_system);
         })
-        .then( function(){
-            return service.getVocabulary(service.appData.vocabulary_filerel_path);
+        .then( function() {
+            return service.getVocabulary(service.config.defaults.file_system.vocabulary_filerel_path);
         })
-        .then( function(){
+        .then( function() {
             return service.checkAudioPresence();
         })
-        .then( function(){
-            return service.connectBluetoothDevices(service.appData.blt_devices);
+        .then( function() {
+            return service.connectBluetoothDevices(service.config.appConfig.blt_devices);
         })
         .then( function(blt_conn_res){
-            if (service.appData.assisted)
-                return service.loginServer(service.appData.remote);
+            if ( service.config.appConfig.assisted)
+                return service.loginServer(service.config.appConfig.remote);
             else
                 return 1;
         })
-        .then(function(success){
+        .then( function(success){
             // manage login errors
             return 1;
         })
@@ -47,49 +72,83 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
             return $q.reject(error);
         });
     };
-    //==========================================================================
-    //==========================================================================
-    // load json containing init info
-    service.loadInit = function()
+    //====================================================================================================================
+    // load json containing defaults info
+    service.loadDefaults = function()
     {
-        return $http.get(service.init_json_www_path)
+        // read www/json/defaults.json 
+        return $http.get(service.default_json_www_path)
         .then(function(res){
-            service.appData        = res.data.init_data;       
-            service.appData.device = HWSrv.getDevice();
-            
-            service.audio_folder    = service.appData.file_system.audio_folder;            
-            return service.appData;
+            service.config.defaults = res.data.defaults;       
+            return service.config;
         });        
-    };
- // get vocabulary list
-    service.getVocabulary = function(vocabulary_filerel_path)
-    {
-        return VocabularySrv.getVocabulary(vocabulary_filerel_path);
     }; 
-    
+    //---------------------------------------------------------------------------------------------------------------------
     // create (if not existent) the App folder and its audio sentence and json subfolders 
     // and the subjects and vocabulary files
-    service.initFileSystem = function(file_system)
+    service.initFileSystem = function(default_file_system)
     {
-        service.appData.file_system.resolved_odp = FileSystemSrv.setUnresolvedOutDataFolder(file_system.output_data_root);
-            return FileSystemSrv.createDir(file_system.app_folder, false)
+        FileSystemSrv.setUnresolvedOutDataFolder(default_file_system.output_data_root);
+            return FileSystemSrv.createDir(default_file_system.app_folder, false)
         .then(function(){        
-            return FileSystemSrv.createDir(file_system.audio_folder, false);
+            return FileSystemSrv.createDir(default_file_system.audio_folder, false);
         })
         .then(function(){
-            return FileSystemSrv.createDir(file_system.audio_temp_folder);
+            return FileSystemSrv.createDir(default_file_system.audio_temp_folder);
         })
         .then(function(){
-            return FileSystemSrv.createDir(file_system.json_folder, false);
+            return FileSystemSrv.createDir(default_file_system.json_folder, false);
         })
         .then(function(){
-            // create file:///app_folder/output_data_root/json/vocabulary.json if absent.
-            return service.createVocabularyFile(service.appData.vocabulary_filerel_path, service.appData.vocabulary_www_path);
+            // create, if absent, the file:///externalRootDirectory/app_folder/json/data.json otherwise read its content
+            return service.checkConfigFile(default_file_system.config_filerel_path);
+        })
+        .then(function(){
+            // create, if absent, the file:///externalRootDirectory/app_folder/json/vocabulary.json otherwise read its content
+            return service.createVocabularyFile(default_file_system.vocabulary_filerel_path, default_file_system.vocabulary_www_path);
         })
         .catch(function(error){
             return $q.reject(error);
         });        
     };     
+
+    // if config.json is not present in file:/// , create it
+    service.checkConfigFile = function(config_filerel_path)
+    {
+        return FileSystemSrv.existFile(config_filerel_path)
+        .then(function(exist)
+        {
+            if(exist)   return 1;
+            else
+            {
+                // file://.../config.json file does not exist, copy defaults subfields to appConfig subfields 
+                service.fillAppConfig();
+                var confString = JSON.stringify(service.config);
+                return FileSystemSrv.createFile(config_filerel_path, confString); 
+            }
+        })
+        .then(function()
+        {
+            return FileSystemSrv.readJSON(config_filerel_path)
+        })   
+        .then(function(configdata)
+        {
+            service.config = configdata;
+        })         
+        .catch(function(error){ 
+            return $q.reject(error);              
+        });        
+    };
+    
+    service.fillAppConfig =  function()
+    {
+        service.config.appConfig.assisted                   = 0;
+        service.config.appConfig.file_system.resolved_odp   = FileSystemSrv.getResolvedOutDataFolder();
+        service.config.appConfig.audio_configurations       = service.config.defaults.audio_configurations;
+        service.config.appConfig.bluetooth                  = service.config.defaults.bluetooth;
+        service.config.appConfig.remote                     = service.config.defaults.remote;
+        service.config.appConfig.device                     = HWSrv.getDevice();
+    };
 
     // if vocabulary.json is not present in file:/// , create it from www_path
     service.createVocabularyFile = function(vocabulary_filerel_path, vocabulary_www_path)
@@ -110,72 +169,155 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
             return $q.reject(error);              
         });
     };  
-    
+
+    //---------------------------------------------------------------------------------------------------------------------
     // get vocabulary list
     service.getVocabulary = function(vocabulary_filerel_path)
     {
         return VocabularySrv.getVocabulary(vocabulary_filerel_path);
     }; 
-    
+    //---------------------------------------------------------------------------------------------------------------------
     // check if sentences audio is present, update json file
-    service.checkAudioPresence = function(vocabulary)
+    service.checkAudioPresence = function()
     {
-        return 1;
-        return VocabularySrv.checkAudioPresence(vocabulary);
+        return 1; // ********************* TODO *****************
+        return VocabularySrv.checkAudioPresence();
     }; 
+    //---------------------------------------------------------------------------------------------------------------------
     // try to connect the registered devices
     service.connectBluetoothDevices = function(blt_devices)
     {
-        return 1;
+        return 1; // ********************* TODO *****************
         return HWSrv.connectBluetoothDevices(blt_devices);
     }; 
-    
+    //---------------------------------------------------------------------------------------------------------------------
     service.loginServer = function(remote)
     {
-        return 1;
+        return 1; // ********************* TODO *****************
         return RemoteSrv.loginServer(remote);
     }; 
     
+    //==========================================================================
+    // GET INTERNALSTATUS
+    //==========================================================================    
     service.getAudioFolder = function()
     {
-        return service.audio_folder;
+        return service.config.defaults.file_system.audio_folder;
     }; 
+    
+    service.getAudioTempFolder = function()
+    {
+        return service.config.defaults.file_system.audio_temp_folder;
+    }; 
+
+    service.getPluginName = function()
+    {
+        return service.config.defaults.plugin_interface_name;
+    };    
     //==========================================================================
+    // MERGE CURRENT CONFIG WITH POSSIBLE OVERRIDDING FROM CALLER CONTROLLERS (DOES NOT CHANGE service.config.appConfig.audio_configurations[profile] !!!!)
+    //==========================================================================
+    // receive some cfg params from the controller and overwrite the standard values, returns cfg object    
+    service.getCaptureCfg = function (captureCfg, profile)
+    {
+        var cfg = service.config.appConfig.audio_configurations[profile];
+        
+        if (captureCfg != null)
+        {
+            for (item in captureCfg)
+                cfg[item] = captureCfg[item];
+        }        
+        return cfg;
+    };    
+    
+    service.getVadCfg = function (vadCfg)
+    {
+        var cfg = service.config.appConfig.audio_configurations.vad;
+        
+        if (vadCfg != null)
+        {
+            for (item in vadCfg)
+                cfg[item] = vadCfg[item];
+        }        
+        return cfg;
+    };     
+    
+    service.getMfccCfg = function (mfccCfg)
+    {
+        var cfg = service.config.appConfig.audio_configurations.mfcc;
+        
+        if (mfccCfg != null)
+        {
+            for (item in mfccCfg)
+                cfg[item] = mfccCfg[item];
+        }        
+        return cfg;
+    };     
+    
+    service.getTfCfg = function (tfCfg)
+    {
+        var cfg = service.config.appConfig.audio_configurations.tf;
+        
+        if (tfCfg != null)
+        {
+            for (item in tfCfg)
+                cfg[item] = tfCfg[item];
+        }        
+        return cfg;
+    };     
+    
+    //==========================================================================
+    // UPDATE INIT.json
+    //==========================================================================
+    service.revertDefaultConfig = function(field)
+    { 
+        if(field == null || !field.length) service.fillAppConfig();
+        else
+        {
+            switch(field)
+            {
+                case "capture":
+                case "record":
+                case "recognition":
+                case "vad":
+                case "mfcc":
+                case "tf":
+                    service.config.appConfig.audio_configurations[field] = service.config.defaults.audio_configurations[field];
+                    break;
+                    
+                case "remote":
+                    service.config.appConfig.remote = service.config.defaults.remote;
+                    break;
+            }
+        }
+        // writes data to JSON
+        FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
+        .then(function(){
+            return 1;
+        });        
+    }
+
+    service.saveAudioConfigField = function(field, obj)
+    {
+        service.config.appConfig.audio_configurations[field] = obj;
+        // writes data to JSON
+        FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
+        .then(function(){
+            return 1;
+        });  
+    }
+    
+    service.saveConfigField = function(field, obj)
+    {
+        service.config.appConfig[field] = obj;
+        // writes data to JSON
+        FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
+        .then(function(){
+            return 1;
+        });  
+    }
     //==========================================================================
     return service;
 }
 
  main_module.service('InitAppSrv', InitAppSrv);
- 
- 
- 
- 
-// 
-// main_module.service('FileSystemSrv', function() {
-//    var dataDirEntry = null;
-//    return {
-//      getDataDirEntry: function () {
-//        if (dataDirEntry)
-//            return Promise.resolve(dataDirEntry);
-//        return window.resolveLocalFileSystemURL(window.cordova.file.dataDirectory,
-//                    function(dir) {
-//                        dataDirEntry = dir;
-//                        //return dataDirEntry;
-//                        return Promise.resolve(dataDirEntry);
-//                    }, 
-//                    function(error) {console.log("error accessing dataDirectory folder", error.message);}
-//                    );          
-//      }
-//    };
-//});
-
-//        window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, function(dir) {
-//                console.log("got main dir",dir);
-//                dir.getDirectory(relative_path, {create:true},
-//                    function(dirEntry) {
-//                       console.log("created directory", dirEntry);
-//                    },
-//                    function(error) {
-//                       console.log("error creating the folder", error.message);
-//                    });
-//                });     

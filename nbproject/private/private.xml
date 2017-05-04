@@ -2,6 +2,12 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="1"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group/>
+        <group>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/services/SpeechDetectionSrv.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/templates/recognition.html</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/controllers/SetupRecognitionCtrl.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/js/controllers/SetupAudioInputCtrl.js</file>
+            <file>file:/data/CODE/ionic/AllSpeak/App/www/templates/settings_recognition.html</file>
+        </group>
     </open-files>
 </project-private>

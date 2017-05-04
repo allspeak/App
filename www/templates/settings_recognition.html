@@ -1,0 +1,62 @@
+<ion-view view-title="Voice Detection">
+    
+    <ion-nav-buttons side="left">
+        <button class="button button-clear" ui-sref="home"><i class="icon ion-arrow-left-c" ></i>Home</button>
+    </ion-nav-buttons>
+<!--    <ion-nav-buttons side="right">
+        <button class="button button-clear" ui-sref="home"><i class="icon ion-arrow-left-c" ></i>Back</button>
+    </ion-nav-buttons>-->
+    
+    <ion-content>
+        <div class="list">
+            <label class="item item-input item-select">
+                <div class="input-label">Sample Rate [Hz]</div>
+                <select ng-model="selectedSR" ng-change="updateSR(selectedSR)">
+                    <option ng-selected="{{item.value == captureCfg.sampleRate}}" ng-repeat="item in sampling_frequencies" value="{{item.value}}">{{item.label}}</option>
+                </select>            
+            </label>     
+ 
+            <label class="item item-input item-select">
+                <div class="input-label">Capture Buffer Size</div>
+                <select ng-model="selectedCBS" ng-change="updateCBS(selectedCBS)">
+                    <option ng-selected="{{item.value == captureCfg.bufferSize}}" ng-repeat="item in capture_buffer" value="{{item.value}}">{{item.label}}</option>
+                </select>            
+            </label>   
+
+            <label class="item item-input item-select">
+                <div class="input-label">Analysis Chunk length [ms]</div>
+                <select ng-model="selectedACL" ng-change="updateACL(selectedACL)">
+                    <option ng-selected="{{item.value == captureCfg.AnalysisChunkLength}}" ng-repeat="item in capture_buffer" value="{{item.value}}">{{item.label}}</option>
+                </select>            
+            </label>              
+
+            <label class="item item-input item-select">
+                <div class="input-label">Minimum Length [ms]</div>
+                <select ng-model="selectedMIL" ng-change="updateMIL(selectedMIL)">
+                    <option ng-selected="{{item.value == captureCfg.MinimumLength}}" ng-repeat="item in capture_buffer" value="{{item.value}}">{{item.label}}</option>
+                </select>            
+            </label>              
+
+            <label class="item item-input item-select">
+                <div class="input-label">Maximum Length [ms]</div>
+                <select ng-model="selectedMXL" ng-change="updateMXL(selectedMXL)">
+                    <option ng-selected="{{item.value == captureCfg.MaximumLength}}" ng-repeat="item in capture_buffer" value="{{item.value}}">{{item.label}}</option>
+                </select>            
+            </label>              
+
+            <label class="item item-input item-select">
+                <div class="input-label">Allowed Delay [ms]</div>
+                <select ng-model="selectedAD" ng-change="updateACL(selectedAD)">
+                    <option ng-selected="{{item.value == captureCfg.allowedDelay}}" ng-repeat="item in capture_buffer" value="{{item.value}}">{{item.label}}</option>
+                </select>            
+            </label>              
+            
+            <div class="item range">
+                <!--<i class="icon ion-volume-low"></i>-->
+                Threshold:
+                <input type="range" name="threshold" ng-model="volume" ng-change="onChangeThreshold(threshold)">
+                <span class="badge">{{threshold}}</span>
+            </div>
+        </div>      
+    </ion-content>
+</ion-view>

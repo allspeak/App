@@ -6,7 +6,7 @@
 function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
 {
     // reference to the plugin js interface
-    pluginInterfaceName   = InitAppSrv.getPluginName();
+    pluginInterfaceName   = InitAppSrv.appData.plugin_interface_name;
     pluginInterface       = null;
     
     LOCK_TYPES = {
@@ -22,17 +22,20 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     
     // Management of default values:
     // each time I call : init (captureCfg, captureProfile, output_chunks, vadCfg, mfccCfg)
-    // 1) take the values defined in InitAppSrv (according to config.json)
-    // 2) overwrite with possible controllers defaults (which are usually tests)
+    // 1) take the values defined in pluginInterface (capture) & pluginInterface (vad) & here
+    // 2) overwrite with App defaults (according to init.json)
+    // 3) overwrite with possible controllers defaults                 
     Cfg                     = {};
     Cfg.captureCfg          = null;
     Cfg.vadCfg              = null;
     Cfg.captureProfile      = null;
     
+    // hold standard Capture Configuration (obtained from App json, if not present takes them from pluginInterface & pluginInterface
+    standardCaptureCfg      = null;
+    standardVadCfg          = null;     
+    
     lockMode                = LOCK_TYPES.FREE; //determine if the service is already involved in a task (e.g capturing, waiting for callbacks)
     
-    _capturestartCB         = null; // used by capture
-    _capturestopCB          = null; // used by capture
     _captureprogressCB      = null; // used by capture
     _errorCB                = null; // used by all the processes
     _speechCapturedCB       = null; // used by vad
@@ -46,6 +49,9 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     speechChunksDestination = "";
     saveFullSpeech          = false;
 
+    micGain                 = null; // ref to audioinput._micGainNode
+    
+    
     _clearCounters = function()
     {  
         lastTS             = 0;
@@ -55,6 +61,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         
         audioRawDataQueue  = [];
         totalReceivedData  = 0;
+//        totalPlayedData    = 0;    
         packetsNumber      = 0;        
         bitRate            = 0;    
         data2bewritten     = 0;
@@ -63,6 +70,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         totalNoOfSpeechCaptured = 0;
         totalNoOfSpeechErrors   = 0;
     };  
+
     _clearCounters();
     
     //==========================================================================
@@ -94,8 +102,8 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                 speechChunksFolderRoot      = "audio_sentences/temp";
                 speechChunksFilenameRoot    = "chunk_";          
             }
-            Cfg.captureCfg  = InitAppSrv.getCaptureCfg(captureCfg, captureProfile);
-            Cfg.vadCfg      = InitAppSrv.getVadCfg(vadCfg);
+            _setCaptureCfg(captureCfg, captureProfile);
+            _setVadCfg(vadCfg);
             return Cfg;
         }
         else
@@ -104,9 +112,110 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
             return null;
         }
     };
-    //==========================================================================
+    
+    //--------------------------------------------------------------------------
+    // receive some cfg params and overwrite the standard values, returns full cfg object    
+    _setCaptureCfg = function (captureCfg, captureProfile)
+    {
+        Cfg.captureCfg = _getStandardCaptureCfg(captureProfile);
+        
+        if (captureCfg != null)
+        {
+            for (item in captureCfg)
+                Cfg.captureCfg[item] = captureCfg[item];
+        }        
+        return Cfg.captureCfg;
+    };    
+    
+    _setVadCfg = function (vadCfg)
+    {
+        Cfg.vadCfg = _getStandardVadCfg();
+        
+        if (vadCfg != null)
+        {
+            for (item in vadCfg)
+                Cfg.vadCfg[item] = vadCfg[item];
+        }        
+        return Cfg.vadCfg;
+    };    
+
+
+    //--------------------------------------------------------------------------
+    // first defaults from audioinput, then from App json
+    _getStandardCaptureCfg = function(profile)
+    {
+        if(standardCaptureCfg == null)
+        {
+            standardCaptureCfg = {
+                //audioinput JAVA
+                nBufferSize             : pluginInterface.ENUM.capture.DEFAULT["BUFFER_SIZE"], 
+                nChannels               : pluginInterface.ENUM.capture.DEFAULT["CHANNELS"],
+                sFormat                 : pluginInterface.ENUM.capture.DEFAULT["FORMAT"],
+                nAudioSourceType        : pluginInterface.ENUM.capture.DEFAULT["AUDIOSOURCE_TYPE"],
+                //audioinput JS
+                nConcatenateMaxChunks   : pluginInterface.ENUM.capture.DEFAULT["CONCATENATE_MAX_CHUNKS"],
+                nNormalize              : pluginInterface.ENUM.capture.DEFAULT["NORMALIZE"],
+                dNormalizationFactor    : pluginInterface.ENUM.capture.DEFAULT["NORMALIZATION_FACTOR"],
+                bStreamToWebAudio       : pluginInterface.ENUM.capture.DEFAULT["STREAM_TO_WEBAUDIO"],
+                bStartMFCC              : pluginInterface.ENUM.capture.DEFAULT["START_MFCC"],
+                bStartVAD               : pluginInterface.ENUM.capture.DEFAULT["START_VAD"],
+                nDataDest               : pluginInterface.ENUM.capture.DEFAULT["DATA_DEST"]
+            }
+//                //audioinput extension JAVA
+//                nFftLength                : pluginInterface.DEFAULT["FFT_SIZES"],
+//                nCaptureMode            : pluginInterface.DEFAULT["CAPTURE_MODES"],
+
+//                //audioinput extension (COMMENTED)
+//                nFftWindow              : pluginInterface.DEFAULT["fftWindow"],
+//                nFftAvg                 : pluginInterface.DEFAULT["fftAvg"],
+//                nFftAvgParams           : pluginInterface.DEFAULT["fftAvgParams"],
+        }
+        
+        // InitAppSrv.appData could be modified at runtime
+        if(profile == null) profile = "record";
+        if(InitAppSrv.appData.capture_profiles[profile] != null)
+        {
+            for (var item in InitAppSrv.appData.capture_profiles[profile])
+                standardCaptureCfg[item] = InitAppSrv.appData.capture_profiles[profile][item];
+        }
+        return standardCaptureCfg;
+    };
+    
+    // first defaults from speechcapture, then from App json
+    _getStandardVadCfg = function()
+    {
+        if(standardVadCfg == null)
+        {
+            if (pluginInterface )
+            {        
+                standardVadCfg = {
+                    nAudioResultType                : pluginInterface.ENUM.vad.DEFAULT["AUDIO_RESULT_TYPE"], // WAV_BLOB
+                    nSpeechDetectionThreshold       : pluginInterface.ENUM.vad.DEFAULT["SPEECH_DETECTION_THRESHOLD"],
+                    nSpeechDetectionMinimum         : pluginInterface.ENUM.vad.DEFAULT["SPEECH_DETECTION_MIN_LENGTH"],
+                    nSpeechDetectionMaximum         : pluginInterface.ENUM.vad.DEFAULT["SPEECH_DETECTION_MAX_LENGTH"],
+                    nSpeechDetectionAllowedDelay    : pluginInterface.ENUM.vad.DEFAULT["SPEECH_DETECTION_ALLOWED_DELAY"],
+                    nAnalysisChunkLength            : pluginInterface.ENUM.vad.DEFAULT["SPEECH_DETECTION_ANALYSIS_CHUNK_LENGTH"],
+                    bCompressPauses                 : pluginInterface.ENUM.vad.DEFAULT["SPEECH_DETECTION_COMPRESS_PAUSES"],
+                    bPreferGUM                      : pluginInterface.ENUM.vad.DEFAULT["PREFER_GET_USER_MEDIA"],
+                    bDebugAlerts                    : pluginInterface.ENUM.vad.DEFAULT["DEBUG_ALERTS"], // Just for debug
+                    bDebugConsole                   : pluginInterface.ENUM.vad.DEFAULT["DEBUG_CONSOLE"], // Just for debug                        
+                    bDetectOnly                     : pluginInterface.ENUM.vad.DEFAULT["DETECT_ONLY"]            
+                };
+            }
+            else
+                standardVadCfg = {};
+        }
+        // InitAppSrv.appData could be modified at runtime
+        if(InitAppSrv.appData.vad != null)
+        {
+            for (var item in InitAppSrv.appData.vad)
+                standardVadCfg[item] = InitAppSrv.appData.vad[item];
+        }        
+        return standardVadCfg;
+    };    
+    
      // PUBLIC *************************************************************************************************
-    getCfg = function()
+   getCfg = function()
     {
         return Cfg;
     };    
@@ -121,22 +230,14 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         if(lockMode == LOCK_TYPES.FREE)
         {        
             try{
-                if(_capturestopCB !=  null) _capturestopCB  = onstopCB;    
-                else
-                {
-                    ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::startCapture, _capturestopCB is required but is null", e);
-                    return false;                    
-                }
-                    
-                if(_capturestartCB !=  null) _capturestartCB = onstartCB;    
-                else
-                {
-                    ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::startCapture, _capturestartCB is required but is null", e);
-                    return false;                    
-                }   
-                _errorCB                            = errorCB;      
+                _capturestopCB              = onstopCB;    
+                _capturestartCB             = onstartCB;    
+                _errorCB                    = errorCB;      
                 
-                if (captureCfg == null) captureCfg  = _getStandardCaptureCfg();
+                if (captureCfg == null)
+                    captureCfg = _getStandardCaptureCfg();
+                else
+                    captureCfg = captureCfg;
 
                 window.addEventListener('audioinput'    , _onAudioRawInputCapture);
                 window.addEventListener('pluginError'   , _onAudioInputError);
@@ -149,6 +250,8 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
             catch (e) 
             {
                 ErrorSrv.raiseError(_errorCB, "startRawPlayback exception", e);
+                lockMode    = LOCK_TYPES.FREE;
+                micGain     = null;
                 return false;
             }            
         }
@@ -173,36 +276,28 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                 }
                 _clearCounters();                
                 _captureprogressCB          = captureprogressCB;    
-                if(_capturestopCB !=  null) _capturestopCB  = onstopCB;    
-                else
-                {
-                    ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::startCapture, _capturestopCB is required but is null", e);
-                    return false;                    
-                }
-                    
-                if(_capturestartCB !=  null) _capturestartCB = onstartCB;    
-                else
-                {
-                    ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::startCapture, _capturestartCB is required but is null", e);
-                    return false;                    
-                }
-                    
+                _capturestopCB              = onstopCB;    
+                _capturestartCB             = onstartCB;    
                 _errorCB                    = errorCB;     
 
-                if (captureCfg == null) captureCfg = _getStandardCaptureCfg();
+                if (captureCfg == null)
+                    captureCfg = _getStandardCaptureCfg();
                 
                 window.addEventListener('audioinput'    , _onAudioRawInputCapture);
                 window.addEventListener('pluginError'   , _onAudioInputError);
                 window.addEventListener('capturestopped', _onStopCapture);
                 window.addEventListener('capturestarted', _onStartCapture);
                 
-                firstGetTime    = new Date().getTime();
                 pluginInterface.startCapture(captureCfg, mfccCfg);
+                
+                firstGetTime    = new Date().getTime();
                 return true;
             }
             catch (e) 
             {
                 ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::startCapture exception", e);
+                pluginInterface.stopCapture();
+                lockMode = LOCK_TYPES.FREE;
                 return false;
             }
         }
@@ -277,13 +372,13 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     {
         console.log("Microphone input STOPPED!");
         lockMode = LOCK_TYPES.FREE;
-        
+        micGain  = null;
         window.removeEventListener('audioinput'     , _onAudioRawInputCapture);
         window.removeEventListener('audioinputerror', _onAudioInputError);
         window.removeEventListener('capturestopped' , _onStopCapture);   
         window.removeEventListener('capturestarted' , _onStartCapture);  
         
-        _capturestopCB(data);
+        if(_capturestopCB != null) _capturestopCB(data);
         
         _captureprogressCB  = null;
         _capturestopCB      = null;
@@ -296,6 +391,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     {
         ErrorSrv.raiseError(_errorCB, "_onAudioInputError event received: ", error, true);
         lockMode = LOCK_TYPES.FREE;
+        micGain  = null;        
     };     
  
     _onStartCapture = function()
@@ -321,20 +417,8 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                     return false;
                 }
                 _clearCounters();
-                if(_capturestopCB !=  null) _capturestopCB  = onstopCB;    
-                else
-                {
-                    ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::startCapture, _capturestopCB is required but is null", e);
-                    return false;                    
-                }
-                    
-                if(_capturestartCB !=  null) _capturestartCB = onstartCB;    
-                else
-                {
-                    ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::startCapture, _capturestartCB is required but is null", e);
-                    return false;                    
-                }
-                
+                _capturestopCB      = onstopCB;    
+                _capturestartCB     = onstartCB;                  
                 _speechCapturedCB   = cbSpeechCaptured;
                 _errorCB            = cbSpeechError;
                 _speechStatusCB     = cbSpeechStatus;     
@@ -352,13 +436,15 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                 window.addEventListener('capturestarted'    , _onStartCapture);
                 window.addEventListener('speechstatus'      , _onSpeechStatus);
 
+                pluginInterface.startSpeechRecognition(captureCfg, vadCfg, mfccCfg, tfCfg);
                 firstGetTime        = new Date().getTime();
                 console.log("start Speech Detection");
-                
-                pluginInterface.startSpeechRecognition(captureCfg, vadCfg, mfccCfg, tfCfg);
                 return true;
             }
             catch (e) {
+                lockMode = LOCK_TYPES.FREE
+//                pluginInterface.stopSpeechRecognition();                
+//                return $q.reject(error);
                 ErrorSrv.raiseError(_errorCB, "startSpeechRecognition exception", e, true);
             }
         }
@@ -414,6 +500,9 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                     _speechCapturedCB(filename, totalNoOfSpeechCaptured, wavblob);
             })
             .catch(function(error) {
+                //TODO: decide what to do .... stop capturing ??
+//                pluginInterface.stop();
+//                lockMode = LOCK_TYPES.FREE;
                 if(_onSpeechError != null) _errorCB(error);
             });
         }
@@ -427,6 +516,22 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     };
 
     _onSpeechStatus = function(event) {
+        totalNoOfSpeechEvents++;
+
+//        switch (event.data) {
+//            case pluginInterface.STATUS.ENCODING_ERROR:
+//                totalNoOfSpeechErrors++;
+//                console.log("Encoding Error!");
+//                break;
+//            case pluginInterface.STATUS.CAPTURE_ERROR:
+//                totalNoOfSpeechErrors++;
+//                console.log("Capture Error!");
+//                break;
+//            case pluginInterface.STATUS.SPEECH_ERROR:
+//                totalNoOfSpeechErrors++;
+//                console.log("Speech Error!");
+//                break;
+//        }
         _speechStatusCB(event.data);
     };   
     
@@ -434,6 +539,32 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         totalNoOfSpeechErrors++;
         ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::_onSpeechError", error);
     };
+    //==============================================
+    // PUBLIC ***************************************************************************************************
+    // SAVE WAVE (don't need Web Audio API support)
+    saveData2Wav = function(filename, overwrite, data)
+    {
+        if (data == null)  data = audioRawDataQueue;
+
+        var blob = _dataArray2BlobWav(Cfg.captureCfg, data);
+        return FileSystemSrv.createFile(filename, blob, overwrite)
+        .then(function(){
+            return true;
+        })        
+        .catch(function(error) {
+            // ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::_saveBlobWav", error); ....exception is managed by the catch
+            return $q.reject(error);
+        });;
+    };
+
+    // returns wav Blob
+    _dataArray2BlobWav = function(captureCfg, data_array)
+    {
+        var encoder = new WavAudioEncoder(captureCfg.nSampleRate, captureCfg.nChannels);
+        encoder.encode([data_array]);
+        return encoder.finish("audio/wav");        
+    };    
+
     //==========================================================================
     _setSubSamplingFactor = function(factor)
     {
@@ -525,7 +656,9 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         getCfg                  : getCfg, 
         startMicPlayback        : startMicPlayback,
         startRawCapture         : startRawCapture, 
+//        startFFTCapture         : startFFTCapture, 
         stopCapture             : stopCapture,
+        saveData2Wav            : saveData2Wav,
         startSpeechRecognition  : startSpeechRecognition,
         stopSpeechRecognition   : stopSpeechRecognition,
         setPlayBackPercVol      : setPlayBackPercVol,
@@ -533,8 +666,121 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         getInputSources         : getInputSources,
         getSamplingFrequencies  : getSamplingFrequencies,
         getCaptureBuffers       : getCaptureBuffers
+        
     };    
 }
 
 main_module.service('SpeechDetectionSrv', SpeechDetectionSrv);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//                
+//    BUFFER_SIZES = {
+//        BS_512: 512,
+//        BS_1024: 1024,
+//        BS_2048: 2048,
+//        BS_4096: 4096,
+//        BS_8192: 8192,
+//        BS_16384: 16384,
+//        BS_32768: 32768
+//    }; 
+//    
+//    
+//    // PUBLIC ***************************************************************************************************
+//    startFFTCapture = function (captureCfg, captureprogressCB, errorCB) 
+//    {
+//        if(lockMode == LOCK_TYPES.FREE)
+//        {
+//            try {
+//                if (!pluginInterface.isCapturing()) 
+//                {
+//                    if (captureCfg == null)
+//                        captureCfg = standardCaptureCfg;
+//                    else
+//                        captureCfg = captureCfg;
+//                    
+//                    _clearCounters();
+//                    _captureprogressCB          = captureprogressCB;    
+//                    _errorCB                    = errorCB;     
+//
+//                    captureCfg.captureMode      = pluginInterface.CAPTURE_MODES.FFTDATA_MODE;
+//                    captureCfg.streamToWebAudio = false;
+//
+//                    window.addEventListener('audiofftinput', _onAudioFFTInputCapture, false);
+//                    window.addEventListener('audioinputerror', _onAudioInputError, false);
+//
+//                    pluginInterface.startCapture(captureCfg);
+//                    firstGetTime = new Date().getTime();
+//                    console.log("Microphone input started!");
+//                    lockMode = LOCK_TYPES.CAPTURE;
+//                    
+//                    return true;
+//                }
+//            }
+//            catch (e) {
+//                ErrorSrv.raiseError(_errorCB, "startFFTCapture exception", e);
+//                return false;
+//            }
+//        }
+//        else
+//        {
+//            ErrorSrv.raiseWarning("SpeechDetectionSrv::startFFTCapture service is locked !");
+//            return null;
+//        }            
+//    };
+
+ 
+//    // Called continuously while Raw Audio Input capture is running.
+//    _onAudioFFTInputCapture = function (evt)
+//    {
+//        try {
+//            if (evt && evt.data) 
+//            {
+//                _calculateElapsedTime(evt);
+//                
+//                var subsampled_data = _subsampleData(evt.data, subsamplingFactor);
+//                _captureprogressCB( totalReceivedData,
+//                                    captureElapsedTime, 
+//                                    packetsNumber,
+//                                    bitRate, evt.params, subsampled_data);
+//            }
+//        }
+//        catch (e) {
+//            ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::onAudioFFTInputCapture", e);
+//        }
+//    };   
+// 
