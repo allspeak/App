@@ -4,23 +4,21 @@
  * and open the template in the editor.
  */
 
-function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv)
+function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv)
 {
-    // reference to the plugin js interface
-    pluginInterfaceName             = InitAppSrv.getPluginName();
-    pluginInterface                 = null;    
-    
     $scope.captureProfile           = "recognition";
-    $scope.captureParams            = { "nSampleRate"       : 8000,
-                                        "nAudioSourceType"  : 1,  //android voice recognition
-                                        "nBufferSize"       : 512}; 
-                       
+    
+    $scope.captureParams            = {}; // this params definition override what defined in initAppSrv (which can be modified by user)
+    
+//    $scope.captureParams            = { "nSampleRate"       : 8000,
+//                                        "nAudioSourceType"  : 1,  //android voice recognition
+//                                        "nBufferSize"       : 512};                      
     $scope.initVadParams            = null;
     $scope.initMfccParams           = {nDataType: 2, nDataDest: 0};     // get MFFILTERS & write to file
     $scope.initTfParams             = null;
     
                     
-    $scope.chunkSaveParams          = { "output_relpath":   null, // it takes it from InitAppSrv.appData.file_system.audio_temp_folder: "AllSpeak/audiofiles/temp"
+    $scope.chunkSaveParams          = { "output_relpath":   null, // it takes it from InitAppSrv.getAudioTempFolder(): "AllSpeak/audiofiles/temp"
                                         "chunks_root_name": "chunk_"
                                       };
                               
@@ -35,9 +33,9 @@ function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSy
                     
     $scope.$on("$ionicView.enter", function(event, data)
     {
-        pluginInterface = eval(pluginInterfaceName);        
+        pluginInterface                         = InitAppSrv.getPlugin();            
         
-        $scope.captureParams.nDataDest          = pluginInterface.ENUM.RETURN.CAPTURE_DATADEST_JS_DB;
+        $scope.captureParams.nDataDest          = pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_DB;
         $scope.chunkSaveParams.output_relpath   = InitAppSrv.getAudioTempFolder(); // "AllSpeak/audiofiles/temp"
         $scope.audio_files_resolved_root        = FileSystemSrv.getResolvedOutDataFolder() + $scope.chunkSaveParams.output_relpath;   // FileSystemSrv.getResolvedOutDataFolder() ends with a slash: "file:///storage/emulated/0/"
         $scope.relpath_root                     = $scope.chunkSaveParams.output_relpath;
@@ -54,12 +52,13 @@ function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSy
         $scope.sampling_frequencies = SpeechDetectionSrv.getSamplingFrequencies();
         
         $scope.selectedSourceType   = $scope.selectObjByValue($scope.captureCfg.nAudioSourceType, $scope.input_sources);
-        $scope.selectedFrequency    = $scope.selectObjByValue($scope.captureCfg.nSsampleRate, $scope.sampling_frequencies);
-        $scope.selectedCaptureBuffer= $scope.selectObjByValue($scope.captureCfg.nBbufferSize, $scope.capture_buffer);
+        $scope.selectedFrequency    = $scope.selectObjByValue($scope.captureCfg.nSampleRate, $scope.sampling_frequencies);
+        $scope.selectedCaptureBuffer= $scope.selectObjByValue($scope.captureCfg.nBufferSize, $scope.capture_buffer);
         $scope.selectedSSF          = $scope.subsampling_factors[1]; //subsampling factor for visualization: regulates how many data are sent here from the service
 
         $scope.refreshAudioList($scope.chunkSaveParams.output_relpath);
-    });      
+        $scope.$apply();
+    });    
     
     $scope.selectObjByValue = function(value, objarray)
     {
@@ -78,6 +77,7 @@ function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSy
         CAPTURE_ERROR               : 110,
         SPEECH_STATUS_STARTED       : 20,
         SPEECH_STATUS_STOPPED       : 21,
+        SPEECH_STATUS_SENTENCE      : 22,
         SPEECH_STATUS_MAX_LENGTH    : 23,
         SPEECH_STATUS_MIN_LENGTH    : 24,        
         VAD_ERROR                   : 120
@@ -128,6 +128,11 @@ function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSy
         }
         else SpeechDetectionSrv.stopSpeechRecognition();
     };
+    
+   $scope.go2settings = function()
+   {
+       $state.go('settings.recognition'); 
+   };
 
     //==================================================================================
     // PLUGIN CALLBACKS
@@ -165,7 +170,7 @@ function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSy
     // called by plugin interface _pluginEvent::cordova.fireWindowEvent("audiometer",...
     $scope.onDBMETER = function(event)
     {    
-        $scope.voiceDB = event.data;
+        $scope.voiceDB = event.decibels;
         $scope.$apply();
     };
     
@@ -176,11 +181,11 @@ function RecognitionCtrl($scope, SpeechDetectionSrv, IonicNativeMediaSrv, FileSy
     
     $scope.onSpeechStatus = function(code)
     {    
-        if(code == speechrecognition.ENUM.RETURN.SPEECH_STATUS_STARTED){
+        if(code == speechrecognition.ENUM.PLUGIN.SPEECH_STATUS_STARTED){
             $scope.isSpeaking = "ON"
             $scope.$apply();
         }
-        else if(code == speechrecognition.ENUM.RETURN.SPEECH_STATUS_STOPPED){
+        else if(code == speechrecognition.ENUM.PLUGIN.SPEECH_STATUS_STOPPED){
             $scope.isSpeaking = "OFF"
             $scope.$apply();
         }

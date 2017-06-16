@@ -1,77 +1,74 @@
-
-
-
 main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native', 'checklist-model']);
 
 main_module.run(function($ionicPlatform, InitAppSrv, $state, $rootScope) 
-            {
-                $ionicPlatform.ready(function() 
-                {
+{
+    $ionicPlatform.ready(function() 
+    {
 //                    $cordovaSplashscreen.show();
-                    if(window.cordova && window.cordova.plugins.Keyboard) 
-                    {
-                        // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard for form inputs)
-                        cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
+        if(window.cordova && window.cordova.plugins.Keyboard) 
+        {
+            // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard for form inputs)
+            cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
 
-                        // Don't remove this line unless you know what you are doing. It stops the viewport from snapping when text inputs are focused. 
-                        // Ionic handles this internally for a much nicer keyboard experience.
-                        cordova.plugins.Keyboard.disableScroll(true);
-                        
-                        // useful to inform the registered controllers that the App is active again (e.g. after having managed OS popup, like enabling Bluetooth.)
-                        document.addEventListener("resume", function() {
-                            $rootScope.$broadcast("onAppResume", []);
-                        }, false);                        
-                        
-                        // load init params, other json files, and init services. check if plugin is present
-                        InitAppSrv.init()
-                        .then(function(success)
-                        {
-//                            $cordovaSplashscreen.hide();   
-                            var plugin = eval(InitAppSrv.getPluginName());
-                            if(plugin == null)
-                            {
-                                alert("audioinput plugin " + InitAppSrv.init_data.plugin_interface_name + " is not present");
-                                ionic.Platform.exitApp();
-                            }
-                            // qui potrei inizializzare il plugin chiamando una sua funzione..in modo da inizializzare il Service ed avere una callback con eventuali errori
-                            else  $state.go('home');
-                        })
-                        .catch(function(error){
-                            console.log(error.message);
-                        });
-                    }
-                    else
-                    {
-                        alert("cordova and/or cordova.plugins.Keyboard is not present");
-                        ionic.Platform.exitApp();
-                    }                        
-                    if(window.StatusBar) {
-                        StatusBar.styleDefault();
-                    }
-                });
-            })
-            .run(function($ionicPlatform, $ionicHistory, $ionicPopup, $state) 
+            // Don't remove this line unless you know what you are doing. It stops the viewport from snapping when text inputs are focused. 
+            // Ionic handles this internally for a much nicer keyboard experience.
+            cordova.plugins.Keyboard.disableScroll(true);
+
+            // useful to inform the registered controllers that the App is active again (e.g. after having managed OS popup, like enabling Bluetooth.)
+            document.addEventListener("resume", function() {
+                $rootScope.$broadcast("onAppResume", []);
+            }, false);                        
+
+            // load init params, other json files, and init services. check if plugin is present
+            InitAppSrv.init()
+            .then(function(success)
             {
-                $ionicPlatform.registerBackButtonAction(function()
+//                            $cordovaSplashscreen.hide();   
+                var plugin = InitAppSrv.getPlugin();
+                if(plugin == null)
                 {
-                    // delete history once in the home and 
-                    // ask for user confirm after pressing back (thus trying to exit from the App)
-                    if($state.current.name == "home") 
-                    {
-                        $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
-                        .then(function(res) {
-                            if (res) ionic.Platform.exitApp();
-                        });
-                    }
-                    else        $ionicHistory.goBack();
-                }, 100);
+                    alert("audioinput plugin is not present");
+                    ionic.Platform.exitApp();
+                }
+                // qui potrei inizializzare il plugin chiamando una sua funzione..in modo da inizializzare il Service ed avere una callback con eventuali errori
+                else  $state.go('home');
             })
-            .run(function($ionicPlatform) {
-                $ionicPlatform.ready(function() 
-                {
-
-                });
-            });            
+            .catch(function(error){
+                console.log(error.message);
+            });
+        }
+        else
+        {
+            alert("cordova and/or cordova.plugins.Keyboard is not present");
+            ionic.Platform.exitApp();
+        }                        
+        if(window.StatusBar) {
+            StatusBar.styleDefault();
+        }
+    });
+})
+.run(function($ionicPlatform, $ionicHistory, $ionicPopup, $state) 
+{
+    $ionicPlatform.registerBackButtonAction(function()
+    {
+        // delete history once in the home and 
+        // ask for user confirm after pressing back (thus trying to exit from the App)
+        if($state.current.name == "home") 
+        {
+            $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
+            .then(function(res) {
+                if (res) ionic.Platform.exitApp();
+            });
+        }
+        else        $ionicHistory.goBack();
+    }, 100);
+});
+//            .run(function($ionicPlatform) {
+//                $ionicPlatform.ready(function() 
+//                {
+//
+//                });
+//            });            
             
 
 main_module.config(function($stateProvider, $urlRouterProvider) {

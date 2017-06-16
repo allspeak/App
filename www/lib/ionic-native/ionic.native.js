@@ -3289,7 +3289,7 @@ var Camera = (function () {
     Camera.MediaType = {
         /** Allow selection of still pictures only. DEFAULT. Will return format specified via DestinationType */
         PICTURE: 0,
-        /** Allow selection of video only, ONLY RETURNS URL */
+        /** Allow selection of video only, ONLY PLUGINS URL */
         VIDEO: 1,
         /** Allow selection from all media types */
         ALLMEDIA: 2

@@ -12,6 +12,24 @@
     
     <ion-content>
         
+      
+        
+<!--    <ion-list radio-audio-input>
+      <ion-list-header>
+        Audio Input
+      </ion-list-header>
+
+      <ion-item>
+        <ion-label>Microfono cellulare</ion-label>
+        <ion-radio checked="true" value="mic"></ion-radio>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>{{btDeviceLabel}}</ion-label>
+        <ion-radio value="bt"></ion-radio>
+      </ion-item>
+    </ion-list>        -->
+        
         <!--<ion-toggle ng-model="bluetoothEnabled" ng-checked="bluetoothEnabled" ng-change="onBluetoothChange(bluetoothEnabled)" toggle-class="toggle-calm">{{bluetoothLabel}}</ion-toggle>-->        
         <ion-toggle ng-model="bluetoothEnabled" ng-checked="bluetoothEnabled" ng-click="onBluetoothChange($event, bluetoothEnabled)" toggle-class="toggle-calm">{{bluetoothLabel}}</ion-toggle>        
         <ion-item class="item-button-right"> Reset Ignore list

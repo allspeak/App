@@ -1,9 +1,5 @@
 function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
 {
-    // reference to the plugin js interface
-    pluginInterfaceName     = InitAppSrv.getPluginName();
-    pluginInterface         = null;       
-    
     $scope.captureProfile   = "amplifier";   
     $scope.captureParams    = { "nSampleRate": 8000,
                                 "nAudioSourceType": 6, //android voice recognition
@@ -20,14 +16,15 @@ function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
     $scope.isRunning        = 0;
     $scope.buttonLabel      = ($scope.isRunning ? $scope.bLabelStop : $scope.bLabelStart);
     
+    //==================================================================================
     $scope.$on("$ionicView.enter", function(event, data)
     {
-        pluginInterface         = eval(pluginInterfaceName);            
+        pluginInterface                 = InitAppSrv.getPlugin();            
         
-        $scope.captureParams.nDataDest          = pluginInterface.ENUM.RETURN.CAPTURE_DATADEST_JS_DB;        
+        $scope.captureParams.nDataDest  = pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_DB;        
         // get standard capture params + overwrite some selected
-        $scope.Cfg              = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
-        $scope.captureCfg       = $scope.Cfg.captureCfg;
+        $scope.Cfg                      = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
+        $scope.captureCfg               = $scope.Cfg.captureCfg;
     });        
 
     $scope.start = function()
@@ -36,11 +33,11 @@ function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
         else                    SpeechDetectionSrv.stopCapture();
     };
   
-   $scope.onChangeVolume = function(volume)
-   {
-       console.log("@@@@ " + volume.toString());
-       SpeechDetectionSrv.setPlayBackPercVol(volume);
-   };
+    $scope.onChangeVolume = function(volume)
+    {
+        console.log("@@@@ " + volume.toString());
+        SpeechDetectionSrv.setPlayBackPercVol(volume);
+    };
    
     //==================================================================================
     // PLUGIN CALLBACKS

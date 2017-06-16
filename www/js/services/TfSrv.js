@@ -5,10 +5,6 @@
 
 function TfSrv(ErrorSrv, InitAppSrv)
 {
-    // reference to the plugin js interface
-    pluginInterfaceName   = InitAppSrv.getPluginName();
-    pluginInterface       = null;
-    
     // Management of default values:
     // each time I call : init (captureCfg, captureProfile, output_chunks, vadCfg, mfccCfg)
     // 1) take the values defined in window.audioinput (capture) & window.speechcapture (vad) & here
@@ -27,7 +23,7 @@ function TfSrv(ErrorSrv, InitAppSrv)
     // PUBLIC ********************************************************************************************************
     init = function(tfCfg)
     {  
-        pluginInterface = eval(pluginInterfaceName);
+        pluginInterface = InitAppSrv.getPlugin();
         plugin_enum     = pluginInterface.ENUM.tf;
    
         

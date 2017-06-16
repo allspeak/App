@@ -16,8 +16,8 @@
 /* AUDIO PARAMS MANAGEMENT
  * 
  * Audio params (capture, vad, mfcc, tf) are managed according to the following principles:
- * initial json file (init.json) contain two sections defining both current and default values for all these params.
- * current params session can be edited by the user. Default one are read only and are used to override the current ones.
+ * App Configuration json file (config.json) contain two sections defining both current and default values for all these params.
+ * current params session can be edited by the user (or the App itself). Default one are read-only and are used to override the current ones.
  * In principle only the VAD params will be really edited by the user, but the mechanism was implemented for all of them.
  * InitAppSrv 
  */
@@ -94,7 +94,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
             return FileSystemSrv.createDir(default_file_system.audio_folder, false);
         })
         .then(function(){
-            return FileSystemSrv.createDir(default_file_system.audio_temp_folder);
+            return FileSystemSrv.createDir(default_file_system.audio_temp_folder, true);
         })
         .then(function(){
             return FileSystemSrv.createDir(default_file_system.json_folder, false);
@@ -118,7 +118,11 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         return FileSystemSrv.existFile(config_filerel_path)
         .then(function(exist)
         {
-            if(exist)   return 1;
+            if(exist)
+            {
+                service.config.appConfig.device = HWSrv.getDevice();
+                return 1;
+            }
             else
             {
                 // file://.../config.json file does not exist, copy defaults subfields to appConfig subfields 
@@ -133,7 +137,8 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         })   
         .then(function(configdata)
         {
-            service.config = configdata;
+            service.config                  = configdata;
+            service.config.appConfig.plugin = eval(service.config.defaults.plugin_interface_name);
         })         
         .catch(function(error){ 
             return $q.reject(error);              
@@ -143,6 +148,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
     service.fillAppConfig =  function()
     {
         service.config.appConfig.assisted                   = 0;
+        service.config.appConfig.plugin                     = null;
         service.config.appConfig.file_system.resolved_odp   = FileSystemSrv.getResolvedOutDataFolder();
         service.config.appConfig.audio_configurations       = service.config.defaults.audio_configurations;
         service.config.appConfig.bluetooth                  = service.config.defaults.bluetooth;
@@ -210,9 +216,14 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         return service.config.defaults.file_system.audio_temp_folder;
     }; 
 
-    service.getPluginName = function()
+    service.getPlugin = function()
     {
-        return service.config.defaults.plugin_interface_name;
+        return service.config.appConfig.plugin;
+    };    
+
+    service.getDevice = function()
+    {
+        return service.config.appConfig.device;
     };    
     //==========================================================================
     // MERGE CURRENT CONFIG WITH POSSIBLE OVERRIDDING FROM CALLER CONTROLLERS (DOES NOT CHANGE service.config.appConfig.audio_configurations[profile] !!!!)
@@ -294,28 +305,41 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
         .then(function(){
             return 1;
-        });        
-    }
+        })
+        .catch(function(error){ 
+            return $q.reject(error);              
+        });
+    };
 
     service.saveAudioConfigField = function(field, obj)
     {
+        var old_conf = service.config.appConfig.audio_configurations[field];
         service.config.appConfig.audio_configurations[field] = obj;
         // writes data to JSON
-        FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
+        return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
         .then(function(){
             return 1;
-        });  
-    }
+        })
+        .catch(function(error){ 
+            service.config.appConfig.audio_configurations[field] = old_conf;
+            return $q.reject(error);              
+        });
+    };
     
     service.saveConfigField = function(field, obj)
     {
+        var old_conf = service.config.appConfig[field];
         service.config.appConfig[field] = obj;
         // writes data to JSON
         FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
         .then(function(){
             return 1;
-        });  
-    }
+        })
+        .catch(function(error){ 
+            service.config.appConfig[field] = old_conf;
+            return $q.reject(error);              
+        });
+    };
     //==========================================================================
     return service;
 }

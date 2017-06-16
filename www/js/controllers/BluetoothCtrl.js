@@ -1,10 +1,10 @@
 /* 
 bluetooth device object:
 
-address : "E4:F8:EF:E7:25:27"
+address : "E4:22:A5:4C:F6:AD"
 class   : 1028
-id      : "E4:F8:EF:E7:25:27"
-name    : "Samsung Headset Essential"
+id      : "E4:22:A5:4C:F6:AD"
+name    : "PLT_E500"
 
 added fields
 
@@ -15,10 +15,11 @@ connected:
  */
 
 //function BluetoothCtrl($scope, $cordovaBLE)
-function BluetoothCtrl($scope, $cordovaBluetoothSerial, $ionicPopup, $ionicPlatform, InitAppSrv)
+function BluetoothCtrl($scope, $cordovaBLE, $ionicPopup, $ionicPlatform, InitAppSrv)
 {
     $scope.bluetoothEnabled = false;
-    $scope.bluetoothLabel = "Bluetooth is OFF";
+    $scope.BTOFF    = "Bluetooth spento, premi per attivare";
+    $scope.BTON     = "Bluetooth è attivo";
     
     $scope.unpaired_devices = [];
     $scope.paired_devices   = [];
@@ -28,26 +29,48 @@ function BluetoothCtrl($scope, $cordovaBluetoothSerial, $ionicPopup, $ionicPlatf
     $scope.$on("onAppResume", function (event) {
         $scope.refreshDevices();
     });  
-    
+
     $scope.$on("$ionicView.enter", function(event, data)
     {
-        $scope.refreshDevices();
+        return $scope.isBTEnabled()
+        .then(function(enabled)
+        {
+            if(enabled)
+            {
+                $scope.bluetoothEnabled = true;
+                $scope.btDeviceLabel    = $scope.BTON;
+                $scope.refreshDevices();
+            }
+            else
+            {
+                $scope.bluetoothEnabled = false;
+                $scope.btDeviceLabel    = $scope.BTOFF;
+            }
+        });
     });    
+    
+    
+    $scope.isBTEnabled = function()
+    {
+        $cordovaBLE.isEnabled()
+        .then(function(){
+
+            return 1;
+        })
+        .catch(function(){ 
+            return 0;
+        })       
+    }
     
     $scope.refreshDevices = function()
     {
-        $cordovaBluetoothSerial.isEnabled()
-        .then(function(){
-            $scope.bluetoothEnabled = true;
-            $scope.bluetoothLabel = "Bluetooth is ON";
-            return $scope.getPairedDevices();
-        })
-        .catch(function(error){ // BT is not enabled
-            $scope.resetDevices();
-        })
-        .then(function(){
-            $scope.getUnPairedDevices();
-        })
+        return $scope.getPairedDevices()
+//        .then(function(){
+//            return $scope.getUnPairedDevices();
+//        })
+//        .then(function(){
+//            $scope.$apply();
+//        })
         .catch(function(error){ 
             alert(error + ", " + error.message);
             $scope.resetDevices();
@@ -68,7 +91,7 @@ function BluetoothCtrl($scope, $cordovaBluetoothSerial, $ionicPopup, $ionicPlatf
     
     $scope.isConnected = function(device)
     {
-        return $cordovaBluetoothSerial.isConnected(device.address)
+        return $cordovaBLE.isConnected(device.id)
     };
     
     $scope.resetDevices = function()
@@ -83,7 +106,7 @@ function BluetoothCtrl($scope, $cordovaBluetoothSerial, $ionicPopup, $ionicPlatf
     $scope.onBluetoothChange = function(event, value)
     {
         if (value){ // was off -> user asked to switch on
-            $cordovaBluetoothSerial.enable()   // I don't call here the update ...the onResume callback will do it.
+            $cordovaBLE.enable()   // I don't call here the update ...the onResume callback will do it.
             .catch(function(error){  // user did not enable BT....I get this : error = "User did not enable Bluetooth"
                 event.preventDefault();  // IT DOESN'T WORK...toggle changes
                 $scope.resetDevices();
@@ -96,7 +119,7 @@ function BluetoothCtrl($scope, $cordovaBluetoothSerial, $ionicPopup, $ionicPlatf
             });
 
             alertPopup.then(function(res) {
-                $cordovaBluetoothSerial.showBluetoothSettings()
+                $cordovaBLE.showBluetoothSettings()
                 .catch(function(error){
                     alert(error + " - " + error.message); 
                 });            
@@ -106,7 +129,7 @@ function BluetoothCtrl($scope, $cordovaBluetoothSerial, $ionicPopup, $ionicPlatf
     
     $scope.connectDevice = function(device, id)
     {
-        $cordovaBluetoothSerial.connectInsecure(device.address)
+        $cordovaBLE.connect(device.id)
         .subscribe(function(p) {
             $scope.$apply(function() {
                 $scope.paired_devices[id].connected = 1;
@@ -125,7 +148,8 @@ function BluetoothCtrl($scope, $cordovaBluetoothSerial, $ionicPopup, $ionicPlatf
     $scope.getPairedDevices = function()
     {
         $scope.paired_devices = [];
-        return $cordovaBluetoothSerial.list()
+//        return $cordovaBluetoothSerial.list()
+        return $cordovaBLE.scan([],10)
         .then(function (devices) {
             for (device in devices){
                 var addit=1;
@@ -137,23 +161,6 @@ function BluetoothCtrl($scope, $cordovaBluetoothSerial, $ionicPopup, $ionicPlatf
                 }
                 if(addit)   $scope.paired_devices.push(devices[device])
             }
-            
-            
-//            var promises = [promiseAlpha(), promiseBeta(), promiseGamma()];
-//
-//            $q.all(promises)
-//            .then(function(values){
-//                console.log(values[0]); // value alpha
-//                console.log(values[1]); // value beta
-//                console.log(values[2]); // value gamma
-//
-//                complete();
-//            });            
-//            
-//            
-            
-            
-            $scope.$apply();
             return $scope.paired_devices;
         }, function(err) {
             return [];

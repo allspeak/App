@@ -5,10 +5,6 @@
 
 function MfccSrv(ErrorSrv, InitAppSrv)
 {
-    // reference to the plugin js interface
-    pluginInterfaceName   = InitAppSrv.getPluginName();
-    pluginInterface       = null;
-    
     // Management of default values:
     // each time I call : init (mfccCfg)
     // 1) take the values defined in InitAppSrv (according to config.json)
@@ -16,48 +12,32 @@ function MfccSrv(ErrorSrv, InitAppSrv)
     Cfg                     = {};
     Cfg.mfccCfg             = null;
     
-    dataTypes               = {};
-  
-
     _successCB              = null  // used by mfcc
     _errorCB                = null; // used by all the processes
     
     // PUBLIC ********************************************************************************************************
     init = function(mfccCfg)
     {  
-        pluginInterface         = eval(pluginInterfaceName);
-        plugin_enum             = pluginInterface.ENUM.mfcc;
-        
-        dataTypes.DATATYPE      = plugin_enum.DATATYPE;
-        dataTypes.DATAORIGIN    = plugin_enum.DATAORIGIN;
-        dataTypes.DATADEST      = plugin_enum.DATADEST;            
+        pluginInterface         = InitAppSrv.getPlugin();
+        plugin_enum             = pluginInterface.ENUM.PLUGIN;
         
         Cfg.mfccCfg             = InitAppSrv.getMfccCfg(mfccCfg);
-        return {
-                mfccCfg         : Cfg.mfccCfg, 
-                dataTypes       : dataTypes
-               };
+        return Cfg;
     };
      // PUBLIC *************************************************************************************************
    getCfg = function()
     {
         return Cfg.mfccCfg;
     };    
-    //  end DEFAULT VALUES MANAGEMENT
- 
-    //==========================================================================
+    
     //==========================================================================
     // M F C C
     //==========================================================================
-    //==========================================================================
     // NOTE :   If calculated, the 0-th coefficient is added to the end of the vector (for compatibility with HTK).     
     //          all methods call the same API : successCB, errorCB, mfcc_params, source, datatype, origintype, write, outputpath_noext
-    
     // here the 3 calls are still divided to better manage the callbacks.
-    // 
-    // 
+
     // PUBLIC ******************************************************************************************************
-//    getMFCCFromData = function(successCB, errorCB, data_array, data_type, data_origin, data_dest, filepath_noext)
     getMFCCFromData = function(successCB, errorCB, data_array, data_type, data_dest, filepath_noext)
     {
         _successCB  = successCB;
@@ -69,13 +49,12 @@ function MfccSrv(ErrorSrv, InitAppSrv)
             return null;
         }
         
-//        if(_checkParams(data_type, dataTypes.DATATYPE)*_checkParams(data_origin, dataTypes.DATAORIGIN)*_checkParams(data_dest, dataTypes.DATADEST))
-        if(_checkParams(data_type, dataTypes.DATATYPE)*_checkParams(data_dest, dataTypes.DATADEST))
+        if(_checkParams(data_type, plugin_enum)*_checkParams(data_dest, plugin_enum))
         {
             var currCfg         = Cfg.mfccCfg;
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
-            currCfg.nDataOrig   = dataTypes.DATAORIGIN.JSONDATA;            
+            currCfg.nDataOrig   = plugin_enum.MFCC_DATAORIGIN_JSONDATA;            
             
             pluginInterface.getMFCC(currCfg, data_array, filepath_noext);
             return true;
@@ -94,53 +73,47 @@ function MfccSrv(ErrorSrv, InitAppSrv)
             return null;
         }
         
-        if(_checkParams(data_type, dataTypes.DATATYPE)*_checkParams(data_dest, dataTypes.DATADEST))
+        if(_checkParams(data_type, plugin_enum)*_checkParams(data_dest, plugin_enum))
         {
             var currCfg         = Cfg.mfccCfg;
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
-            currCfg.nDataOrig   = dataTypes.DATAORIGIN.FILE;            
+            currCfg.nDataOrig   = plugin_enum.MFCC_DATAORIGIN_FILE;            
             
-//            pluginInterface.getMFCC( _onMFCCSuccess, _onMFCCError, currCfg, relpath_noext);
             pluginInterface.getMFCC(currCfg, relpath_noext);
             return true;
         } 
-        else{
+        else
+        {
             erroCB("ERROR in MfccSrv: one of the input params (" +  data_type.toString() + "|" + data_origin.toString() + "|" + data_dest.toString() + ") is wrong");
             return false;
         }
     };
     // PUBLIC *****************************************************************************************************
-//    getMFCCFromFolder = function(successCB, errorCB, relpath_noext, data_type, data_origin, data_dest)
-//    getMFCCFromFolder = function(successCB, errorCB, relpath_noext, data_type, data_dest)
     getMFCCFromFolder = function(relpath_noext, data_type, data_dest)
     {
-//        _successCB  = successCB;
-//        _errorCB    = errorCB;
-        
         if(relpath_noext == null || !relpath_noext.length)
         {
             ErrorSrv.raiseError(_errorCB, "MfccSrv::getMFCCFromFolder input relpath is null");
             return null;
         }
         
-        if(_checkParams(data_type, dataTypes.DATATYPE)*_checkParams(data_dest, dataTypes.DATADEST))
+        if(_checkParams(data_type, plugin_enum)*_checkParams(data_dest, plugin_enum))
         {
             var currCfg         = Cfg.mfccCfg;
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
-            currCfg.nDataOrig   = dataTypes.DATAORIGIN.FOLDER;            
+            currCfg.nDataOrig   = plugin_enum.MFCC_DATAORIGIN_FOLDER;            
             
-//            pluginInterface.getMFCC( _onMFCCSuccess, _onMFCCError, currCfg, relpath_noext);
             pluginInterface.getMFCC(currCfg, relpath_noext);
             return true;
         } 
-            else{
+        else
+            {
             erroCB("ERROR in MfccSrv: one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong");
             return false;
         }
     };
-    
   
     _onMFCCSuccess = function(mfcc){
         _successCB(mfcc);

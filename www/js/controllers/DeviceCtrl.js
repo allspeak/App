@@ -4,16 +4,13 @@
  * and open the template in the editor.
  */
 
-function DeviceCtrl($scope, HWSrv)
+function DeviceCtrl($scope, InitAppSrv)
 {
     $scope.device = null;
     $scope.$on("$ionicView.enter", function(event, data)
     {
-        if ($scope.device ==  undefined)
-        {
-            $scope.device   = HWSrv.device;    
-            $scope.fillDevice();
-    }
+        $scope.device   = InitAppSrv.getDevice();    
+        $scope.fillDevice();
     });    
     
     $scope.device_item_to_be_shown    = [ {label:"model", value:""},  

@@ -23,9 +23,11 @@ function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNative
     
     $scope.$on("$ionicView.enter", function(event, data)
     {
+        pluginInterface     = InitAppSrv.getPlugin();            
+        
         // get standard capture params + overwrite some selected
-        $scope.Cfg                  = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
-        $scope.captureCfg           = $scope.Cfg.captureCfg;
+        $scope.Cfg          = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
+        $scope.captureCfg   = $scope.Cfg.captureCfg;
     });     
     
     
@@ -49,8 +51,8 @@ function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNative
     
     $scope.startRecording = function()
     {
-        $scope.audioFolder      = InitAppSrv.appData.file_system.audio_folder; 
-        $scope.relwavpath          = $scope.audioFolder + "/" + $scope.wavName;
+        $scope.audioFolder      = InitAppSrv.getAudioFolder(); 
+        $scope.relwavpath       = $scope.audioFolder + "/" + $scope.wavName;
         $scope.isRecording      = !$scope.isRecording;
         $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);        
         if ($scope.isRecording)
@@ -99,7 +101,7 @@ function RecordCtrl($scope, $window, SpeechDetectionSrv, InitAppSrv, IonicNative
         {
             var volume          = $scope.volume/100;
             $scope.isPlaying    = 1;
-            IonicNativeMediaSrv.playAudio(InitAppSrv.appData.file_system.resolved_odp + $scope.relwavpath, volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
+            IonicNativeMediaSrv.playAudio(InitAppSrv.FileSystemSrv.getResolvedOutDataFolder() + $scope.relwavpath, volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
         }
         else
         {
@@ -254,8 +256,8 @@ controllers_module.controller('RecordCtrl', RecordCtrl);
  
  //    $scope.PlayAudio = function()
 //    {
-////        var media = $cordovaMedia.newMedia(InitAppSrv.appData.file_system.resolved_odp + $scope.relwavpath, function(success){
-//        var media = $cordovaMedia.newMedia(InitAppSrv.appData.file_system.resolved_odp + $scope.relwavpath, function(success){
+////        var media = $cordovaMedia.newMedia(InitAppSrv.FileSystemSrv.getResolvedOutDataFolder() + $scope.relwavpath, function(success){
+//        var media = $cordovaMedia.newMedia(InitAppSrv.FileSystemSrv.getResolvedOutDataFolder() + $scope.relwavpath, function(success){
 //           console.log("success: "+success); 
 //        }, function (error){
 //           console.log(error.message); 
@@ -278,7 +280,7 @@ controllers_module.controller('RecordCtrl', RecordCtrl);
 
     $scope.startRecordingINMP = function()
     {
-        $scope.audioFolder      = InitAppSrv.appData.file_system.audio_folder; 
+        $scope.audioFolder      = InitAppSrv.getAudioFolder(); 
         $scope.relwavpath       = $scope.audioFolder + "/" + $scope.wavName;
         $scope.isRecording      = !$scope.isRecording;
         $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);        

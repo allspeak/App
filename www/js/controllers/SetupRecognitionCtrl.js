@@ -4,39 +4,62 @@
  * and open the template in the editor.
  */
 
-function SetupRecognitionCtrl($scope, SpeechDetectionSrv)
+function SetupRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSrv, $ionicPopup, $ionicHistory)
 {
     $scope.captureProfile   = "recognition";
-    $scope.captureParams    = {"sampleRate": 8000,
-                               "bufferSize": 1024};
+    $scope.captureParams    = null;
+    
+//    $scope.captureParams    = {"sampleRate": 8000,
+//                               "bufferSize": 1024};
                
     $scope.initVadParams    = null;
+//    $scope.initVadParams    = {"nAnalysisChunkLength": 64};
     
     $scope.Cfg              = null;
     $scope.captureCfg       = null;
-    $scope.vadCfg           = null;    
+    $scope.vadCfg           = null;  
+    
+    $scope.ACL_limits       = [];
     
     $scope.$on("$ionicView.enter", function(event, data)
     {
+        // take control of BACK buttons
+        
+        
+        
+        pluginInterface             = InitAppSrv.getPlugin();            
+        
         // get standard capture params + overwrite some selected
         $scope.Cfg                  = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
         $scope.captureCfg           = $scope.Cfg.captureCfg;
         $scope.vadCfg               = $scope.Cfg.vadCfg;
 
         $scope.input_sources        = SpeechDetectionSrv.getInputSources();
-        $scope.capture_buffer       = SpeechDetectionSrv.getCaptureBuffers();
-        $scope.sampling_frequencies = SpeechDetectionSrv.getSamplingFrequencies();
+        $scope.aCBS                 = SpeechDetectionSrv.getCaptureBuffers();
+        $scope.aSR                  = SpeechDetectionSrv.getSamplingFrequencies();
         
         $scope.selectedSourceType   = $scope.selectObjByValue($scope.captureCfg.nAudioSourceType, $scope.input_sources);
-        $scope.selectedFrequency    = $scope.selectObjByValue($scope.captureCfg.nSampleRate, $scope.sampling_frequencies);
-        $scope.selectedCBS          = $scope.selectObjByValue($scope.captureCfg.nBufferSize, $scope.capture_buffer);
+        $scope.selectedSR           = $scope.selectObjByValue($scope.captureCfg.nSampleRate, $scope.aSR);
+        $scope.selectedCBS          = $scope.selectObjByValue($scope.captureCfg.nBufferSize, $scope.aCBS);
         
-        $scope.selectedACL          = $scope.selectObjByMsValue($scope.vadCfg.nAnalysisChunkLength, $scope.captureCfg.nSampleRate, $scope.capture_buffer);
-        $scope.selectedMIL          = $scope.selectObjByMsValue($scope.vadCfg.nSpeechDetectionMinimum, $scope.captureCfg.nSampleRate, $scope.capture_buffer);
-        $scope.selectedMXL          = $scope.selectObjByMsValue($scope.vadCfg.nSpeechDetectionMaximum, $scope.captureCfg.nSampleRate, $scope.capture_buffer);
-        $scope.selectedAD           = $scope.selectObjByMsValue($scope.vadCfg.nSpeechDetectionAllowedDelay, $scope.captureCfg.nSampleRate, $scope.capture_buffer);
+        $scope.calculateAllowedRanges();
+        $scope.selectedACL          = $scope.selectObjByLabel($scope.vadCfg.nAnalysisChunkLength, $scope.aACL);
+        
+        $scope.acl_ms_step          = parseInt($scope.selectedACL.label);
+        $scope.acl_bs_step          = parseInt($scope.selectedACL.label)*($scope.captureCfg.nSampleRate/1000);
+        
+        $scope.countMIL             = $scope.vadCfg.nSpeechDetectionMinimum;
+        $scope.countMXL             = $scope.vadCfg.nSpeechDetectionMaximum;
+        $scope.countAD              = $scope.vadCfg.nSpeechDetectionAllowedDelay;
 
+        $scope.$apply();
     });      
+    
+    
+    $scope.$on('$ionicView.beforeLeave', function()
+    {
+      // here I will restore the normal back button functions
+    });    
 
     $scope.captureCfg = null;
     
@@ -45,6 +68,14 @@ function SetupRecognitionCtrl($scope, SpeechDetectionSrv)
         var len = objarray.length;
         for (i=0; i<len; i++) 
            if(objarray[i].value == value)
+               return objarray[i];
+    };    
+    
+    $scope.selectObjByLabel = function(value, objarray)
+    {
+        var len = objarray.length;
+        for (i=0; i<len; i++) 
+           if(objarray[i].label == value)
                return objarray[i];
     };    
     
@@ -61,9 +92,23 @@ function SetupRecognitionCtrl($scope, SpeechDetectionSrv)
         }
     };    
 
-
-
-
+    // define allowed values for ACL,MIL,MXL,AD
+    $scope.calculateAllowedRanges = function()
+    {
+        var min_ACLms_step          = pluginInterface.ENUM.vad.MIN_ACL_MS;
+        var min_ACLbs_step          = (min_ACLms_step*$scope.captureCfg.nSampleRate)/1000;
+        $scope.ACLbs_limits         = SpeechDetectionSrv.calcRecConstants(); // return values in BufferSizes
+        
+        //-------------------------------------------------------------
+        // ACL
+        $scope.aACL                 = [];
+        for (x = 0; x < $scope.ACLbs_limits[1]/min_ACLbs_step; x++)
+        {
+            var bs = $scope.ACLbs_limits[0] + x*min_ACLbs_step;
+            var ms = (bs*1000)/$scope.captureCfg.nSampleRate
+            $scope.aACL[x] = {"label": ms, "value" : bs};
+        }
+    }; 
 
     // ============================================================================================
     // ============================================================================================
@@ -72,45 +117,93 @@ function SetupRecognitionCtrl($scope, SpeechDetectionSrv)
     {
         $scope.selectedSourceType           = selDevice;
         $scope.captureCfg.audioSourceType   = parseInt($scope.selectedSourceType.value);
+        
+        $scope.calculateAllowedRanges();
     };
 
-    $scope.updateFrequency = function(selFreq)
+    $scope.updateSR = function(selFreq)
     {
         $scope.selectedFrequency            = selFreq;
-        $scope.captureCfg.sampleRate        = parseInt($scope.selectedFrequency.value);
-    };    
+        $scope.captureCfg.nSampleRate        = parseInt($scope.selectedFrequency.value);
+        
+        $scope.calculateAllowedRanges();
+        
+    };
     
     $scope.updateCBS = function(selCaptBuf)
     {
         $scope.selectedCBS                  = selCaptBuf;
-        $scope.captureCfg.bufferSize        = parseInt($scope.selectedCBS.value);
+        $scope.captureCfg.nBufferSize       = parseInt($scope.selectedCBS.value);
+        
+        $scope.calculateAllowedRanges();
     };  
     
     $scope.updateACL = function(selCaptBuf)
     {
         $scope.selectedACL                  = selCaptBuf;
-        $scope.captureCfg.bufferSize        = parseInt($scope.selectedACL.value);
+        $scope.vadCfg.nAnalysisChunkLength  = parseInt($scope.selectedACL.label);
+        
+        $scope.acl_ms_step = parseInt($scope.selectedACL.label);
+        $scope.acl_bs_step = parseInt($scope.selectedACL.value);
+        
+//        $scope.calculateAllowedRanges();
     };  
+
     
-    $scope.updateMIL = function(selCaptBuf)
+    $scope.save = function(doexit)
     {
-        $scope.selectedMIL                  = selCaptBuf;
-        $scope.captureCfg.bufferSize        = parseInt($scope.selectedMIL.value);
-    };  
+            return InitAppSrv.saveAudioConfigField('vad', $scope.vadCfg)
+        .then(function(){
+            return InitAppSrv.saveAudioConfigField('recognition', $scope.captureCfg);
+        })
+        .then(function(){        
+            if(doexit)  $ionicHistory.goBack(); // back ! 
+        })
+        .catch(function(error){
+            ErrorSrv.raiseError(null, "Save config error", error);
+        });
+    };
     
-    $scope.updateMXL = function(selCaptBuf)
+    $scope.cancel = function()
     {
-        $scope.selectedMXL                  = selCaptBuf;
-        $scope.captureCfg.bufferSize        = parseInt($scope.selectedMXL.value);
-    };  
+        $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai uscendo senza salvare i nuovi parametri, sei sicuro ?'})
+        .then(function(res) 
+        {
+            if (res) $ionicHistory.goBack(); // back ! 
+        });         
+    };
     
-    $scope.updateACL = function(selCaptBuf)
+    $scope.decrementCounter = function(item)
     {
-        $scope.selectedAD                   = selCaptBuf;
-        $scope.captureCfg.bufferSize        = parseInt($scope.selectedAD.value);
-    };  
+        switch(item)
+        {
+            case "MIL":
+                $scope.countMIL -= $scope.acl_ms_step;
+                break;
+            case "MXL":
+                $scope.countMXL -= $scope.acl_ms_step;
+                break;
+            case "AD":
+                $scope.countAD -= $scope.acl_ms_step;
+                break;
+        }
+    };
     
-    
+    $scope.incrementCounter = function(item)
+    {
+        switch(item)
+        {
+            case "MIL":
+                $scope.countMIL += $scope.acl_ms_step;
+                break;
+            case "MXL":
+                $scope.countMXL += $scope.acl_ms_step;
+                break;
+            case "AD":
+                $scope.countAD += $scope.acl_ms_step;
+                break;
+        }
+    };
     
     
     // ============================================================================================
