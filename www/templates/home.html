@@ -6,27 +6,16 @@
         
     <ion-content class="padding">
         <h1 style="text-align: center;"></h1><br/>
-          <button class="button button-block button-large button-positive" ui-sref="amplifier">
-            Amplifier
-          </button>
-        <button class="button button-block button-large button-positive" ui-sref="recognition">
-            Recognition
-          </button>
-        <button class="button button-block button-large button-positive" ui-sref="training">
-            Train
-        </button>        
-        <button class="button button-block button-large button-positive" ui-sref="record">
-            Record
-        </button>        
-        <button class="button button-block button-large button-positive" ui-sref="settings.device">
-            Settings
-        </button>        
+        <button class="button button-block button-large button-positive" ui-sref="amplifier">Amplificatore</button>
+        <button class="button button-block button-large button-positive" ng-click="goRecognition()">Riconosci</button>
+        <button class="button button-block button-large button-positive" ui-sref="training">Addestra</button>        
+        <button class="button button-block button-large button-positive" ui-sref="vocabulary">Vocabolario</button>        
+        <!--<button class="button button-block button-large button-positive" ui-sref="record">Record</button>-->        
+        <button class="button button-block button-large button-positive" ui-sref="settings.device">Settings</button>        
         <br/><br/> 
         <br/><br/> 
         <br/><br/> 
-        <button class="button button-block button-positive" ng-click="exit()">
-            Exit
-        </button>        
+        <button class="button button-block button-positive" ng-click="exit()">Exit</button>        
 
     </ion-content>
 </ion-view>

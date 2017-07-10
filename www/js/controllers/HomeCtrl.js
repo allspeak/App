@@ -7,10 +7,13 @@
 
 
  
-function HomeCtrl($scope, $ionicPopup, $ionicHistory)
+function HomeCtrl($scope, $ionicPopup, $ionicHistory, $state, InitAppSrv)
 {
-    $scope.$on('$ionicView.enter', function(){
+    $scope.modelLoaded = false;
+    
+    $scope.$on('$ionicView.beforeEnter', function(){
         $ionicHistory.clearHistory();
+        $scope.modelLoaded = InitAppSrv.isModelLoaded();
     });
     
     $scope.exit = function()
@@ -20,6 +23,24 @@ function HomeCtrl($scope, $ionicPopup, $ionicHistory)
             if (res){  ionic.Platform.exitApp();  }
         });
     };
+    
+    $scope.goRecognition = function()
+    {
+        if($scope.modelLoaded)
+            $state.go('recognition');
+        else
+        {
+            $ionicPopup.confirm({ title: 'Attenzione', template: 'L\'applicazione non è stata ancora addestrata\nVuoi farlo adesso?'}).then(function(res) 
+            {
+                if (res)
+                {  
+                     $state.go('settings.recognition'); 
+                }
+            });
+            
+        }
+            
+    }
 };
 
 

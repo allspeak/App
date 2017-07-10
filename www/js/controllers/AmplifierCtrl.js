@@ -69,7 +69,7 @@ function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
     // called by plugin interface _pluginEvent::cordova.fireWindowEvent("audiometer",...
     $scope.onDBMETER = function(event)
     {    
-        $scope.voiceDB = event.data;
+        $scope.voiceDB = event.decibels;
         $scope.$apply();
     };
    //==================================================================================

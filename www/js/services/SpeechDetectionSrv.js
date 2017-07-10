@@ -36,6 +36,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
      
     data2bewritten          = 0;
     subsamplingFactor       = 8;
+    isSpeechStarted         = false;
     
     speechChunksFolderRoot  = "";
     speechChunksFilenameRoot= "";
@@ -92,6 +93,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
             }
             Cfg.captureCfg  = InitAppSrv.getCaptureCfg(captureCfg, captureProfile);
             Cfg.vadCfg      = InitAppSrv.getVadCfg(vadCfg);
+            
             return Cfg;
         }
         else
@@ -256,6 +258,8 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                 _calculateElapsedTime(evt);
 
                 audioRawDataQueue   = audioRawDataQueue.concat(evt.data);
+                if(isSpeechStarted) sentenceData = sentenceData.concat(evt.data);
+                
                 var subsampled_data = _subsampleData(evt.data, subsamplingFactor);
                 
                 if(_captureprogressCB)  _captureprogressCB( totalReceivedData, 
@@ -313,8 +317,10 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     {
         if(lockMode == LOCK_TYPES.FREE)
         {        
-            try {
-                if(pluginInterface.isCapturing()){
+            try 
+            {
+                if(pluginInterface.isCapturing())
+                {
                     ErrorSrv.raiseError(cbSpeechError, "SpeechDetectionServ::startSpeechDetection.....should never happen FREE(SpeechDetectionServ), but running(audioinput)!!! ");
                     return false;
                 }
@@ -342,7 +348,9 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                 else
                     saveFullSpeech      = false;     
 
-                totalNoOfSpeechCaptured = 0;                    
+                totalNoOfSpeechCaptured = 0;         
+                audioRawDataQueue       = [];
+                sentenceData            = [];
 
                 window.addEventListener('audioinput'        , _onAudioRawInputCapture);
                 window.addEventListener('pluginError'       , _onAudioInputError);
@@ -376,7 +384,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
             
             if(saveFullSpeech)
             {
-                var wavblob     = pluginInterface.getFullSpeechWavData();
+                var wavblob     = _dataArray2BlobWav(Cfg.captureCfg, audioRawDataQueue);
                 var filename    = speechChunksFolderRoot + "/full_speech.wav";
                 return saveBlobWav(wavblob, filename, 1)     
                 .then(function(){
@@ -400,32 +408,47 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     };
     
     // triggered by external js => notify through callback and not $q
-    _onSpeechCaptured = function(wavblob, type) {
+    _onSpeechCaptured = function() {
         
         totalNoOfSpeechCaptured++;
-        var filename = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + "_" + totalNoOfSpeechCaptured.toString() + ".wav";
         
-        if (type === speechcapture.AUDIO_RESULT_TYPE.WAV_BLOB){
-            return FileSystemSrv.saveFile(filename, wavblob, overwrite)
+        if(Cfg.vadCfg.nAudioResultType == pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA_SAVE_SENTENCE || Cfg.vadCfg.nAudioResultType == pluginInterface.ENUM.PLUGIN.VAD_RESULT_SAVE_SENTENCE)
+        {
+//            var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + "_" + totalNoOfSpeechCaptured.toString() + ".wav";
+            var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + ".wav";
+            wavblob         = _dataArray2BlobWav(Cfg.captureCfg, sentenceData);
+
+            return FileSystemSrv.createFile(filename, wavblob, true)
             .then(function(){
                 if(_speechCapturedCB != null)
-                    _speechCapturedCB(filename, totalNoOfSpeechCaptured, wavblob);
+                    _speechCapturedCB(totalNoOfSpeechCaptured, filename);
             })
             .catch(function(error) {
                 if(_onSpeechError != null) _errorCB(error);
             });
         }
-        else
-        {
-            var str = "onSpeechCaptured: unexpected type value (" + type + ")"
-            console.log(str);
-            _errorCB({"message": str});
-        };
-
+        else _speechCapturedCB(totalNoOfSpeechCaptured, null);
     };
 
-    _onSpeechStatus = function(event) {
-        _speechStatusCB(event.data);
+    _onSpeechStatus = function(event) 
+    {
+        var type = event.datatype;
+        switch(type)
+        {
+            case pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_SENTENCE:
+                _onSpeechCaptured();
+                break;
+                        
+            case pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_STARTED:
+                isSpeechStarted         = true;
+                sentenceData            = [];
+                break;
+                        
+            case pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_STOPPED:
+                isSpeechStarted         = false;
+                break;
+        }
+        _speechStatusCB(type);
     };   
     
     _onSpeechError = function (error) {
@@ -447,7 +470,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         .catch(function(error) {
             // ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::_saveBlobWav", error); ....exception is managed by the catch
             return $q.reject(error);
-        });;
+        });
     };
 
     // returns wav Blob

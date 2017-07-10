@@ -1,6 +1,6 @@
 main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native', 'checklist-model']);
 
-main_module.run(function($ionicPlatform, InitAppSrv, $state, $rootScope) 
+main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootScope) 
 {
     $ionicPlatform.ready(function() 
     {
@@ -20,20 +20,22 @@ main_module.run(function($ionicPlatform, InitAppSrv, $state, $rootScope)
             }, false);                        
 
             // load init params, other json files, and init services. check if plugin is present
+            // TODO: evaluate whether init the service here in order to have a callback with possible errors, instead of loading on the APK onLoad 
             InitAppSrv.init()
             .then(function(success)
             {
-//                            $cordovaSplashscreen.hide();   
-                var plugin = InitAppSrv.getPlugin();
-                if(plugin == null)
-                {
-                    alert("audioinput plugin is not present");
-                    ionic.Platform.exitApp();
-                }
-                // qui potrei inizializzare il plugin chiamando una sua funzione..in modo da inizializzare il Service ed avere una callback con eventuali errori
-                else  $state.go('home');
+                //$cordovaSplashscreen.hide();   
+                $state.go('home');
             })
-            .catch(function(error){
+            .catch(function(error)
+            {
+                $ionicPopup.alert({
+                    title: 'Errore',
+                    template: "L\'applicazione verra chiusa per il seguente errore:\n" + error.message
+                })
+                .then(function() {
+                    ionic.Platform.exitApp();
+                });                
                 console.log(error.message);
             });
         }

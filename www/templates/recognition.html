@@ -14,7 +14,7 @@
             <select ng-model="selectedSourceType" ng-change="updateSourceType(selectedSourceType)" ng-options="item.label for item in input_sources track by item.value"></select>            
         </label>     -->
         
-        <label class="item item-input item-select">
+<!--        <label class="item item-input item-select">
             <div class="input-label">S. Frequency</div>
             <select ng-model="selectedFrequency" ng-change="updateFrequency(selectedFrequency)" ng-options="item.label for item in sampling_frequencies track by item.value"></select>            
         </label>     
@@ -22,11 +22,18 @@
         <label class="item item-input item-select">
             <div class="input-label">Capture Buffer</div>
             <select ng-model="selectedCaptureBuffer" ng-change="updateCaptureBuffer(selectedCaptureBuffer)" ng-options="item.label for item in capture_buffer track by item.value"></select>            
-        </label>     
+        </label>     -->
         
+
+        <ion-toggle ng-model="HeadsetSelected" ng-disabled="!HeadsetAvailable" ng-click="onHeadsetChange(HeadsetSelected)"> Input Source</ion-toggle>
+
+
+<!--        <label class="item">Sampling Frequency : <span class="badge">{{selectedSF}}</span></label>        
+        <label class="item">Buffer Size: <span class="badge">{{selectedCBS}}</span></label>    -->
+
 <!--        <label class="item">Data received : <span class="badge">{{totalReceivedData}}</span> </label>   
         <label class="item">Elapsed Time : <span class="badge">{{elapsedTime*1000 | secondsToDateTime }}</span></label>      -->
-        <label class="item"># chunks : <span class="badge">{{totalNoOfSpeechCaptured}}</span></label>        
+        <!--<label class="item"># chunks : <span class="badge">{{totalNoOfSpeechCaptured}}</span></label>-->        
         <label class="item">is Speaking : <span class="badge">{{isSpeaking}}</span></label>        
         <label class="item">Voice Intensity : <span class="badge">{{voiceDB}}</span></label>        
 
@@ -47,6 +54,12 @@
                 </div>                
             </ion-item>
         </ion-list>
+        
+        <ion-list>
+            <ion-item ng-repeat="item in recognizedItems track by $index">
+                <label>{{item.title}}<span class="badge">{{item.confidence}}</span></label>
+            </ion-item>
+        </ion-list>         
         
     </div>      
   </ion-content>

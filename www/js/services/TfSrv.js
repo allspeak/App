@@ -3,7 +3,7 @@
  */
 
 
-function TfSrv(ErrorSrv, InitAppSrv)
+function TfSrv(ErrorSrv, InitAppSrv, FileSystemSrv)
 {
     // Management of default values:
     // each time I call : init (captureCfg, captureProfile, output_chunks, vadCfg, mfccCfg)
@@ -39,13 +39,21 @@ function TfSrv(ErrorSrv, InitAppSrv)
         return Cfg.tfCfg;
     };    
     //  end DEFAULT VALUES MANAGEMENT
+    //--------------------------------------------------------------------------
+     // PUBLIC *************************************************************************************************
+    checkModel = function(modelname)
+    {
+        pluginInterface.loadTFModel(FileSystemSrv.getResolvedOutDataFolder() + InitAppSrv.getTFModelsFolder(), modelname);
+    };    
+    //  end DEFAULT VALUES MANAGEMENT
 
     //==========================================================================
     // public interface
     //==========================================================================
     return {
         init                : init,
-        getCfg              : getCfg
+        getCfg              : getCfg,
+        checkModel          : checkModel
     };    
 }
 

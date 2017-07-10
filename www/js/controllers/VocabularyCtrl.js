@@ -4,19 +4,22 @@
  * and open the template in the editor.
  */
 
-function VocabularyCtrl($scope, $http, $location, VocabularySrv, AudioSrv)
+function VocabularyCtrl($scope, $location, VocabularySrv)
 {
-
-    $scope.vocabulary       = VocabularySrv.getVocabulary();
     $scope.selectedItemId   = -1;
     $scope.selectedSentence = {};
+    
+    $scope.$on("$ionicView.enter", function(event, data)
+    {
+        $scope.vocabulary       = VocabularySrv.getVocabulary();
+    });    
     
     $scope.play = function(index, id)
     {
         $scope.selectedItemId       = id-1;
         $scope.selectedSentence     = VocabularySrv.vocabulary[$scope.selectedItemId];
         var filename                = $scope.selectedSentence.filename;
-        AudioSrv.playWav(filename);
+//        AudioSrv.playWav(filename);
     };
     
     $scope.recordSentence = function(index, id)

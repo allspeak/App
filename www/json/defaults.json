@@ -8,14 +8,17 @@
             "app_folder"                : "AllSpeak",
             "audio_folder"              : "AllSpeak/audiofiles",
             "audio_temp_folder"         : "AllSpeak/audiofiles/temp",
+            "tf_models_folder"          : "AllSpeak/models",
+            "tf_default_model"          : "AllSpeak/models/default_it",
             "json_folder"               : "AllSpeak/json",
             "config_filerel_path"       : "AllSpeak/json/config.json",
             "vocabulary_filerel_path"   : "AllSpeak/json/vocabulary.json",
+            "temp_folder"               : "AllSpeak/temp",
             "vocabulary_www_path"       : "./json/vocabulary.json",
             "resolved_odp"              : ""
         },
         "audio_configurations"      : {
-            "recognition"   : {
+            "recognition"                       : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 512,
                 "nChannels"                     : 1,
@@ -24,9 +27,9 @@
                 "nConcatenateMaxChunks"         : 1,
                 "nNormalize"                    : true,
                 "fNormalizationFactor"          : 32767.0,
-                "nDataDest"                     : 0            
+                "nDataDest"                     : 202            
             },
-            "amplifier"     : {
+            "amplifier"                         : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 512,
                 "nChannels"                     : 1,
@@ -35,9 +38,9 @@
                 "nConcatenateMaxChunks"         : 10,
                 "nNormalize"                    : true,
                 "fNormalizationFactor"          : 32767.0,
-                "nDataDest"                     : 1 
+                "nDataDest"                     : 202 
             },
-            "record"        : {
+            "record"                            : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 1024,
                 "nChannels"                     : 1,
@@ -46,19 +49,19 @@
                 "nConcatenateMaxChunks"         : 10,
                 "nNormalize"                    : true,
                 "fNormalizationFactor"          : 32767.0,
-                "nDataDest"                     : 1 
+                "nDataDest"                     : 203 
             },
-            "vad"           : {
+            "vad"                               : {
                 "nSpeechDetectionThreshold"     : 15, 
                 "nSpeechDetectionAllowedDelay"  : 400,
                 "nSpeechDetectionMaximum"       : 10000,
                 "nSpeechDetectionMinimum"       : 500,
                 "bCompressPauses"               : false,
                 "nAnalysisChunkLength"          : 64,
-                "nAudioResultType"              : 1,
+                "nAudioResultType"              : 262,
                 "bDetectOnly"                   : false
             },
-            "mfcc"          : {
+            "mfcc"                              : {
                 "nNumberOfMFCCParameters"       : 12,
                 "dSamplingFrequency"            : 8000.0,
                 "nNumberofFilters"              : 24,
@@ -67,17 +70,26 @@
                 "nLifteringCoefficient"         : 22,
                 "bCalculate0ThCoeff"            : true,
                 "nWindowDistance"               : 80,
-                "nWindowLength"                 : 200
-            },
-            "tf"             : {
-                "nNetLayers"                    : 12
+                "nWindowLength"                 : 200,
+                "nDeltaWindow"                  : 2
             }
         },            
+        "tf"                        : {
+            "nInputParams"          : 792,
+            "nContextFrames"        : 11,
+            "nItems2Recognize"      : 25,
+            "sModelFileName"        : "trained",   
+            "sLabelFileName"        : "trained",   
+            "sInputNodeName"        : "inputs/I",   
+            "sOutputNodeName"       : "SMO",
+            "nDataDest"             : 270,              
+            "bLoaded"               : false
+        },
         "remote"                    : {    
-            "patient_id": "",
-            "url": "",
-            "login": "",
-            "password": ""
+            "patient_id"            : "",
+            "url"                   : "",
+            "login"                 : "",
+            "password"              : ""
         },
         "bluetooth"                 : {
             "paired_devices"        : [], 

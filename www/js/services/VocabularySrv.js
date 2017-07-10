@@ -49,7 +49,6 @@ main_module.service('VocabularySrv', function($http, FileSystemSrv) {
     }
 
     return {
-        //promise:promise,
         setVocabulary: function (data) {
             return $http.post(vocabulary_json_relpath, data)
             .then( function (success){

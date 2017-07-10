@@ -4,7 +4,7 @@ function RemoteSrv($http)
     
     service.loginServer = function()
     {
-        return 1;
+        return 0;
     };
     
     

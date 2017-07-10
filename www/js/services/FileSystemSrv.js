@@ -1,4 +1,4 @@
-//      /storage/emulated/0/Android/data/com.ionicframework.allspeak/files/audio_sentences
+//      /storage/emulated/0/Android/data/com.allspeak/files/audio_sentences
 
 
 function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
