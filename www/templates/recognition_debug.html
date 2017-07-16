@@ -1,0 +1,38 @@
+<ion-view view-title="Recognition">
+    
+    
+    <ion-nav-buttons side="right">
+        <button class="button" ng-disabled="isvoicemonitoring" ng-click="go2settings()">
+            <i class="icon ion-mic-a"></i>
+        </button>
+    </ion-nav-buttons>      
+   
+  <ion-content>
+    <div class="list">
+       
+        <label class="item">is Speaking : <span class="badge">{{isSpeaking}}</span></label>        
+        <label class="item">Voice Intensity : <span class="badge">{{voiceDB}}</span></label>        
+
+        <button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}}</button> 
+        
+        <ion-list>
+            <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
+                <div class="buttons">
+                    
+                    <button class="button button-clear button-balanced" ng-click="recognize(chunk)">
+                        <i class="icon ion-play"></i>
+                    </button>
+                   
+                </div>                
+            </ion-item>
+        </ion-list>
+        
+        <ion-list>
+            <ion-item ng-repeat="item in recognizedItems track by $index">
+                <label>{{item.title}}<span class="badge">{{item.confidence}}</span></label>
+            </ion-item>
+        </ion-list>         
+        
+    </div>      
+  </ion-content>
+</ion-view>

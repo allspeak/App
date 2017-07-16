@@ -87,7 +87,13 @@ function StringSrv()
         }
     };     
 
-
+    
+    service.formatDate = function(inputFormat) 
+    {
+        function pad(s) { return (s < 10) ? "0" + s.toString() : s.toString(); }
+        var d = new Date();
+        return pad(d.getDate()) + pad(d.getMonth()+1) + d.getFullYear().toString() + "_" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+    };   
     return service;
 };
 

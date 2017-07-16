@@ -28,13 +28,18 @@
     <script src="js/services/RemoteSrv.js"></script>    
     <script src="js/services/SpeechDetectionSrv.js"></script>    
     <script src="js/services/VocabularySrv.js"></script>
+    <script src="js/services/SequencesRecordingSrv.js"></script>
+    <script src="js/services/EnumsSrv.js"></script>
+    <script src="js/services/UITextsSrv.js"></script>
+    <script src="js/services/SubjectsSrv.js"></script>
     
     <script src="js/controllers/InitCtrl.js"></script>    
     <script src="js/controllers/HomeCtrl.js"></script>    
     <script src="js/controllers/AmplifierCtrl.js"></script>    
-    <script src="js/controllers/RecordCtrl.js"></script>    
+    <script src="js/controllers/SequenceRecordCtrl.js"></script>    
     <script src="js/controllers/LoginCtrl.js"></script>      
     <script src="js/controllers/VocabularyCtrl.js"></script>  
+    <script src="js/controllers/VoiceBankCtrl.js"></script>  
     <script src="js/controllers/TrainingCtrl.js"></script>  
     <script src="js/controllers/DeviceCtrl.js"></script>  
     <script src="js/controllers/RecognitionCtrl.js"></script>  
@@ -46,20 +51,13 @@
     <script src="js/utility/StringSrv.js"></script>  
     <script src="js/utility/WavAudioEncoder.min.js"></script>  
     <script src="js/utility/checklist_model.js"></script>  
-
-    <!--<script src="js/services/TrainingSrv.js"></script>-->      
-    <!--<script src="js/components/ChartCmp.js"></script>-->
-    <!--<script src="js/controllers/SetupAudioInputCompCtrl.js"></script>-->  
-    <!--<script src="lib/vad/vad.js"></script>-->
-    <!--<script src="lib/hark/hark.bundle.js"></script>-->
-    <!--<script src="lib/ngCordova/dist/ng-cordova.js"></script>-->     
-    
   </head>
   <body ng-app="main_module">
       
   <ion-nav-bar class="bar-positive">
-    <ion-nav-back-button class="button-clear">
-      <i class="ion-arrow-left-c"></i> Back
+    <ion-nav-back-button class="button-clear" ui-sref="home">
+      <!--<i class="ion-arrow-left-c"></i>-->
+      Home
     </ion-nav-back-button>
   </ion-nav-bar>
    

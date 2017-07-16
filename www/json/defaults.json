@@ -4,18 +4,19 @@
         "assisted": 0,
         "plugin_interface_name"     : "window.speechrecognition",
         "file_system"               : {
-            "output_data_root"          : "externalRootDirectory",
-            "app_folder"                : "AllSpeak",
-            "audio_folder"              : "AllSpeak/audiofiles",
-            "audio_temp_folder"         : "AllSpeak/audiofiles/temp",
-            "tf_models_folder"          : "AllSpeak/models",
-            "tf_default_model"          : "AllSpeak/models/default_it",
-            "json_folder"               : "AllSpeak/json",
-            "config_filerel_path"       : "AllSpeak/json/config.json",
-            "vocabulary_filerel_path"   : "AllSpeak/json/vocabulary.json",
-            "temp_folder"               : "AllSpeak/temp",
-            "vocabulary_www_path"       : "./json/vocabulary.json",
-            "resolved_odp"              : ""
+            "output_data_root"                  : "externalRootDirectory",
+            "app_folder"                        : "AllSpeak",
+            "audio_folder"                      : "AllSpeak/audiofiles",
+            "voicebank_folder"                  : "AllSpeak/voicebank",
+            "audio_temp_folder"                 : "AllSpeak/audiofiles/temp",
+            "tf_models_folder"                  : "AllSpeak/models",
+            "tf_default_model"                  : "AllSpeak/models/default_it",
+            "json_folder"                       : "AllSpeak/json",
+            "config_filerel_path"               : "AllSpeak/json/config.json",
+            "vocabulary_filerel_path"           : "AllSpeak/json/vocabulary.json",
+            "temp_folder"                       : "AllSpeak/temp",
+            "global_vocabulary_www_path"        : "./json/global_vocabulary.json",
+            "resolved_odp"                      : ""
         },
         "audio_configurations"      : {
             "recognition"                       : {

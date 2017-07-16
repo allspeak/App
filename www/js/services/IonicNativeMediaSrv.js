@@ -7,7 +7,7 @@ function IonicNativeMediaSrv($cordovaMediaPlugin)
 {
     var service = {};
     
-    service.playback_file      = "";
+    service.playback_file      = null;
 
     service.controller         = {};
     //=============================================
@@ -44,7 +44,8 @@ function IonicNativeMediaSrv($cordovaMediaPlugin)
     };    
     service.setVolume = function (volume)
     {
-        service.playback_file.setVolume(volume);
+        if(service.playback_file)
+            service.playback_file.setVolume(volume);
     };    
     
     //=============================================

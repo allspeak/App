@@ -104,24 +104,61 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
 //        return $cordovaFile.writeExistingFile(service.resolved_output_data_root, relative_path, content)
 //        .then(function(){ return 1;}).catch(function(error){ console.log(error.message);  return $q.reject(error);  });
     };    
+    
+    //--------------------------------------------------------------------------
+    // delete target file if existing && force, rename source
+    service.renameFile = function(source_relative_path, target_relative_path, force)
+    {
+        if(force == null) force = false;
+        return service.existFile(target_relative_path)
+        .then(function(exist){
+            if(exist && force)          return service.deleteFile(target_relative_path);
+            else if(!exist)             return 1;
+            else if(exist && !force)    return -1;
+        })
+        .then(function(success){
+            if(success) return $cordovaFile.moveFile(service.resolved_output_data_root, source_relative_path, service.resolved_output_data_root, target_relative_path);
+            else        return success;
+        })
+        .catch(function(error){
+            console.log("FileSystemSrv::substituteFile" + JSON.stringify(error));            
+            return $q.reject(error);
+        });        
+    };
+    
     //--------------------------------------------------------------------------
     service.deleteFile = function(relative_path)
     {
-        return $cordovaFile.removeFile(service.resolved_output_data_root, relative_path)
-        .then(function(success){
-            return success;
+        return service.existFile(relative_path)
+        .then(function(exist){        
+            if (exist)  return $cordovaFile.removeFile(service.resolved_output_data_root, relative_path);
+            else        return 1;
         })
         .catch(function(error){
             console.log("FileSystemSrv::deleteFile" + JSON.stringify(error));            
             return $q.reject(error);
         });
     };
-    
+ 
     // =========================================================================
     // DIRECTORIES
     // =========================================================================    
+    // invoke the success callback (then) returning 1 or 0 instead of invoking the success or error callbacks
+    service.existDir = function(relative_path)
+    {
+        return $cordovaFile.checkDir(service.resolved_output_data_root, relative_path)
+        .then(function (success) {
+            return 1;  
+        })
+        .catch(function (error)   {
+            return $q.resolve(0);
+        });        
+    };
+        
+    
     service.createDir = function(relative_path, force)
     {
+        if(force == null)   force = 0;
         if (!force)
         {
             return $cordovaFile.checkDir(service.resolved_output_data_root, relative_path)

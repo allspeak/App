@@ -47,7 +47,8 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
         service.config.checks.isConnected               = false;        
     };
     service.initConfigStructure();    
-    
+   
+    service.postRecordState                             = "";   //it stores the state to reach after audio record (can be voicebank or training)
     //====================================================================================================================
     service.init = function()
     {
@@ -132,6 +133,9 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
         .then(function(){        
             return FileSystemSrv.createDir(default_file_system.audio_folder, false);
         })
+        .then(function(){        
+            return FileSystemSrv.createDir(default_file_system.voicebank_folder, false);
+        })
         .then(function(){
             return FileSystemSrv.createDir(default_file_system.json_folder, false);
         })
@@ -210,14 +214,18 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
     };
 
     //---------------------------------------------------------------------------------------------------------------------
-    // get vocabulary list
+    // get global and local vocabulary list
+    // check if voice bank audio files are present
     service.getVocabulary = function()
     {
         default_filesystem = service.config.defaults.file_system;
         
-        return VocabularySrv.getHttpVocabulary(default_filesystem.vocabulary_www_path)
+        return VocabularySrv.getGlobalVocabulary(default_filesystem.global_vocabulary_www_path)
         .then(function(content){
-            service.config.defaults.vocabulary = content;
+            return VocabularySrv.checkVocabularyAudioPresence(content, service.getVoiceBankFolder())
+        })
+        .then(function(voc){
+            service.config.defaults.global_vocabulary = voc;
             return FileSystemSrv.existFile(default_filesystem.vocabulary_filerel_path);
         })
         .then(function(exist)
@@ -230,15 +238,13 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
             if(content)
             {
                 service.config.checks.hasVocabulary = true;
-                service.config.vocabulary           = content;
+                service.config.vocabulary           = VocabularySrv.checkVocabularyAudioPresence(content, service.getVoiceBankFolder());;
             }
             else service.config.checks.hasVocabulary = false;
         })       
         .catch(function(error){ 
             return $q.reject(error);              
         });
-        
-        
     }; 
     //---------------------------------------------------------------------------------------------------------------------
     // check if sentences audio is present, update json file.
@@ -292,11 +298,16 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
     }; 
     
     //==========================================================================
-    // GET INTERNALSTATUS
+    // GET INTERNAL STATUS
     //==========================================================================    
     service.getAudioFolder = function()
     {
         return service.config.defaults.file_system.audio_folder;
+    }; 
+    
+    service.getVoiceBankFolder = function()
+    {
+        return service.config.defaults.file_system.voicebank_folder;
     }; 
     
     service.getAudioTempFolder = function()
@@ -328,6 +339,25 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
     {
         return service.config.appConfig.tf.bLoaded;
     };    
+    
+    service.getGlobalVocabularyStatus = function()
+    {
+        return VocabularySrv.checkVocabularyAudioPresence(service.config.defaults.global_vocabulary, service.getVoiceBankFolder())
+        .then(function(voc){
+            service.config.defaults.global_vocabulary = voc;
+            return voc;
+        });
+    };    
+    
+    service.getPostRecordState = function()
+    {
+        return service.postRecordState;
+    };
+    
+    service.setPostRecordState = function(state)
+    {
+        service.postRecordState = state;
+    };
     
     //==========================================================================
     // MERGE CURRENT CONFIG WITH POSSIBLE OVERRIDDING FROM CALLER CONTROLLERS (DOES NOT CHANGE service.config.appConfig.audio_configurations[profile] !!!!)

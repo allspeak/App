@@ -1,0 +1,27 @@
+<ion-view view-title="Voice Bank">
+    
+    <ion-nav-buttons side="right">
+        <button class="button" ng-disabled="isBusy" ng-click="recordAudioSequence()">REGISTRA
+            <!--<i class="icon ion-mic-a"></i>-->
+        </button>
+    </ion-nav-buttons>     
+    
+    <ion-content>
+     
+        <ion-list>
+            <ion-item class="item-button-right" ng-repeat="file in voicebankSentences"> {{file.title}}
+                <div class="buttons">
+                    <button class="button button-clear button-balanced" ng-disabled="isBusy" ng-show="file.existwav" ng-click="playAudio(file.filename)">
+                        <i class="icon ion-play"></i>
+                    </button>
+                    <button class="button button-clear button-assertive" ng-disabled="isBusy" ng-click="recordAudio(file.id)">
+                        <i class="icon ion-record"></i>
+                    </button>
+                    <button class="button button-clear button-assertive" ng-disabled="isBusy" ng-disabled="isBusy" ng-show="file.existwav" ng-click="deleteAudio(file.filename)">
+                        <i class="icon ion-trash-a"></i>
+                    </button>
+                </div>                
+            </ion-item>
+        </ion-list>
+    </ion-content>
+</ion-view>

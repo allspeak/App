@@ -1,0 +1,41 @@
+<ion-view view-title="record" hide-back-button="true">
+    
+    <ion-content>
+
+        
+        <label class="item" >{{sentence.title}}</label>
+        
+        <div class="card" ng-if="preserveOriginal">   
+            <div class="item item-divider">VERSIONE ATTUALE</div>            
+            <div class="button-bar">        
+                <button class="button button-block button button-balanced icon icon-only ion-play" ng-disabled="disablePlayOld || !existOriginalFile" ng-click="playAudioOld()"/>
+                <button class="button button-block button button-energized icon icon-only ion-pause" ng-disabled="disablePauseOld || !existOriginalFile" ng-click="pauseAudio()"/>
+                <button class="button button-block button button-royal icon icon-only ion-stop" ng-disabled="disableStopOld || !existOriginalFile" ng-click="stopAudio()"/>
+            </div> 
+        </div>
+        
+        <div class="card">   
+            <div class="item item-divider">VERSIONE NUOVA</div>                 
+            <button class="button button-block button-large button-assertive icon icon-left ion-mic-a" ng-click="startRecording()">{{recButtonLabel}}</button>       
+            <div class="button-bar">        
+                <button class="button button-block button button-balanced icon icon-only ion-play" ng-disabled="disablePlayNew || !existNewFile" ng-click="playAudioNew()"/>
+                <button class="button button-block button button-energized icon icon-only ion-pause" ng-disabled="disablePauseNew || !existNewFile" ng-click="pauseAudio()"/>
+                <button class="button button-block button button-royal icon icon-only ion-stop" ng-disabled="disableStopNew || !existNewFile" ng-click="stopAudio()"/>
+            </div>         
+        </div>
+            
+        <!--<label class="item">Voice Activity:<span class="badge">{{voice_power}}</span></label>-->        
+<!--        <label class="item">VOLUME<span class="badge">{{volume}}</span></label>-->
+        <div class="item range">
+            <i class="icon ion-volume-low"></i>
+            <input type="range" name="volume" ng-model="volume" ng-change="onChangeVolume(volume)">
+            <i class="icon ion-volume-high"></i>
+        </div>
+        
+        <div class="button-bar">        
+            <button class="button button-block button-large button-balanced icon icon-left ion-android-archive" ng-disabled="!existNewFile" ng-click="confirm()">{{nextButtonLabel}}</button>       
+            <button class="button button-block button-large button-energized icon icon-left ion-arrow-left-a" ng-if="isSequence" ng-click="skip()">{{skipButtonLabel}}</button>       
+            <button class="button button-block button-large button-assertive icon icon-left ion-arrow-left-a" ng-click="cancel()">{{exitButtonLabel}}</button>       
+        </div>         
+  </ion-content>
+</ion-view>

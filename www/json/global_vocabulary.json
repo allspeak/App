@@ -1,0 +1,30 @@
+{
+    "vocabulary":
+    [
+        { "title": "Ho fame",                   "id": 1, "filename": "ho_fame.wav", "existwav": 0},
+        { "title": "Ho sete",                   "id": 2, "filename": "ho_sete.wav", "existwav": 0 },
+        { "title": "Ho sonno",                  "id": 3, "filename" : "ho_sonno.wav", "existwav": 0},
+        { "title": "Ho caldo",                  "id": 4, "filename" : "ho_caldo.wav", "existwav": 0},
+        { "title": "Ho freddo",                 "id": 5, "filename" : "ho_freddo.wav", "existwav": 0},
+        { "title": "Devo andare in bagno",      "id": 6, "filename" : "devo_andare_in_bagno.wav", "existwav": 0},
+        { "title": "Voglio cambiare posizione", "id": 7, "filename" : "voglio_cambiare_posizione.wav", "existwav": 0},
+        { "title": "Ho dolore",                 "id": 8, "filename" : "ho_dolore.wav", "existwav": 0},
+        { "title": "Ciao",                      "id": 9, "filename" : "ciao.wav", "existwav": 0},
+        { "title": "Come stai?",                "id": 10, "filename" : "come_stai.wav", "existwav": 0},
+        { "title": "no",                        "id": 11, "filename" : "no.wav", "existwav": 0},
+        { "title": "Ci vediamo domani",         "id": 12, "filename" : "ci_vediamo_domani.wav", "existwav": 0},
+        { "title": "Chiama ...",                "id": 13, "filename" : "chiama.wav", "existwav": 0},
+        { "title": "Salutami ...",              "id": 14, "filename" : "salutami.wav", "existwav": 0},
+        { "title": "Ti voglio bene",            "id": 15, "filename" : "ti_voglio_bene.wav", "existwav": 0},
+        { "title": "Ho troppa saliva",          "id": 16, "filename" : "ho_troppa_saliva.wav", "existwav": 0},
+        { "title": "Ho bisogno di lavarmi",     "id": 17, "filename" : "ho_bisogno_di_lavarmi.wav", "existwav": 0},
+        { "title": "Grazie",                    "id": 18, "filename" : "grazie.wav", "existwav": 0},
+        { "title": "Prego",                     "id": 19, "filename" : "prego.wav", "existwav": 0},
+        { "title": "Sono arrabbiato",           "id": 20, "filename" : "sono_arrabbiato.wav", "existwav": 0},
+        { "title": "Sono triste",               "id": 21, "filename" : "sono_triste.wav", "existwav": 0},
+        { "title": "Tutto bene!",               "id": 22, "filename" : "tutto_bene.wav", "existwav": 0},
+        { "title": "Passami il telefono",       "id": 23, "filename" : "passami_il_telefono.wav", "existwav": 0},
+        { "title": "Voglio stare solo",         "id": 24, "filename" : "voglio_star_solo.wav", "existwav": 0},
+        { "title": "si",                        "id": 25, "filename" : "si.wav", "existwav": 0}
+    ]
+}

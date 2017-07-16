@@ -47,7 +47,8 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
         pluginInterface                         = InitAppSrv.getPlugin();            
         $scope.captureParams.nDataDest          = ($scope.saveSentences ? pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_RAWDB : pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_DB);
     
-        $scope.chunkSaveParams.output_relpath   = InitAppSrv.getAudioTempFolder(); // "AllSpeak/audiofiles/temp"
+//        $scope.chunkSaveParams.output_relpath   = InitAppSrv.getAudioTempFolder(); // "AllSpeak/audiofiles/temp"
+        $scope.chunkSaveParams.output_relpath   = InitAppSrv.getAudioFolder(); // "AllSpeak/audiofiles"
         $scope.audio_files_resolved_root        = FileSystemSrv.getResolvedOutDataFolder() + $scope.chunkSaveParams.output_relpath;   // FileSystemSrv.getResolvedOutDataFolder() ends with a slash: "file:///storage/emulated/0/"
         $scope.relpath_root                     = $scope.chunkSaveParams.output_relpath;
 
@@ -320,6 +321,18 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
             return 0;
         });
     };    
+    //=====================================================================================       
+    // DEBUG 
+    //=====================================================================================        
+    $scope.recognize = function(filename)
+    {      
+        cordova.exec($scope.onRecognitionResults, $scope.onRecognitionError,"SpeechRecognitionPlugin", "recognizeCepstraFile", [$scope.chunkSaveParams.output_relpath + "/" + filename]);
+    };
+    
+    $scope.onRecognitionError = function(error)
+    { 
+        
+    };   
     //=====================================================================================        
 };
 controllers_module.controller('RecognitionCtrl', RecognitionCtrl)   

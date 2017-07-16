@@ -59,7 +59,7 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
         {
             $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
             .then(function(res) {
-                if (res) ionic.Platform.exitApp();
+//                if (res) ionic.Platform.exitApp();
             });
         }
         else        $ionicHistory.goBack();
@@ -92,7 +92,7 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
     })
     .state('recognition', {
         url: '/recognition',
-        templateUrl: 'templates/recognition.html',
+        templateUrl: 'templates/recognition_debug.html',
         controller: 'RecognitionCtrl'
     })
     .state('amplifier', {
@@ -112,17 +112,10 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
                     }
                 }
     })
-    .state('record', {
-        url: '/record',
-        templateUrl: 'templates/record.html',
-        controller: 'RecordCtrl',
-        resolve:{
-                    vocabulary :function(VocabularySrv)
-                    {
-                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
-                        return VocabularySrv.getVocabulary(); 
-                    }
-                }
+    .state('record_sequence', {
+        url: '/record/:modeId/:sentenceId/:subjId',
+        templateUrl: 'templates/record_sequence.html',
+        controller: 'SequenceRecordCtrl'
     })
     .state('vocabulary', {
         url: '/vocabulary',
@@ -135,6 +128,11 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
                         return VocabularySrv.promise; 
                     }
                 }
+    })
+    .state('voicebank', {
+        url: '/voicebank',
+        templateUrl: 'templates/voicebank.html',
+        controller: 'VoiceBankCtrl'
     })
     .state('settings', {
         url: '/settings',
