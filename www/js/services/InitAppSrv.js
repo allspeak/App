@@ -23,7 +23,7 @@
  */
 
 
-function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
+function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
 {
     var service                     = {}; 
     service.default_json_www_path   = "./json/defaults.json";
@@ -42,7 +42,7 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
         service.config.vocabulary                       = [];
         service.config.defaults                         = {};        
         service.config.checks                           = {};        
-        service.config.checks.hasVocabulary             = false;        
+        service.config.checks.hasTrainVocabulary        = false;        
         service.config.checks.hasModelTrained           = false;        
         service.config.checks.isConnected               = false;        
     };
@@ -50,27 +50,28 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
    
     service.postRecordState                             = "";   //it stores the state to reach after audio record (can be voicebank or training)
     //====================================================================================================================
-    service.init = function()
+    // permissions-loadDefaults-createfolders-loadconfig-loadvocabularies-loadTF-setupAudioDevices-loginServer
+    service.initApp = function()
     {
         return service.initPermissions()
         .then( function() {
             return service.loadDefaults();        
         })
         .then( function() {
-            return service.initFileSystem();
+            return service.createFileSystemDirs();
         })
         .then( function() {
-            return service.getVocabulary();
-        })
+            return service.loadConfigFile();        
+        })        
         .then( function() {
-            return service.checkAudioPresence();
+            return service.LoadVocabularies();
         })
         .then( function() {
             return service.loadTFModel();
         })
-//        .then( function() {
-//            return service.connectBluetoothDevices(service.config.appConfig.blt_devices);
-//        })
+        .then( function() {
+            return service.setupAudioDevices();
+        })        
         .then( function(){
             if ( service.config.appConfig.assisted)
                 return service.loginServer(service.config.appConfig.remote);
@@ -87,7 +88,9 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
         });
     };
     //====================================================================================================================
-    // load json containing defaults info
+    // MAIN OPS
+    //====================================================================================================================
+    // check for permissions
     service.initPermissions = function()
     {
         service.permissions = window.cordova.plugins.permissions;
@@ -101,8 +104,7 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
             errorCallback = reject;
         }); 
 
-        service.permissions.checkPermission(service.permissionsList, hasPermissionSuccess, null);
-//        function error() { console.warn('Camera or Accounts permission is not turned on'); }
+        service.permissions.checkPermission(service.permissionsList, hasPermissionSuccess, null);  //        function error() { console.warn('Camera or Accounts permission is not turned on'); }
 
         function hasPermissionSuccess( status ) {
           if( !status.hasPermission ) {
@@ -112,7 +114,7 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
         }        
         return promise;
     }; 
-    //====================================================================================================================
+
     // load json containing defaults info
     service.loadDefaults = function()
     {
@@ -123,12 +125,13 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
             return service.config;
         });        
     }; 
-    //---------------------------------------------------------------------------------------------------------------------
+
     // create (if not existent) the App folders
-    service.initFileSystem = function()
+    service.createFileSystemDirs = function()
     {
         default_file_system = service.config.defaults.file_system;
         FileSystemSrv.setUnresolvedOutDataFolder(default_file_system.output_data_root);
+        
             return FileSystemSrv.createDir(default_file_system.app_folder, false)
         .then(function(){        
             return FileSystemSrv.createDir(default_file_system.audio_folder, false);
@@ -148,46 +151,35 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
         .then(function(){
             return FileSystemSrv.createDir(default_file_system.audio_temp_folder, true);
         })
-        .then(function(){
-            // create, if absent, the file:///externalRootDirectory/app_folder/json/data.json otherwise read its content
-            return service.checkConfigFile(default_file_system.config_filerel_path);
-        })
-//        .then(function(){
-//            // create, if absent, the file:///externalRootDirectory/app_folder/json/vocabulary.json otherwise read its content
-//            return service.createVocabularyFile(default_file_system.vocabulary_filerel_path, default_file_system.vocabulary_www_path);
-//        })
         .catch(function(error){
             return $q.reject(error);
         });        
     };     
 
     // if config.json is not present in file:/// , create it
-    service.checkConfigFile = function(config_filerel_path)
+    service.loadConfigFile = function()
     {
-        return FileSystemSrv.existFile(config_filerel_path)
+        var localConfigJson = service.config.defaults.file_system.config_filerel_path;
+        return FileSystemSrv.existFile(localConfigJson)
         .then(function(exist)
         {
-            if(exist)
-            {
-                service.config.appConfig.device = HWSrv.getDevice();
-                return 1;
-            }
+            if(exist)   return FileSystemSrv.readJSON(localConfigJson)
             else
             {
                 // file://.../config.json file does not exist, copy defaults subfields to appConfig subfields 
-                service.fillAppConfig();
+                service._fillAppConfig();
                 var confString = JSON.stringify(service.config);
-                return FileSystemSrv.createFile(config_filerel_path, confString); 
+                return FileSystemSrv.createFile(localConfigJson, confString)
+                .then(function(){
+                    return FileSystemSrv.readJSON(localConfigJson)
+                })
             }
         })
-        .then(function()
-        {
-            return FileSystemSrv.readJSON(config_filerel_path)
-        })   
         .then(function(configdata)
         {
             service.config.appConfig        = configdata.appConfig;
             service.config.defaults         = configdata.defaults;
+            service.config.appConfig.device = HWSrv.getDevice();
             service.config.appConfig.plugin = eval(service.config.defaults.plugin_interface_name);
             if(service.config.appConfig.plugin == null)
                 return $q.reject({"message": "audioinput plugin is not present"});
@@ -197,91 +189,65 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
         });        
     };
     
-    service.fillAppConfig =  function()
-    {
-        service.config.appConfig.assisted                   = 0;
-        service.config.appConfig.plugin                     = null;
-        service.config.appConfig.file_system.resolved_odp   = FileSystemSrv.getResolvedOutDataFolder();  // ends with '/'
-        service.config.appConfig.audio_configurations       = service.config.defaults.audio_configurations;
-        service.config.appConfig.audio_devices              = service.config.defaults.audio_configurations;
-        service.config.appConfig.tf                         = service.config.defaults.tf;
-        service.config.appConfig.bluetooth                  = service.config.defaults.bluetooth;
-        service.config.appConfig.remote                     = service.config.defaults.remote;
-        service.config.appConfig.device                     = HWSrv.getDevice();
-        
-        service.config.appConfig.tf.sModelFileName          = service.config.appConfig.file_system.resolved_odp + service.config.defaults.file_system.tf_models_folder + "/" + service.config.appConfig.tf.sModelFileName + ".pb";
-        service.config.appConfig.tf.sLabelFileName          = service.config.appConfig.file_system.resolved_odp + service.config.defaults.file_system.tf_models_folder + "/" + service.config.appConfig.tf.sLabelFileName + ".txt";
-    };
-
-    //---------------------------------------------------------------------------------------------------------------------
-    // get global and local vocabulary list
+    // init the vocabulary service. set paths, get voicebank & train vocabulary lists
     // check if voice bank audio files are present
-    service.getVocabulary = function()
+    service.LoadVocabularies = function()
     {
-        default_filesystem = service.config.defaults.file_system;
-        
-        return VocabularySrv.getGlobalVocabulary(default_filesystem.global_vocabulary_www_path)
-        .then(function(content){
-            return VocabularySrv.checkVocabularyAudioPresence(content, service.getVoiceBankFolder())
-        })
-        .then(function(voc){
-            service.config.defaults.global_vocabulary = voc;
-            return FileSystemSrv.existFile(default_filesystem.vocabulary_filerel_path);
-        })
-        .then(function(exist)
-        {
-            if(exist)   return VocabularySrv.getVocabulary(default_filesystem.vocabulary_filerel_path);
-            else        return null;
-        })
-        .then(function(content)
-        {
-            if(content)
-            {
-                service.config.checks.hasVocabulary = true;
-                service.config.vocabulary           = VocabularySrv.checkVocabularyAudioPresence(content, service.getVoiceBankFolder());;
-            }
-            else service.config.checks.hasVocabulary = false;
+        return VocabularySrv.init(service.config.defaults.file_system)
+        .then(function(res){ 
+            service.config.checks.hasTrainVocabulary = res;
         })       
         .catch(function(error){ 
             return $q.reject(error);              
         });
     }; 
-    //---------------------------------------------------------------------------------------------------------------------
-    // check if sentences audio is present, update json file.
-    // returns : {input:[{"name": , "types":  , channels: }], output:[{"name": , "types":  , channels: }]}
-    service.checkAudioPresence = function()
+    
+    // load the user's trained model
+    service.loadTFModel = function()
     {
-        return service.config.appConfig.plugin.getAudioDevices()
+        return FileSystemSrv.existFile(service.getTFModelsFolder() + "/" + service.config.defaults.tf.sModelFileName + ".pb")
+        .then(function(exist)
+        {
+            if (!exist) return 0;
+            else 
+                return service.config.appConfig.plugin.loadTFModel(service.getTfCfg())
+                .then(function()
+                {
+                    return 1;
+                })
+                .catch(function(error){ 
+                    return $q.reject(error);              
+                });                
+        })
+        .then(function(res)
+        {
+            service.config.appConfig.tf.bLoaded = res;
+            service.config.checks.hasModelTrained = res;
+            return res;
+        })        
+        .catch(function(error){ 
+            service.config.appConfig.tf.bLoaded = false;
+            service.config.checks.hasModelTrained = false;
+            return $q.reject(error);              
+        });
+    };
+    
+    // get audiodevice list. find BTHS & BT SPEAKER, if found .. ready to be connected
+    service.setupAudioDevices = function()
+    {
+        return service.config.appConfig.plugin.getAudioDevices()// returns : {input:[{"name": , "types":  , channels: }], output:[{"name": , "types":  , channels: }]}
         .then(function(ad){
             service.config.appConfig.audio_devices = ad;
             return 1;
         })
+        .then( function() {
+            return service._connectBluetoothDevices(service.config.appConfig.blt_devices); // TODO:
+        })        
         .catch(function(error){ 
             return $q.reject(error);              
         });
     }; 
-    //---------------------------------------------------------------------------------------------------------------------
-    service.loadTFModel = function()
-    {
-        return service.config.appConfig.plugin.loadTFModel(service.getTfCfg())
-        .then(function()
-        {
-            service.config.appConfig.tf.bLoaded = true;
-            return 1;
-        })
-        .catch(function(error){ 
-            service.config.appConfig.tf.bLoaded = false;
-            return $q.resolve(0);              
-        });
-    }; 
-    //---------------------------------------------------------------------------------------------------------------------
-    // try to connect the registered devices
-    service.connectBluetoothDevices = function(blt_devices)
-    {
-        return 1; // ********************* TODO *****************
-        return HWSrv.connectBluetoothDevices(blt_devices);
-    }; 
-    //---------------------------------------------------------------------------------------------------------------------
+
     service.loginServer = function(remote)
     {
         // ********************* TODO *****************
@@ -297,6 +263,31 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
         });        
     }; 
     
+   //==========================================================================
+   // PRIVATE
+   //==========================================================================
+    service._fillAppConfig =  function()
+    {
+        service.config.appConfig.assisted                   = 0;
+        service.config.appConfig.plugin                     = null;
+        service.config.appConfig.file_system.resolved_odp   = FileSystemSrv.getResolvedOutDataFolder();  // ends with '/'
+        service.config.appConfig.audio_configurations       = service.config.defaults.audio_configurations;
+        service.config.appConfig.audio_devices              = service.config.defaults.audio_configurations;
+        service.config.appConfig.tf                         = service.config.defaults.tf;
+        service.config.appConfig.bluetooth                  = service.config.defaults.bluetooth;
+        service.config.appConfig.remote                     = service.config.defaults.remote;
+        service.config.appConfig.device                     = HWSrv.getDevice();
+        
+        service.config.appConfig.tf.sModelFilePath          = service.config.appConfig.file_system.resolved_odp + service.config.defaults.file_system.tf_models_folder + "/" + service.config.appConfig.tf.sModelFileName + ".pb";
+        service.config.appConfig.tf.sLabelFilePath          = service.config.appConfig.file_system.resolved_odp + service.config.defaults.file_system.tf_models_folder + "/" + service.config.appConfig.tf.sLabelFileName + ".txt";
+    };
+
+    // try to connect the registered devices
+    service._connectBluetoothDevices = function(blt_devices)
+    {
+        return 1; // ********************* TODO *****************
+        return HWSrv.connectBluetoothDevices(blt_devices);
+    }; 
     //==========================================================================
     // GET INTERNAL STATUS
     //==========================================================================    
@@ -340,13 +331,9 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
         return service.config.appConfig.tf.bLoaded;
     };    
     
-    service.getGlobalVocabularyStatus = function()
+    service.isTrainVocabularyPresent = function()
     {
-        return VocabularySrv.checkVocabularyAudioPresence(service.config.defaults.global_vocabulary, service.getVoiceBankFolder())
-        .then(function(voc){
-            service.config.defaults.global_vocabulary = voc;
-            return voc;
-        });
+        return service.config.checks.hasTrainVocabulary;
     };    
     
     service.getPostRecordState = function()
@@ -360,9 +347,10 @@ function InitAppSrv($http, $q, $ionicPopup, VocabularySrv, FileSystemSrv, HWSrv,
     };
     
     //==========================================================================
-    // MERGE CURRENT CONFIG WITH POSSIBLE OVERRIDDING FROM CALLER CONTROLLERS (DOES NOT CHANGE service.config.appConfig.audio_configurations[profile] !!!!)
+    // MERGE CURRENT CONFIG WITH POSSIBLE OVERRIDDING FROM CONTROLLERS' CALLS
+    // (DOES NOT CHANGE service.config.appConfig.audio_configurations[profile] !!!!)
     //==========================================================================
-    // receive some cfg params from the controller and overwrite the standard values, returns cfg object    
+    // receive some cfg params from the controller and overwrite the standard values, returns the full object (controllers params + other as default)
     service.getCaptureCfg = function (captureCfg, profile)
     {
         var cfg = service.config.appConfig.audio_configurations[profile];

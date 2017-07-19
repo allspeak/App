@@ -3,44 +3,188 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-//function TrainingCtrl($scope, VocabularySrv)
-function TrainingCtrl($scope, vocabulary)  //....use resolve 
+//function TrainingCtrl($scope, vocabulary)//....use resolve 
+//function TrainingCtrl($scope)  
+function TrainingCtrl($scope, $state, $ionicHistory, VocabularySrv, SequencesRecordingSrv, InitAppSrv, StringSrv, EnumsSrv)  
 {
-
-//  2  $scope.vocabulary = VocabularySrv.getVocabularyAsynch();
-    $scope.vocabulary = vocabulary;
-    $scope.status = 'Loading';
-//    VocabularySrv.getVocabulary()
-//            .then(function (v) {
-//                $scope.vocabulary = v;
-//                $scope.status = 'Ready';
-//            })
-//            .catch(function () {
-//                $scope.status = 'Error';
-//            })
-
-    $scope.deselectAll = function ()
+    
+    $scope.labelStartTraining           = "INIZIA TRAINING";
+    $scope.labelEditTrainVocabulary     = "cambia COMANDI";
+    $scope.labelSelectSentences         = "SELEZIONA COMANDI";
+    $scope.labelToggleSentencesEditTrainSequence    = "SCEGLI I COMANDI DA ADDESTRARE";
+    $scope.labelToggleSentencesEditTrainVocabulary  = "MODIFICA I COMANDI DA ADDESTRARE";
+    
+    $scope.labelToggleSentences                     = $scope.labelToggleSentencesEditTrainSequence;
+    
+    $scope.vocabulary           = [];
+    $scope.training_sequence    = []; 
+    
+    $scope.selectList           = true;
+    $scope.editTrainVocabulary  = false;
+    $scope.editTrainSequence         = false;
+    
+    $scope.$on("$ionicView.enter", function(event, data)
     {
-        for (var i = 0; i < $scope.vocabulary.length; i++) {
-            $scope.vocabulary[i].checked = 0;
-            $scope.vocabulary[i].selected = 0;
-        }
-        ;
+        $ionicHistory.clearHistory();
+        
+        $scope.relpath = InitAppSrv.getAudioFolder();
+        
+        return VocabularySrv.getTrainVocabulary()       // train_vocabulary could be empty => add promise
+        .then(function(voc)
+        {
+            $scope.vocabulary               = voc;
+            $scope.repetitionsCount         = SequencesRecordingSrv.getRepetitions(); 
+            $scope.selectedTrainingModality = SequencesRecordingSrv.getModalities()[1]; 
+            
+            if($scope.vocabulary.length)
+            {
+                $scope.selectList           = false;
+                $scope.editTrainVocabulary  = false;
+                $scope.editTrainSequence    = true;
+                
+                $scope.toogleSelectAll      = true;
+            }
+            else
+            {
+                $scope.selectList           = true;
+                $scope.editTrainVocabulary  = false;
+                $scope.editTrainSequence    = false;                
+            }
+        });
+    });
+
+    //-------------------------------------------------------------------
+    // $scope.selectList = true
+    //-------------------------------------------------------------------     
+    $scope.selectSentences = function() {
+        $scope.vocabulary           = VocabularySrv.getVoiceBankVocabulary();
+        $scope.labelButtonMulti     = "SALVA LISTA";
+        $scope.selectList           = false;
+        $scope.editTrainVocabulary  = true;
+        $scope.editTrainSequence    = false;
+    };    
+    //-------------------------------------------------------------------
+    // $scope.editTrainVocabulary = true
+    //-------------------------------------------------------------------  
+    $scope.doEditTrainVocabulary = function() 
+    {
+        $scope.selectList           = false;
+        $scope.editTrainVocabulary  = true;
+        $scope.editTrainSequence    = false; 
+        
+        $scope.toogleSelectAll      = false;
+        $scope.labelToggleSentences = $scope.labelToggleSentencesEditTrainVocabulary;
+        
+        // get all the registered sentences (when i want to train a new sentence, first I have to add to the voicebank vocabulary)
+        var voicebank_voc   = VocabularySrv.getVoiceBankVocabulary(); 
+        var len_vbv         = voicebank_voc.length;
+        var len_tv          = $scope.vocabulary.length;
+        
+        // I set all : voicebank_voc[:].checked = 0
+        // I copy actual $scope.vocabulary[i].checked => voicebank_voc
+        for(vbvs=0; vbvs<len_vbv; vbvs++)
+        {
+            voicebank_voc[vbvs].checked = false;
+            var vbv_id = voicebank_voc[vbvs].id;
+            for(tvs=0; tvs<len_tv; tvs++)
+                if(vbv_id == $scope.vocabulary[tvs].id)
+                    voicebank_voc[vbvs].checked = true;
+        }            
+        $scope.vocabulary = voicebank_voc;
     };
-
-    $scope.selectAll = function ()
-    {
-        for (var i = 0; i < $scope.vocabulary.length; i++) {
-            $scope.vocabulary[i].checked = 1;
-            $scope.vocabulary[i].selected = 1;
-        }
-        ;
+    
+    $scope.cancelEditList = function() {
+        $scope.selectList           = false;
+        $scope.editTrainVocabulary  = false;
+        $scope.editTrainSequence    = true;   
+        
+        $scope.toogleSelectAll      = true;        
+        $scope.labelToggleSentences = $scope.labelToggleSentencesEditTrainSequence;
+        
+        return VocabularySrv.getTrainVocabulary()       // should not be necessary => nevertheless, add promise
+        .then(function(voc)
+        {
+            $scope.vocabulary           = voc;
+        });       
     };
-
-    $scope.startTraining = function ()
+    
+    $scope.addSentence = function() {
+        var voicebank_voc = VocabularySrv.getVoiceBankVocabulary();
+    };
+    
+    $scope.selectAll = function(bool)
     {
+        for(s=0; s<$scope.vocabulary.length; s++)
+            $scope.vocabulary[s].checked = bool;
+    };
+    
+    $scope.saveTrainVocabulary = function(bool)
+    {
+        var selected_sentences = [];
+        
+        for(s=0; s<$scope.vocabulary.length; s++)
+            if($scope.vocabulary[s].checked)
+                selected_sentences.push($scope.vocabulary[s]);
+        $scope.vocabulary = selected_sentences;
+        return VocabularySrv.setTrainVocabulary($scope.vocabulary)
+        .then(function(){
+            $scope.selectList           = false;
+            $scope.editTrainVocabulary  = false;
+            $scope.editTrainSequence    = true;      
+            $scope.$apply();
+        })
+    };
+    
+   
+    
 
-    }
-
+    //-------------------------------------------------------------------
+    // $scope.editTrainSequence = true
+    //-------------------------------------------------------------------
+    $scope.decrementRepCount = function() {
+        $scope.repetitionsCount--;
+        if($scope.repetitionsCount < 1) $scope.repetitionsCount = 1;
+    };
+    
+    $scope.incrementRepCount = function() {
+        $scope.repetitionsCount++;
+    }; 
+    
+    $scope.startTraining = function() 
+    {
+        var sentences = $scope.vocabulary.map(function(item) { return (item.checked ? item : null)});
+        
+        if(sentences.length)
+        {
+            var record_relpath = $scope.relpath + "/training_" + StringSrv.formatDate();
+            return SequencesRecordingSrv.calculateSequence( sentences, 
+                                                            $scope.selectedTrainingModality.value, 
+                                                            $scope.repetitionsCount, 
+                                                            record_relpath,
+                                                            true)                      //  add #repetition to file name
+            .then(function(sequence)
+            {
+                $scope.training_sequence = sequence;    
+                InitAppSrv.setPostRecordState("training");
+                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING, sentenceId:  0});
+            });
+        }
+        else
+            alert("non hai scelto nessuna frase da addestrare");
+    };
+    
+    //-------------------------------------------------------------------
+    //-------------------------------------------------------------------
+    //-------------------------------------------------------------------
+    // used to select default comobobox value
+    $scope.selectObjByValue = function(value, objarray)
+    {
+        var len = objarray.length;
+        for (i=0; i<len; i++) 
+           if(objarray[i].value == value)
+               return objarray[i];
+    }; 
+    //-------------------------------------------------------------------
+    
 }
 controllers_module.controller('TrainingCtrl', TrainingCtrl)

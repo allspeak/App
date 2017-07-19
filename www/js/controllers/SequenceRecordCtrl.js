@@ -19,7 +19,7 @@ audio files are automatically saved after captured, in order to may listen to th
 - the save button thus simply go back
 - the cancel button, first delete the file then go back
  */
-function SequenceRecordCtrl($scope, $state, $ionicPopup, $ionicLoading, SpeechDetectionSrv, InitAppSrv, VocabularySrv, FileSystemSrv, StringSrv, IonicNativeMediaSrv, SequencesRecordingSrv, MfccSrv, EnumsSrv, UITextsSrv, SubjectsSrv)
+function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicLoading, SpeechDetectionSrv, InitAppSrv, VocabularySrv, FileSystemSrv, StringSrv, IonicNativeMediaSrv, SequencesRecordingSrv, MfccSrv, EnumsSrv, UITextsSrv, SubjectsSrv)
 {
     // calling params
     $scope.mode_id          = -1;        // ctrl modality MODE_SINGLE_RECORD, MODE_SEQUENCE_RECORD, MODE_SINGLE_TRAINING, MODE_SEQUENCE_TRAINING
@@ -86,8 +86,14 @@ function SequenceRecordCtrl($scope, $state, $ionicPopup, $ionicLoading, SpeechDe
     //==================================================================================================================
     // INIT PAGE
     //==================================================================================================================
+    
     $scope.$on("$ionicView.enter", function(event, data)
     {
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(e)
+        {
+            e.preventDefault();
+        }, 100);           
+        
         $scope.resetFlags();        
         if(data.stateParams.modeId != null)
             $scope.mode_id         = parseInt(data.stateParams.modeId);
@@ -117,7 +123,7 @@ function SequenceRecordCtrl($scope, $state, $ionicPopup, $ionicLoading, SpeechDe
                 $scope.exitButtonLabel      = UITextsSrv.RECORD.BTN_EXIT_SINGLE;    
 
                  // sentence.filename is a file name (e.g. "ho_sete.wav")
-                $scope.sentence             = VocabularySrv.getBankSentence($scope.sentence_id);
+                $scope.sentence             = VocabularySrv.getVoiceBankSentence($scope.sentence_id);
                 
                 if ($scope.sentence)
                 {
@@ -151,8 +157,8 @@ function SequenceRecordCtrl($scope, $state, $ionicPopup, $ionicLoading, SpeechDe
                 $scope.preserveOriginal     = false;   
                 $scope.isSequence           = true;
                 
-                $scope.nextButtonLabel      = UITextsSrv.service.RECORD.BTN_NEXT_SEQUENCE;
-                $scope.exitButtonLabel      = UITextsSrv.service.RECORD.BTN_EXIT_SEQUENCE;                   
+                $scope.nextButtonLabel      = UITextsSrv.RECORD.BTN_NEXT_SEQUENCE;
+                $scope.exitButtonLabel      = UITextsSrv.RECORD.BTN_EXIT_SEQUENCE;                   
                 $scope.enableAbortButton    = true;                
                 
                 // sentence.filename is a rel path (AllSpeak/voicebank/filename.wav or AllSpeakVoiceRecorder/audio_files/training_XXXX/filename.wav
@@ -193,6 +199,10 @@ function SequenceRecordCtrl($scope, $state, $ionicPopup, $ionicLoading, SpeechDe
             $scope.$apply();
         });
     });
+    
+   $scope.$on('$ionicView.leave', function(){
+        $scope.deregisterFunc();
+    });    
     //===================================================================================================================================================
     //===================================================================================================================================================
     //===================================================================================================================================================

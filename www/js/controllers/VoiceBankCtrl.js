@@ -2,7 +2,7 @@
 manage the following object
 sentence = { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename": "ho_sete.wav", "existwav": 0 }
 */
-function VoiceBankCtrl($scope, $state, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, EnumsSrv, SequencesRecordingSrv)  
+function VoiceBankCtrl($scope, $ionicPlatform, $state, $ionicHistory, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, EnumsSrv, VocabularySrv, SequencesRecordingSrv)  
 {
     $scope.subject          = null;
     $scope.subject_label    = "";
@@ -15,15 +15,28 @@ function VoiceBankCtrl($scope, $state, FileSystemSrv, IonicNativeMediaSrv, InitA
     //==================================================================================================================
     $scope.$on("$ionicView.enter", function(event, data)
     {
+        $ionicHistory.clearHistory();
         $scope.rel_rootpath         = InitAppSrv.getVoiceBankFolder(); 
         $scope.resolved_rootpath    = FileSystemSrv.getResolvedOutDataFolder() + $scope.rel_rootpath;
         $scope.refreshAudioList();
+        
+        // ask user's confirm after pressing back (thus trying to exit from the App)
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
+        {
+            $state.go("home");
+        }, 100);          
     });
+    
+    $scope.$on('$ionicView.leave', function(){
+        $scope.deregisterFunc();
+    });    
+
     
     $scope.refreshAudioList = function()
     {
         $scope.isBusy    = 1;
-        return InitAppSrv.getGlobalVocabularyStatus()
+//        return InitAppSrv.getGlobalVocabularyStatus()
+        return VocabularySrv.checkVoiceBankAudioPresence()
         .then(function(voc){
             $scope.voicebankSentences = voc;
             $scope.isBusy    = 0;

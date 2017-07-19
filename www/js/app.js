@@ -21,7 +21,7 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
 
             // load init params, other json files, and init services. check if plugin is present
             // TODO: evaluate whether init the service here in order to have a callback with possible errors, instead of loading on the APK onLoad 
-            InitAppSrv.init()
+            InitAppSrv.initApp()
             .then(function(success)
             {
                 //$cordovaSplashscreen.hide();   
@@ -34,7 +34,7 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
                     template: "L\'applicazione verra chiusa per il seguente errore:\n" + error.message
                 })
                 .then(function() {
-                    ionic.Platform.exitApp();
+//                    ionic.Platform.exitApp();
                 });                
                 console.log(error.message);
             });
@@ -48,30 +48,7 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
             StatusBar.styleDefault();
         }
     });
-})
-.run(function($ionicPlatform, $ionicHistory, $ionicPopup, $state) 
-{
-    $ionicPlatform.registerBackButtonAction(function()
-    {
-        // delete history once in the home and 
-        // ask for user confirm after pressing back (thus trying to exit from the App)
-        if($state.current.name == "home") 
-        {
-            $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
-            .then(function(res) {
-//                if (res) ionic.Platform.exitApp();
-            });
-        }
-        else        $ionicHistory.goBack();
-    }, 100);
 });
-//            .run(function($ionicPlatform) {
-//                $ionicPlatform.ready(function() 
-//                {
-//
-//                });
-//            });            
-            
 
 main_module.config(function($stateProvider, $urlRouterProvider) {
   
@@ -103,31 +80,12 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
     .state('training', {
         url: '/training',
         templateUrl: 'templates/training.html',
-        controller: 'TrainingCtrl',
-        resolve:{
-                    vocabulary :function(VocabularySrv)
-                    {
-                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
-                        return VocabularySrv.getVocabulary(); 
-                    }
-                }
+        controller: 'TrainingCtrl'
     })
     .state('record_sequence', {
         url: '/record/:modeId/:sentenceId/:subjId',
         templateUrl: 'templates/record_sequence.html',
         controller: 'SequenceRecordCtrl'
-    })
-    .state('vocabulary', {
-        url: '/vocabulary',
-        templateUrl: 'templates/vocabulary.html',
-        controller: 'VocabularyCtrl',
-        resolve:{
-                    'MyServiceData':function(VocabularySrv)
-                    {
-                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
-                        return VocabularySrv.promise; 
-                    }
-                }
     })
     .state('voicebank', {
         url: '/voicebank',
@@ -150,17 +108,6 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
             }
         }
     })
-//    .state('settings.setup_input', {
-//        url: '/setup_input',
-//        views: 
-//        {
-//        'setupinput-settings' : 
-//            {
-//                templateUrl: 'templates/settings_setup_audioinput_debug.html',  // templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
-//                controller: 'SetupAudioInputCtrl'                               // controller: 'SetupAudioInputCompCtrl'
-//            }
-//        }
-//    })
     .state('settings.recognition', {
         url: '/recognition_settings',
         views: 
@@ -200,6 +147,38 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
 });
 
 
+
+
+//    .state('vocabulary', {
+//        url: '/vocabulary',
+//        templateUrl: 'templates/vocabulary.html',
+//        controller: 'VocabularyCtrl',
+//        resolve:{
+//                    'MyServiceData':function(VocabularySrv)
+//                    {
+//                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
+//                        return VocabularySrv.promise; 
+//                    }
+//                    vocabulary :function(VocabularySrv)
+//                    {
+//                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
+//                        return VocabularySrv.getVocabulary(); 
+//                    }//                    
+//                    
+//                    
+//                }
+//    })
+//    .state('settings.setup_input', {
+//        url: '/setup_input',
+//        views: 
+//        {
+//        'setupinput-settings' : 
+//            {
+//                templateUrl: 'templates/settings_setup_audioinput_debug.html',  // templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
+//                controller: 'SetupAudioInputCtrl'                               // controller: 'SetupAudioInputCompCtrl'
+//            }
+//        }
+//    })
 //    .state('sentence_train', {
 //        url: '/train/:sentenceId',
 //        templateUrl: 'templates/sentence_train.html',

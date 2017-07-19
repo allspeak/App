@@ -64,7 +64,7 @@
             "nInputParams"          : 792,
             "nContextFrames"        : 11,
             "nItems2Recognize"      : 25,
-            "sModelFileName"        : "/storage/emulated/0/AllSpeak/models/trained.pb",   
+            "sModelFilePath"        : "/storage/emulated/0/AllSpeak/models/trained.pb",   
             "sLabelFileName"        : "/storage/emulated/0/AllSpeak/models/trained.txt",   
             "sInputNodeName"        : "inputs/I",   
             "sOutputNodeName"       : "SMO",             

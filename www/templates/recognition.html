@@ -1,11 +1,18 @@
-<ion-view view-title="Recognition">
+<ion-view view-title="RICONOSCIMENTO">
     
-    
+ <ion-nav-bar class="bar-positive">    
+    <ion-nav-back-button class="button-clear" ui-sref="home">
+        <i class="ion-arrow-left-c"></i>Home
+    </ion-nav-back-button> 
+     
     <ion-nav-buttons side="right">
         <button class="button" ng-disabled="isvoicemonitoring" ng-click="go2settings()">
             <i class="icon ion-mic-a"></i>
         </button>
     </ion-nav-buttons>      
+     
+  </ion-nav-bar>     
+    
    
   <ion-content>
     <div class="list">

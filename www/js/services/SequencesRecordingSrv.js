@@ -18,8 +18,7 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
     
     var training_modalities  = [{"label": "by sentences", "value":EnumsSrv.RECORD.BY_SENTENCE},
                                 {"label": "by repetitions", "value":EnumsSrv.RECORD.BY_REPETITIONS}];    
-    
-    
+
     clear = function()
     {
         sequence = [];

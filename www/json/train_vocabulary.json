@@ -1,5 +1,5 @@
 {
-    "vocabulary":
+    "train_vocabulary":
     [
         { "title": "Ho fame", "id": 1, "label": "ho_fame", "filename": "ho_fame.wav", "existwav": 0, "firstValidId": 0},
         { "title": "Ho sete", "id": 2, "label": "ho_sete", "filename": "ho_sete.wav", "existwav": 0, "firstValidId": 0 },

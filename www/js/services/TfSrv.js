@@ -41,9 +41,9 @@ function TfSrv(ErrorSrv, InitAppSrv, FileSystemSrv)
     //  end DEFAULT VALUES MANAGEMENT
     //--------------------------------------------------------------------------
      // PUBLIC *************************************************************************************************
-    checkModel = function(modelname)
+    checkModel = function(model_relpath)
     {
-        pluginInterface.loadTFModel(FileSystemSrv.getResolvedOutDataFolder() + InitAppSrv.getTFModelsFolder(), modelname);
+        return pluginInterface.loadTFModel(FileSystemSrv.getResolvedOutDataFolder() + model_relpath);
     };    
     //  end DEFAULT VALUES MANAGEMENT
 

@@ -11,11 +11,12 @@
             "audio_temp_folder"                 : "AllSpeak/audiofiles/temp",
             "tf_models_folder"                  : "AllSpeak/models",
             "tf_default_model"                  : "AllSpeak/models/default_it",
+            "temp_folder"                       : "AllSpeak/temp",
             "json_folder"                       : "AllSpeak/json",
             "config_filerel_path"               : "AllSpeak/json/config.json",
-            "vocabulary_filerel_path"           : "AllSpeak/json/vocabulary.json",
-            "temp_folder"                       : "AllSpeak/temp",
-            "global_vocabulary_www_path"        : "./json/global_vocabulary.json",
+            "voicebank_vocabulary_www_path"     : "./json/voicebank_vocabulary.json",
+            "voicebank_vocabulary_filerel_path" : "AllSpeak/json/voicebank_vocabulary.json",
+            "train_vocabulary_filerel_path"     : "AllSpeak/json/train_vocabulary.json",
             "resolved_odp"                      : ""
         },
         "audio_configurations"      : {

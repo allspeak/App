@@ -2,60 +2,182 @@
 
 main_module.service('VocabularySrv', function($http, FileSystemSrv) 
 {
-    var global_vocabulary       = null;
-    var vocabulary              = null;
-    var vocabulary_json_relpath = ""; //'./json/vocabulary.json';
+    voicebank_vocabulary                = null;
+    train_vocabulary                    = null;
     
+    voicebank_vocabulary_www_path       = "";   //      ./json/voicebank_vocabulary.json
+    voicebank_vocabulary_filerel_path   = "";   //      AllSpeak/json/voicebank_vocabulary.json
+    train_vocabulary_filerel_path       = "";   //      AllSpeak/json/train_vocabulary.json
+    
+    voicebank_folder                    = "";   //      AllSpeak/voice_bank
+    training_folder                     = "";   //      AllSpeak/audio_files
     //========================================================================
-    getGlobalVocabulary = function (path) {
-        return $http.get(path)
-        .then(function(res){
-            global_vocabulary = res.data.vocabulary;
-            return global_vocabulary;
-        });
-    };
+    // set inner paths, load both global & train vocabularies
+    // returns 1 if a train_vocabulary file has been already created by the user, 0 otherwise.
+    // if the global json does not exist ( actually only the first time !), read from asset folder and copy to a writable one.
+    // load the global voc (voice bank) commands and check how many wav file the user did record
+    // look for a train_vocabulary json, if present load it
+    init = function(default_paths)
+    {
+        voicebank_vocabulary_www_path       = default_paths.voicebank_vocabulary_www_path;
+        voicebank_vocabulary_filerel_path   = default_paths.voicebank_vocabulary_filerel_path;
+        train_vocabulary_filerel_path       = default_paths.train_vocabulary_filerel_path;
         
-    getVocabulary = function (path) 
-    {
-        if(path)        vocabulary_json_relpath = path;
-        if(vocabulary)  return Promise.resolve(vocabulary);
+        voicebank_folder                    = default_paths.voicebank_folder;
+        training_folder                     = default_paths.audio_folder;
         
-        return FileSystemSrv.readJSON(vocabulary_json_relpath)
-        .then(function(content){
-            vocabulary = content.vocabulary;
-            return vocabulary;
-        });
-    };
-
-    getBankSentence = function(sentence_id) 
-    {
-        var len_voc = global_vocabulary.length;
-        for(v=0; v<len_voc;v++)
-            if(sentence_id == global_vocabulary[v].id)
-                return global_vocabulary[v];
-    };
-
-    getTrainingSentence = function(sentence_id) 
-    {
-        var len_voc = vocabulary.length;
-        for(v=0; v<len_voc;v++)
-            if(sentence_id == vocabulary[v].id)
-                return vocabulary[v];
-    };
-
-    getSentence = function(sentence_id) {
-        return getVocabulary()
-        .then(function(vocabulary){
-            var len_voc = vocabulary.length;
-            for(v=0; v<len_voc;v++){
-                if(sentence_id == vocabulary[v].id)
-                    return vocabulary[v];
+        return FileSystemSrv.existFile(voicebank_vocabulary_filerel_path)
+        .then(function(exist)
+        {
+            if(exist)  return getVoiceBankVocabulary(voicebank_vocabulary_filerel_path);
+            else
+            {
+                // get default global json (in asset folder) and copy its content to a local file
+                return _getDefaultVoiceBankVocabulary()
+                .then(function()
+                {
+                    var voc_string = JSON.stringify(voicebank_vocabulary);
+                    return FileSystemSrv.createFile(voicebank_vocabulary_filerel_path, voc_string); 
+                })
             }
-            return null;
+        })
+        .then(function()
+        {
+            return checkVoiceBankAudioPresence()
+        })
+        .then(function()
+        {            
+            return FileSystemSrv.existFile(train_vocabulary_filerel_path)
+        })
+        .then(function(exist)
+        {
+            if(exist)  return getTrainVocabulary(train_vocabulary_filerel_path);
+            else       return 0;
+        })
+        .then(function(voc)
+        {
+            if(voc)  return 1
+            else     return 0;
+        })
+        .catch(function(error)
+        {
+            console.log(error.message)
+            return 0;
         });
+    }
+    //========================================================================
+
+    getVoiceBankVocabulary = function (path) 
+    {
+        if(voicebank_vocabulary == null)
+        {
+            if(path)  voicebank_vocabulary_filerel_path = path;
+            return FileSystemSrv.readJSON(voicebank_vocabulary_filerel_path)
+            .then(function(content){
+                voicebank_vocabulary = content;
+                return voicebank_vocabulary;
+            });
+        }
+        else return voicebank_vocabulary;
+    };       
+    
+    getTrainVocabulary = function (path) 
+    {
+        if(train_vocabulary == null)
+        {
+            if(path) train_vocabulary_filerel_path = path;
+            return FileSystemSrv.existFile(train_vocabulary_filerel_path)            
+            .then(function(exist){
+                if(exist)   return FileSystemSrv.readJSON(train_vocabulary_filerel_path)
+                else        return null;
+            })
+            .then(function(content){
+                if(content == null) return [];
+                else
+                {
+                    train_vocabulary = content.train_vocabulary;
+                    return train_vocabulary;
+                }
+            });
+        }
+        else return Promise.resolve(train_vocabulary);
+    }; 
+    
+    setTrainVocabulary = function (voc) 
+    {
+        train_vocabulary = voc;
+        var train_voc_string = JSON.stringify({"train_vocabulary": voc});
+        return FileSystemSrv.createFile(train_vocabulary_filerel_path, train_voc_string);
+    }; 
+    
+    getVoiceBankSentence = function(sentence_id) 
+    {
+        var len_voc = voicebank_vocabulary.length;
+        for(v=0; v<len_voc;v++)
+            if(sentence_id == voicebank_vocabulary[v].id)
+                return voicebank_vocabulary[v];
     };
 
-    checkVocabularyAudioPresence = function(voc, relpath) 
+    getTrainSentence = function(sentence_id) 
+    {
+        var len_voc = train_vocabulary.length;
+        for(v=0; v<len_voc;v++)
+            if(sentence_id == train_vocabulary[v].id)
+                return train_vocabulary[v];
+    };
+
+    checkVoiceBankAudioPresence = function() 
+    {
+        return _checkVocabularyAudioPresence(voicebank_vocabulary, voicebank_folder)
+        .then(function(voc){
+            voicebank_vocabulary = voc;
+            return voc;
+        })
+    };
+    
+    checkTrainVocabularyAudioPresence = function(relpath) 
+    {
+        return _checkVocabularyAudioPresence(train_vocabulary, relpath)
+        .then(function(voc){
+            train_vocabulary = voc;
+            return voc;    
+        })        
+    };
+    
+    getSentencesByArrIDs = function(voc, arr_ids) 
+    {
+        var len_voc     = voc.length;
+        var len_ids     = arr_ids.length;
+        var sentences   = [];
+        
+        for (n = 0; n < len_ids; n++)
+        {
+            var id = arr_ids[n];
+            for(v = 0; v < len_voc; v++)
+            {
+                if(id == voc[v].id)
+                {
+                    sentences.push(vocabulary[v]);
+                    break;
+                }
+            }
+        }
+        return sentences;
+    };    
+    //---------------------------------------------------------------------------
+    // private methods
+    _getDefaultVoiceBankVocabulary = function (path) 
+    {
+        if(path) voicebank_vocabulary_www_path = path;
+        
+        return $http.get(voicebank_vocabulary_www_path)
+        .then(function(res){
+            voicebank_vocabulary = res.data.voicebank_vocabulary;
+            return voicebank_vocabulary;
+        });
+    };
+        
+    _checkVocabularyAudioPresence = function(voc, relpath) 
     {
         return FileSystemSrv.listFilesInDir(relpath, ["wav"])        
         .then(function(files)
@@ -75,22 +197,19 @@ main_module.service('VocabularySrv', function($http, FileSystemSrv)
         });
     };
     
-    setVocabulary = function (data) 
-    {
-        return $http.post(vocabulary_json_relpath, data)
-        .then( function (success){
-            return 1;
-        });
-    };
-        
+    //---------------------------------------------------------------------------
+    // public methods      
+    
     return {
-        setVocabulary: setVocabulary,
-        getVocabulary: getVocabulary,
-        getGlobalVocabulary: getGlobalVocabulary,
-        getSentence: getSentence,
-        getTrainingSentence: getTrainingSentence,
-        getBankSentence: getBankSentence,
-        checkVocabularyAudioPresence: checkVocabularyAudioPresence
+        init: init,
+        getVoiceBankVocabulary: getVoiceBankVocabulary,
+        getTrainVocabulary: getTrainVocabulary,
+        setTrainVocabulary: setTrainVocabulary,
+        getVoiceBankSentence: getVoiceBankSentence,
+        getTrainSentence: getTrainSentence,
+        checkVoiceBankAudioPresence: checkVoiceBankAudioPresence,
+        checkTrainVocabularyAudioPresence: checkTrainVocabularyAudioPresence,
+        getSentencesByArrIDs: getSentencesByArrIDs
     };
 });
 

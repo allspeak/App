@@ -7,13 +7,27 @@
 
 
  
-function HomeCtrl($scope, $ionicPopup, $ionicHistory, $state, InitAppSrv)
+function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, InitAppSrv)
 {
     $scope.modelLoaded = false;
     
-    $scope.$on('$ionicView.beforeEnter', function(){
+    $scope.$on('$ionicView.enter', function()
+    {
+        // delete history once in the home
         $ionicHistory.clearHistory();
         $scope.modelLoaded = InitAppSrv.isModelLoaded();
+        $scope.vocabularyTrained = InitAppSrv.isTrainVocabularyPresent();
+        
+        // ask user's confirm after pressing back (thus trying to exit from the App)
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
+        {
+            $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
+            .then(function(res) { if (res) ionic.Platform.exitApp(); });
+        }, 100);        
+    });
+    
+    $scope.$on('$ionicView.leave', function(){
+        $scope.deregisterFunc();
     });
     
     $scope.exit = function()

@@ -1,5 +1,5 @@
 {
-    "vocabulary":
+    "voicebank_vocabulary":
     [
         { "title": "Ho fame",                   "id": 1, "filename": "ho_fame.wav", "existwav": 0},
         { "title": "Ho sete",                   "id": 2, "filename": "ho_sete.wav", "existwav": 0 },
