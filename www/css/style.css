@@ -37,3 +37,23 @@
   position: absolute;
   bottom: 0;
 }
+
+.bar-footer{
+    position : absolute;
+    bottom : 10;
+    height : 40px;
+    margin-top : 40px;
+}
+
+.bar-footer .button-custom{
+  font-size: 34px !important;
+  border-style: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  margin: 0;
+  padding: 0;
+  background-color: #ed4949;
+  color: white;
+}

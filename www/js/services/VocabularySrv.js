@@ -1,6 +1,6 @@
 
 
-main_module.service('VocabularySrv', function($http, FileSystemSrv) 
+main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSrv) 
 {
     voicebank_vocabulary                = null;
     train_vocabulary                    = null;
@@ -103,6 +103,17 @@ main_module.service('VocabularySrv', function($http, FileSystemSrv)
         else return Promise.resolve(train_vocabulary);
     }; 
     
+    getTrainVocabularyFiles = function(relpath)
+    {
+        return FileSystemSrv.listFilesInDir(relpath, ["wav"])
+        .then(function(files){
+            // I get only wav file names with extension
+            return _parseSentenceFiles(train_vocabulary, files);// writes subject.vocabulary[:].files[]
+        })        
+        .catch(function(error){
+            return $q.reject(error);
+        });          
+    }
     setTrainVocabulary = function (voc) 
     {
         train_vocabulary = voc;
@@ -197,6 +208,44 @@ main_module.service('VocabularySrv', function($http, FileSystemSrv)
         });
     };
     
+    
+    _parseVocabularyFiles = function(vocabulary, files)
+    {
+        for (s=0; s<vocabulary.length; s++)
+            vocabulary[s] = _parseSentenceFiles(vocabulary[s], files);
+        
+        return vocabulary;
+    };     
+    
+    // files is: wav file list without extension
+    _parseSentenceFiles = function(sentence, files)
+    {
+        sentence.existwav       = 0;
+        sentence.firstValidId   = 0;
+        sentence.files          = [];
+
+        var len_files           = files.length;
+        var max                 = 0;
+        for (f=0; f<len_files; f++)
+        {
+            var filelabel_number = StringSrv.splitStringNumber(StringSrv.removeExtension(files[f]));
+            
+            if(!filelabel_number[0].length || filelabel_number.length == 1)
+                return null;
+            
+            if(filelabel_number[0] == sentence.label)
+            {
+                var id = filelabel_number[1];
+                if(id > max )   
+                    max = id;
+                
+                sentence.files[sentence.existwav] = {label: files[f]};
+                sentence.existwav++;
+                sentence.firstValidId = max + 1;
+            }
+        }
+        return sentence;
+    };         
     //---------------------------------------------------------------------------
     // public methods      
     
@@ -205,6 +254,7 @@ main_module.service('VocabularySrv', function($http, FileSystemSrv)
         getVoiceBankVocabulary: getVoiceBankVocabulary,
         getTrainVocabulary: getTrainVocabulary,
         setTrainVocabulary: setTrainVocabulary,
+        getTrainVocabularyFiles: getTrainVocabularyFiles,
         getVoiceBankSentence: getVoiceBankSentence,
         getTrainSentence: getTrainSentence,
         checkVoiceBankAudioPresence: checkVoiceBankAudioPresence,

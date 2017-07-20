@@ -3,7 +3,7 @@
     <ion-content>
 
         
-        <label class="item" >{{sentence.title}}</label>
+        <label class="item" >{{sentence.title}}<span class="badge" ng-if="isSequence">{{labelSeqOrder}}</span></label>
         
         <div class="card" ng-if="preserveOriginal">   
             <div class="item item-divider">VERSIONE ATTUALE</div>            

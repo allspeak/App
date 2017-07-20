@@ -4,13 +4,15 @@ sentence = { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename": "ho_se
 */
 function VoiceBankCtrl($scope, $ionicPlatform, $state, $ionicHistory, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, EnumsSrv, VocabularySrv, SequencesRecordingSrv)  
 {
-    $scope.subject          = null;
-    $scope.subject_label    = "";
-    $scope.sentence         = {};
-    $scope.isBusy        = 0;
+    $scope.subject              = null;
+    $scope.subject_label        = "";
+    $scope.sentence             = {};
+    $scope.isBusy               = 0;
     
-    $scope.record_by_sentences = 1;
+    $scope.record_by_sentences  = 1;
     
+    $scope.successState         = "voicebank";
+    $scope.cancelState          = "voicebank";    
     //==================================================================================================================
     //==================================================================================================================
     $scope.$on("$ionicView.enter", function(event, data)
@@ -86,7 +88,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $state, $ionicHistory, FileSystem
     $scope.recordAudio = function(sentence_id)
     {
         InitAppSrv.setPostRecordState("voicebank");
-        $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, sentenceId: sentence_id});
+        $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, sentenceId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
     };
 
 
@@ -104,7 +106,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $state, $ionicHistory, FileSystem
             if($scope.record_sequence)
             {
                 InitAppSrv.setPostRecordState("voicebank");
-                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, sentenceId:0});
+                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, sentenceId:0, successState:$scope.successState, cancelState:$scope.cancelState});
             }
         });
     };

@@ -83,10 +83,15 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
         controller: 'TrainingCtrl'
     })
     .state('record_sequence', {
-        url: '/record/:modeId/:sentenceId/:subjId',
+        url: '/record/:modeId/:sentenceId/:successState/:cancelState/:subjId',
         templateUrl: 'templates/record_sequence.html',
         controller: 'SequenceRecordCtrl'
     })
+    .state('show_session', {
+        url: '/show_session/:sessionPath/:subjId',
+        templateUrl: 'templates/show_recording_session.html',
+        controller: 'ShowRecordingSessionCtrl'
+    })    
     .state('voicebank', {
         url: '/voicebank',
         templateUrl: 'templates/voicebank.html',

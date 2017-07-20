@@ -11,7 +11,22 @@
             </button>
         </ion-nav-buttons>          -->
         
-    </ion-nav-bar>     
+    </ion-nav-bar>  
+    
+    
+    <ion-footer-bar class="bar-positive">
+        
+        <div class="button-bar" ng-if="editTrainVocabulary">        
+            <button class="button button-custom button-block button-positive" ng-click="saveTrainVocabulary()">SALVA</button>
+            <button class="bu button button-custom button-block button-positive" ng-click="cancelEditList()">RITORNA</button>
+        </div> 
+        
+        <div class="button-bar" ng-if="editTrainSequence">        
+            <button class="button button-custom button-block button-positive" ng-click="startTraining()">{{labelStartTraining}}</button>        
+            <button class="button button-custom button-block button-positive" ng-click="doEditTrainVocabulary()">{{labelEditTrainVocabulary}}</button>        
+        </div>          
+        
+    </ion-footer-bar>    
     
     <ion-content>
 
@@ -23,17 +38,7 @@
         </ion-item>   
             
         <button class="button button-full button-positive" ng-if="selectList" ng-click="selectSentences()">{{labelSelectSentences}}</button>  
-        
-        <div class="button-bar" ng-if="editTrainSequence">        
-            <button class="button button-block button-positive" ng-click="startTraining()">{{labelStartTraining}}</button>        
-            <button class="button button-block button-positive" ng-click="doEditTrainVocabulary()">{{labelEditTrainVocabulary}}</button>        
-        </div>  
-            
-        <div class="button-bar" ng-if="editTrainVocabulary">        
-            <button class="button button-block" ng-click="saveTrainVocabulary()">SALVA</button>
-            <button class="button button-block" ng-click="cancelEditList()">RITORNA</button>
-            <!--<button class="button button-block" ng-click="addSentence()">AGGIUNGI</button>-->
-        </div>          
+         
 
 <!--        <select class="button " ng-if="editTrainVocabulary" ng-model="selectedSentences">
             <option ng-repeat="sentence in vocabulary" value="{{sentence.id}}"> {{sentence.title}}</option>

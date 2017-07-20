@@ -19,7 +19,7 @@ audio files are automatically saved after captured, in order to may listen to th
 - the save button thus simply go back
 - the cancel button, first delete the file then go back
  */
-function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicLoading, SpeechDetectionSrv, InitAppSrv, VocabularySrv, FileSystemSrv, StringSrv, IonicNativeMediaSrv, SequencesRecordingSrv, MfccSrv, EnumsSrv, UITextsSrv, SubjectsSrv)
+function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicLoading, $ionicHistory, SpeechDetectionSrv, InitAppSrv, VocabularySrv, FileSystemSrv, StringSrv, IonicNativeMediaSrv, SequencesRecordingSrv, MfccSrv, EnumsSrv, UITextsSrv, SubjectsSrv)
 {
     // calling params
     $scope.mode_id          = -1;        // ctrl modality MODE_SINGLE_RECORD, MODE_SEQUENCE_RECORD, MODE_SINGLE_TRAINING, MODE_SEQUENCE_TRAINING
@@ -51,7 +51,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     $scope.initMfccParams   = {nDataType: 251, nDataDest: 235};     // get MFFILTERS & write to file
     
     // buttons text
-    $scope.skipButtonLabel  = UITextsSrv.RECORD.BTN_SKIP;
+    $scope.skipButtonLabel  = UITextsSrv.RECORD.BTN_SKIP_TRAIN;
     $scope.nextButtonLabel  = UITextsSrv.RECORD.BTN_NEXT_SINGLE;
     $scope.exitButtonLabel  = UITextsSrv.RECORD.BTN_EXIT_SINGLE;
     $scope.bLabelStart      = UITextsSrv.RECORD.BTN_RECORD_RECORD;
@@ -89,29 +89,36 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     
     $scope.$on("$ionicView.enter", function(event, data)
     {
-        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(e)
-        {
-            e.preventDefault();
-        }, 100);           
-        
-        $scope.resetFlags();        
-        if(data.stateParams.modeId != null)
-            $scope.mode_id         = parseInt(data.stateParams.modeId);
-        else            
-            alert("SequenceRecordCtrl::$ionicView.enter. error : modeId is empty");
+        //---------------------------------------------------------------------------------------------------------------------
+        // manage input params
+        //---------------------------------------------------------------------------------------------------------------------
+        if(data.stateParams.modeId != null)         $scope.mode_id         = parseInt(data.stateParams.modeId);
+        else                                        alert("SequenceRecordCtrl::$ionicView.enter. error : modeId is empty");
 
         // in MODE_SINGLE_BANK is really a sentenceId, in SEQUENCE mode is the index of the array of sequences
-        if(data.stateParams.sentenceId != null)
-            $scope.sentence_id     = parseInt(data.stateParams.sentenceId);
-        else            
-            alert("SequenceRecordCtrl::$ionicView.enter. error : sentenceId is empty");
+        if(data.stateParams.sentenceId != null)     $scope.sentence_id     = parseInt(data.stateParams.sentenceId);
+        else                                        alert("SequenceRecordCtrl::$ionicView.enter. error : sentenceId is empty");
 
+        if(data.stateParams.successState != null)   $scope.successState    = data.stateParams.successState;
+        else                                        $scope.successState    = "";
+        
+        if(data.stateParams.cancelState != null)    $scope.cancelState     = data.stateParams.cancelState;
+        else                                        $scope.cancelState     = "";
+        
         // optional param
         if(data.stateParams.subjId != null)
         {
             $scope.subject_id      = parseInt(data.stateParams.subjId);
             $scope.subject         = SubjectsSrv.getSubject($scope.subject_id);
-        }
+        }        
+        //---------------------------------------------------------------------------------------------------------------------
+
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(e)
+        {
+            e.preventDefault();
+        }, 100);           
+        
+        $scope.resetFlags();  
 
         switch ($scope.mode_id)
         {
@@ -140,9 +147,12 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 $scope.isSequence           = true;
                 
                 $scope.nextButtonLabel      = UITextsSrv.RECORD.BTN_NEXT_SEQUENCE;
-                $scope.exitButtonLabel      = UITextsSrv.RECORD.BTN_EXIT_SEQUENCE;                 
+                $scope.exitButtonLabel      = UITextsSrv.RECORD.BTN_EXIT_SEQUENCE;         
+                $scope.skipButtonLabel      = UITextsSrv.RECORD.BTN_SKIP_VOICEBANK;
                 
-                // sentence.filename is a rel path (AllSpeak/voicebank/filename.wav or AllSpeakVoiceRecorder/audio_files/training_XXXX/filename.wav
+                $scope.labelSeqOrder        = ($scope.sentence_id+1) + " di " + SequencesRecordingSrv.getSequenceLength();
+                
+                // sentence.filename is a rel path (AllSpeak/voicebank/filename.wav or AllSpeakVoiceRecorder/audio_files/SUBJ_LABEL/training_XXXX/filename.wav
                 $scope.sentence             = SequencesRecordingSrv.getSentenceBySequenceId($scope.sentence_id);
                 if ($scope.sentence)
                 {
@@ -159,9 +169,11 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 
                 $scope.nextButtonLabel      = UITextsSrv.RECORD.BTN_NEXT_SEQUENCE;
                 $scope.exitButtonLabel      = UITextsSrv.RECORD.BTN_EXIT_SEQUENCE;                   
-                $scope.enableAbortButton    = true;                
+                $scope.skipButtonLabel      = UITextsSrv.RECORD.BTN_SKIP_TRAIN;                
                 
-                // sentence.filename is a rel path (AllSpeak/voicebank/filename.wav or AllSpeakVoiceRecorder/audio_files/training_XXXX/filename.wav
+                $scope.labelSeqOrder        = ($scope.sentence_id+1) + " di " + SequencesRecordingSrv.getSequenceLength();
+                
+                // sentence.filename is a rel path (AllSpeak/voicebank/filename.wav or AllSpeakVoiceRecorder/audio_files/SUBJ_LABEL/training_XXXX/filename.wav
                 $scope.sentence             = SequencesRecordingSrv.getSentenceBySequenceId($scope.sentence_id);
                 if ($scope.sentence)
                 {
@@ -382,7 +394,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         IonicNativeMediaSrv.pauseAudio();
     };    
     
-    $scope.onChangeVolume   = function(vol)
+    $scope.onChangeVolume = function(vol)
     {
         $scope.volume = vol;
         if ($scope.playback_file)
@@ -398,8 +410,12 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         {
             case EnumsSrv.RECORD.MODE_SINGLE_BANK:
                 return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, true)
-                .then(function(){
-                    $state.go(InitAppSrv.getPostRecordState());
+                .then(function()
+                {
+                    if($scope.successState != "")
+                        $state.go($scope.successState);
+                    else
+                        $ionicHistory.goBack();
                 })
                 .catch(function(error){
                     alert(error.message);
@@ -412,9 +428,15 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 {
                     var next_id = SequencesRecordingSrv.getNextSentenceId();
                     if(next_id >= 0)
-                        $state.go('record_sequence', {sentenceId:next_id, modeId:$scope.mode_id , savedData:1 });
+                        $state.go('record_sequence', {sentenceId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState});
                     else
-                        $state.go(InitAppSrv.getPostRecordState());
+                    {
+                        // SEQUENZA FINITA
+                        if($scope.successState != "")
+                            $state.go($scope.successState);
+                        else
+                            $ionicHistory.goBack();
+                    }                
                 })
                 .catch(function(error){
                     alert(error.message);
@@ -424,9 +446,15 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING:
                 var next_id = SequencesRecordingSrv.getNextSentenceId();
                 if(next_id >= 0)
-                    $state.go('record_sequence', {sentenceId:next_id, modeId:$scope.mode_id , savedData:1 });
+                    $state.go('record_sequence', {sentenceId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState});
                 else
-                    $state.go(InitAppSrv.getPostRecordState());
+                {
+                    // sequence terminated
+                    if($scope.successState != "")
+                        $state.go($scope.successState, {sessionPath:StringSrv.getFileParentFolder($scope.rel_filepath)});
+                    else
+                        $ionicHistory.goBack();
+                }
                 break;
         }
     };
@@ -435,19 +463,44 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     {
         // in MODE_SEQUENCE_BANK:       rel_filepath is : original_temp.wav
         // in MODE_SEQUENCE_TRAINING:   rel_filepath is : original.wav
-                
-        return FileSystemSrv.deleteFile($scope.rel_filepath)
-        .then(function()
+        switch($scope.mode_id)
         {
-            var next_id = SequencesRecordingSrv.getNextSentenceId();
-            if(next_id >= 0)
-                $state.go('record_sequence', {sentenceId:next_id, modeId:$scope.mode_id , savedData:1 });
-            else
-                $state.go(InitAppSrv.getPostRecordState());
-        })
-        .catch(function(error){
-            alert(error.message);
-        });
+            case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:                
+                
+                return FileSystemSrv.deleteFile($scope.rel_filepath)
+                .then(function()
+                {
+                    var next_id = SequencesRecordingSrv.getNextSentenceId();
+                    if(next_id >= 0)
+                        $state.go('record_sequence', {sentenceId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState});
+                    else
+                    {
+                        if($scope.successState != "")
+                            $state.go($scope.successState);
+                        else
+                            $ionicHistory.goBack();
+                    }
+                })
+                .catch(function(error){
+                    alert(error.message);
+                });
+                break;
+                
+            case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING:                
+                
+                return FileSystemSrv.deleteFile($scope.rel_filepath)
+                .then(function()
+                {
+                    if($scope.successState != "")
+                        $state.go($scope.successState, {sessionPath:StringSrv.getFileParentFolder($scope.rel_filepath)});
+                    else
+                        $ionicHistory.goBack();
+                })
+                .catch(function(error){
+                    alert(error.message);
+                });
+                break;
+        }
     };
     
     $scope.cancel = function()
@@ -459,7 +512,10 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 return FileSystemSrv.deleteFile($scope.rel_filepath)
                 .then(function()
                 {
-                    $state.go(InitAppSrv.getPostRecordState());
+                    if($scope.cancelState != "")
+                        $state.go($scope.cancelState);
+                    else
+                        $ionicHistory.goBack();
                 })
                 .catch(function(error){
                     alert(error.message);
@@ -477,34 +533,19 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                         FileSystemSrv.deleteDir(session_folder)
                         .then(function(){
                             // I'm not able to delete only the record views history, so I send the app to the starting view (where it deletes all the history)
-                            $state.go(InitAppSrv.getPostRecordState());       
+                            if($scope.cancelState != "")
+                                $state.go($scope.cancelState);
+                            else
+                                $ionicHistory.goBack();
                         })
                         .catch(function(error){
                             alert(error.message);
                         });                
                     }
                 });                
-//                return FileSystemSrv.deleteFile($scope.rel_filepath)
-//                .then(function()
-//                {
-//                    var next_id = SequencesRecordingSrv.getNextSentenceId();
-//                    if(next_id >= 0)
-//                        $state.go('record_sequence', {sentenceId:next_id, modeId:$scope.mode_id , savedData:1 });
-//                    else
-//                        $state.go(InitAppSrv.getPostRecordState());
-//                })
-//                .catch(function(error){
-//                    alert(error.message);
-//                });
                 break;
         }
-
- 
-        
-        
-        
     };
-    
     //=====================================================================
 
         

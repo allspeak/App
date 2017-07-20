@@ -5,7 +5,7 @@
  */
 //function TrainingCtrl($scope, vocabulary)//....use resolve 
 //function TrainingCtrl($scope)  
-function TrainingCtrl($scope, $state, $ionicHistory, VocabularySrv, SequencesRecordingSrv, InitAppSrv, StringSrv, EnumsSrv)  
+function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularySrv, SequencesRecordingSrv, InitAppSrv, StringSrv, EnumsSrv)  
 {
     
     $scope.labelStartTraining           = "INIZIA TRAINING";
@@ -21,11 +21,21 @@ function TrainingCtrl($scope, $state, $ionicHistory, VocabularySrv, SequencesRec
     
     $scope.selectList           = true;
     $scope.editTrainVocabulary  = false;
-    $scope.editTrainSequence         = false;
+    $scope.editTrainSequence    = false;
     
+    $scope.successState         = "show_session";
+    $scope.cancelState          = "training";
+    
+    // =======================================================================================================
+
     $scope.$on("$ionicView.enter", function(event, data)
     {
         $ionicHistory.clearHistory();
+        // ask user's confirm after pressing back (thus trying to exit from the App)
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
+        {
+            $state.go("home");
+        }, 100);        
         
         $scope.relpath = InitAppSrv.getAudioFolder();
         
@@ -53,6 +63,9 @@ function TrainingCtrl($scope, $state, $ionicHistory, VocabularySrv, SequencesRec
         });
     });
 
+    $scope.$on('$ionicView.leave', function(){
+        $scope.deregisterFunc();
+    }); 
     //-------------------------------------------------------------------
     // $scope.selectList = true
     //-------------------------------------------------------------------     
@@ -135,10 +148,7 @@ function TrainingCtrl($scope, $state, $ionicHistory, VocabularySrv, SequencesRec
         })
     };
     
-   
-    
-
-    //-------------------------------------------------------------------
+   //-------------------------------------------------------------------
     // $scope.editTrainSequence = true
     //-------------------------------------------------------------------
     $scope.decrementRepCount = function() {
@@ -166,7 +176,7 @@ function TrainingCtrl($scope, $state, $ionicHistory, VocabularySrv, SequencesRec
             {
                 $scope.training_sequence = sequence;    
                 InitAppSrv.setPostRecordState("training");
-                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING, sentenceId:  0});
+                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING, sentenceId: 0, successState:$scope.successState, cancelState:$scope.cancelState});
             });
         }
         else

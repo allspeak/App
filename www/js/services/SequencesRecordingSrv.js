@@ -92,8 +92,10 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
         });
     };
     
- 
-    
+    getSequenceLength = function()
+    {
+        return sequence.length;
+    };
     
     getRepetitions = function()
     {
@@ -142,7 +144,8 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
         getNextSentence: getNextSentence,
         getNextSentenceId: getNextSentenceId,
         getSentenceById: getSentenceById,
-        getSentenceBySequenceId: getSentenceBySequenceId
+        getSentenceBySequenceId: getSentenceBySequenceId,
+        getSequenceLength: getSequenceLength
     };
 };
 
