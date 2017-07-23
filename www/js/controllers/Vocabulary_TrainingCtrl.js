@@ -5,14 +5,14 @@
  */
 //function TrainingCtrl($scope, vocabulary)//....use resolve 
 //function TrainingCtrl($scope)  
-function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularySrv, SequencesRecordingSrv, InitAppSrv, StringSrv, EnumsSrv)  
+function Vocabulary_TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularySrv, SequencesRecordingSrv, InitAppSrv, StringSrv, EnumsSrv)  
 {
     
-    $scope.labelStartTraining                       = "INIZIA TRAINING";
-    $scope.labelEditTrainVocabulary                 = "cambia COMANDI";
-    $scope.labelSelectSentences                     = "SELEZIONA COMANDI";
-    $scope.labelToggleSentencesEditTrainSequence    = "ADDESTRA I SEGUENTI COMANDI";
-    $scope.labelToggleSentencesEditTrainVocabulary  = "MODIFICA LA LISTA DEI COMANDI";
+    $scope.labelStartTraining           = "INIZIA TRAINING";
+    $scope.labelEditTrainVocabulary     = "cambia COMANDI";
+    $scope.labelSelectSentences         = "SELEZIONA COMANDI";
+    $scope.labelToggleSentencesEditTrainSequence    = "SCEGLI I COMANDI DA ADDESTRARE";
+    $scope.labelToggleSentencesEditTrainVocabulary  = "MODIFICA I COMANDI DA ADDESTRARE";
     
     $scope.labelToggleSentences                     = $scope.labelToggleSentencesEditTrainSequence;
     
@@ -30,16 +30,38 @@ function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularyS
 
     $scope.$on("$ionicView.enter", function(event, data)
     {
+        if(data.stateParams.modeId != null)         $scope.mode_id         = parseInt(data.stateParams.modeId);
+        else                                        alert("Vocabulary_TrainingCtrl::$ionicView.enter. error : modeId is empty");        
+        
+        switch($scope.mode_id)
+        {
+            case 1: 
+                // edit
+                $scope.selectList           = false;
+                $scope.editTrainVocabulary  = true;
+                $scope.editTrainSequence    = false;                  
+                break;
+                
+            case 2: 
+                // train
+                $scope.selectList           = false;
+                $scope.editTrainVocabulary  = false;
+                $scope.editTrainSequence    = true;                  
+                break;
+                        
+            case 3: 
+                // empty vocabulary
+                $scope.selectList           = true;
+                $scope.editTrainVocabulary  = false;
+                $scope.editTrainSequence    = false;                  
+                break;
+        }        
+        
         $ionicHistory.clearHistory();
         // ask user's confirm after pressing back (thus trying to exit from the App)
         $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
         {
-            if($scope.editTrainVocabulary)
-            {
-                $scope.goToEditTrainSequence();
-                $scope.$apply();
-            }
-            else    $state.go("home");
+            $state.go("home");
         }, 100);        
         
         $scope.relpath = InitAppSrv.getAudioFolder();
@@ -51,25 +73,25 @@ function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularyS
             $scope.repetitionsCount         = SequencesRecordingSrv.getRepetitions(); 
             $scope.selectedTrainingModality = SequencesRecordingSrv.getModalities()[1]; 
             
-            if($scope.vocabulary.length)
-            {
-                $scope.selectList           = false;
-                $scope.editTrainVocabulary  = false;
-                $scope.editTrainSequence    = true;
-                
-                $scope.toogleSelectAll      = true;
-            }
-            else
-            {
-                $scope.selectList           = true;
-                $scope.editTrainVocabulary  = false;
-                $scope.editTrainSequence    = false;                
-            }
+//            if($scope.vocabulary.length)
+//            {
+//                $scope.selectList           = false;
+//                $scope.editTrainVocabulary  = false;
+//                $scope.editTrainSequence    = true;
+//                
+//                $scope.toogleSelectAll      = true;
+//            }
+//            else
+//            {
+//                $scope.selectList           = true;
+//                $scope.editTrainVocabulary  = false;
+//                $scope.editTrainSequence    = false;                
+//            }
         });
     });
 
     $scope.$on('$ionicView.leave', function(){
-        if($scope.deregisterFunc)   $scope.deregisterFunc();
+        $scope.deregisterFunc();
     }); 
     //-------------------------------------------------------------------
     // $scope.selectList = true
@@ -110,7 +132,22 @@ function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularyS
         }            
         $scope.vocabulary = voicebank_voc;
     };
-
+    
+    $scope.cancelEditList = function() {
+        $scope.selectList           = false;
+        $scope.editTrainVocabulary  = false;
+        $scope.editTrainSequence    = true;   
+        
+        $scope.toogleSelectAll      = true;        
+        $scope.labelToggleSentences = $scope.labelToggleSentencesEditTrainSequence;
+        
+        return VocabularySrv.getTrainVocabulary()       // should not be necessary => nevertheless, add promise
+        .then(function(voc)
+        {
+            $scope.vocabulary           = voc;
+        });       
+    };
+    
     $scope.addSentence = function() {
         var voicebank_voc = VocabularySrv.getVoiceBankVocabulary();
     };
@@ -131,29 +168,16 @@ function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularyS
         $scope.vocabulary = selected_sentences;
         return VocabularySrv.setTrainVocabulary($scope.vocabulary)
         .then(function(){
-            $scope.goToEditTrainSequence();
+            $scope.selectList           = false;
+            $scope.editTrainVocabulary  = false;
+            $scope.editTrainSequence    = true;      
             $scope.$apply();
-        });
+        })
     };
     
    //-------------------------------------------------------------------
     // $scope.editTrainSequence = true
     //-------------------------------------------------------------------
-    $scope.goToEditTrainSequence = function()
-    {
-        $scope.selectList           = false;
-        $scope.editTrainVocabulary  = false;
-        $scope.editTrainSequence    = true;  
-        $scope.toogleSelectAll      = true;        
-        $scope.labelToggleSentences = $scope.labelToggleSentencesEditTrainSequence;            
-        
-        return VocabularySrv.getTrainVocabulary()       // should not be necessary => nevertheless, add promise
-        .then(function(voc)
-        {
-            $scope.vocabulary           = voc;
-        });  
-    };
-    
     $scope.decrementRepCount = function() {
         $scope.repetitionsCount--;
         if($scope.repetitionsCount < 1) $scope.repetitionsCount = 1;
@@ -178,6 +202,7 @@ function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularyS
             .then(function(sequence)
             {
                 $scope.training_sequence = sequence;    
+                InitAppSrv.setPostRecordState("training");
                 $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING, sentenceId: 0, successState:$scope.successState, cancelState:$scope.cancelState});
             });
         }
@@ -199,4 +224,4 @@ function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularyS
     //-------------------------------------------------------------------
     
 }
-controllers_module.controller('TrainingCtrl', TrainingCtrl)
+controllers_module.controller('Vocabulary_TrainingCtrl', Vocabulary_TrainingCtrl)

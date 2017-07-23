@@ -114,7 +114,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         }        
         return promise;
     }; 
-
+    //====================================================================================================================
     // load json containing defaults info
     service.loadDefaults = function()
     {
@@ -155,7 +155,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
             return $q.reject(error);
         });        
     };     
-
+    //====================================================================================================================
     // if config.json is not present in file:/// , create it
     service.loadConfigFile = function()
     {
@@ -163,7 +163,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         return FileSystemSrv.existFile(localConfigJson)
         .then(function(exist)
         {
-            if(exist)   return FileSystemSrv.readJSON(localConfigJson)
+            if(exist)   return FileSystemSrv.readJSON(localConfigJson);
             else
             {
                 // file://.../config.json file does not exist, copy defaults subfields to appConfig subfields 
@@ -171,8 +171,8 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
                 var confString = JSON.stringify(service.config);
                 return FileSystemSrv.createFile(localConfigJson, confString)
                 .then(function(){
-                    return FileSystemSrv.readJSON(localConfigJson)
-                })
+                    return FileSystemSrv.readJSON(localConfigJson);
+                });
             }
         })
         .then(function(configdata)
@@ -189,6 +189,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         });        
     };
     
+    //====================================================================================================================
     // init the vocabulary service. set paths, get voicebank & train vocabulary lists
     // check if voice bank audio files are present
     service.LoadVocabularies = function()
@@ -231,8 +232,9 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
             return $q.reject(error);              
         });
     };
-    
+    //====================================================================================================================
     // get audiodevice list. find BTHS & BT SPEAKER, if found .. ready to be connected
+    // is the first call to the plugin...check if
     service.setupAudioDevices = function()
     {
         return service.config.appConfig.plugin.getAudioDevices()// returns : {input:[{"name": , "types":  , channels: }], output:[{"name": , "types":  , channels: }]}
@@ -247,7 +249,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
             return $q.reject(error);              
         });
     }; 
-
+    //====================================================================================================================
     service.loginServer = function(remote)
     {
         // ********************* TODO *****************
@@ -288,9 +290,10 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         return 1; // ********************* TODO *****************
         return HWSrv.connectBluetoothDevices(blt_devices);
     }; 
+    //====================================================================================================================
+    //====================================================================================================================
+    // GET INTERNALSTATUS
     //==========================================================================
-    // GET INTERNAL STATUS
-    //==========================================================================    
     service.getAudioFolder = function()
     {
         return service.config.defaults.file_system.audio_folder;
@@ -335,16 +338,6 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
     {
         return service.config.checks.hasTrainVocabulary;
     };    
-    
-    service.getPostRecordState = function()
-    {
-        return service.postRecordState;
-    };
-    
-    service.setPostRecordState = function(state)
-    {
-        service.postRecordState = state;
-    };
     
     //==========================================================================
     // MERGE CURRENT CONFIG WITH POSSIBLE OVERRIDDING FROM CONTROLLERS' CALLS

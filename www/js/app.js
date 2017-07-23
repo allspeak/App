@@ -67,36 +67,92 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
         url: '/login',
         templateUrl: 'templates/login.html'
     })
+    .state('amplifier', {
+        url: '/amplifier',
+        templateUrl: 'templates/amplifier.html',
+        controller: 'AmplifierCtrl'
+    })    
     .state('recognition', {
         url: '/recognition',
         templateUrl: 'templates/recognition_debug.html',
         controller: 'RecognitionCtrl'
     })
-    .state('amplifier', {
-        url: '/amplifier',
-        templateUrl: 'templates/amplifier.html',
-        controller: 'AmplifierCtrl'
+    .state('voicebank', {
+        url: '/voicebank',
+        templateUrl: 'templates/voicebank.html',
+        controller: 'VoiceBankCtrl'
     })
+    .state('record_sequence', {
+        url: '/record/:modeId/:sentenceId/:subjId/:successState/:cancelState',
+        templateUrl: 'templates/record_sequence.html',
+        controller: 'SequenceRecordCtrl'
+    })    
     .state('training', {
         url: '/training',
         templateUrl: 'templates/training.html',
         controller: 'TrainingCtrl'
-    })
-    .state('record_sequence', {
-        url: '/record/:modeId/:sentenceId/:successState/:cancelState/:subjId',
-        templateUrl: 'templates/record_sequence.html',
-        controller: 'SequenceRecordCtrl'
     })
     .state('show_session', {
         url: '/show_session/:sessionPath/:subjId',
         templateUrl: 'templates/show_recording_session.html',
         controller: 'ShowRecordingSessionCtrl'
     })    
-    .state('voicebank', {
-        url: '/voicebank',
-        templateUrl: 'templates/voicebank.html',
-        controller: 'VoiceBankCtrl'
-    })
+
+    
+    
+    
+    
+    
+    
+//    .state('vocabulary', {
+//        url: '/vocabulary',
+//        abstract: 'true',
+//        templateUrl: 'templates/vocabulary_tabs.html'
+//    })
+//    .state('vocabulary.show_sessions', {
+//        url: '/show_sessions',
+//        views: 
+//        {
+//            'show_sessions-vocabulary' : 
+//            {
+//                templateUrl: 'templates/vocabulary_show_sessions.html',
+//                controller: ''
+//            }
+//        }
+//    })
+//    .state('vocabulary.edit', {
+//        url: '/edit/:modeId',
+//        views: 
+//        {
+//        'edit-vocabulary' : 
+//            {
+//                templateUrl: 'templates/vocabulary_edit.html',  
+//                controller: 'SetupRecognitionCtrl'                               
+//            }
+//        }
+//    })
+//    .state('vocabulary.train', {
+//        url: '/train/:modeId',
+//        views: 
+//        {
+//        'train-vocabulary' : 
+//            {
+//                templateUrl: 'templates/vocabulary_train.html',
+//                controller: 'BluetoothCtrl'
+//            }
+//        }
+//    })
+//    .state('vocabulary.show_session', {
+//        url: '/show_session',
+//        views: 
+//        {
+//        'show_session-vocabulary' : 
+//            {
+//                templateUrl: 'templates/vocabulary_show_session.html',
+//                controller: 'ShowRecordingSessionCtrl'
+//            }
+//        }
+//    })
     .state('settings', {
         url: '/settings',
         abstract: 'true',
