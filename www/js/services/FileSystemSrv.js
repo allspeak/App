@@ -60,7 +60,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
                         
                     case 1:
                         // prompt for overwrite permissions
-                        $ionicPopup.confirm({ title: 'Attenzione', template: 'File already exist, do you want to overwrite it?'})
+                        return $ionicPopup.confirm({ title: 'Attenzione', template: 'File already exist, do you want to overwrite it?'})
                         .then(function(res) 
                         {
                             if(res)     return service.overwriteFile(relative_path, content);               

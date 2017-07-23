@@ -30,7 +30,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $state, $ionicHistory, FileSystem
     });
     
     $scope.$on('$ionicView.leave', function(){
-        $scope.deregisterFunc();
+        if($scope.deregisterFunc)   $scope.deregisterFunc();
     });    
 
     

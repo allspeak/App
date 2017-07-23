@@ -9,11 +9,11 @@ function UITextsSrv()
     service.RECORD = {};
     service.RECORD.BTN_NEXT_SINGLE    = "save";
     service.RECORD.BTN_NEXT_SEQUENCE  = "next";
-    service.RECORD.BTN_NEXT_SEQUENCE  = "CANCELLA";
+    service.RECORD.BTN_NEXT_SEQUENCE  = "cancel";
     service.RECORD.BTN_EXIT_SINGLE    = "cancel";
     service.RECORD.BTN_EXIT_SEQUENCE  = "abort";
-    service.RECORD.BTN_SKIP_VOICEBANK = "SKIP";
-    service.RECORD.BTN_SKIP_TRAIN     = "STOP";
+    service.RECORD.BTN_SKIP_VOICEBANK = "skip";
+    service.RECORD.BTN_SKIP_TRAIN     = "stop";
     service.RECORD.BTN_RECORD_RECORD  = "REGISTRA";
     service.RECORD.BTN_RECORD_STOP    = "STOP";
 

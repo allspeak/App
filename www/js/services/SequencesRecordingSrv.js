@@ -16,6 +16,8 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
     var curr_sequence_id    = 0;
     var seq_folder          = "";
     
+    var separator_filename_rep = "_";
+    
     var training_modalities  = [{"label": "by sentences", "value":EnumsSrv.RECORD.BY_SENTENCE},
                                 {"label": "by repetitions", "value":EnumsSrv.RECORD.BY_REPETITIONS}];    
 
@@ -60,7 +62,7 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
                     {
                         var sentence        = sentences[s];
                         var rel_filepath    = rel_folder_root + "/"+ StringSrv.removeExtension(sentence.filename);
-                        if(add_rep_cnt)     rel_filepath += "_" + r.toString() + EnumsSrv.RECORD.FILE_EXT;
+                        if(add_rep_cnt)     rel_filepath += separator_filename_rep + r.toString() + EnumsSrv.RECORD.FILE_EXT;
                         else                rel_filepath += EnumsSrv.RECORD.FILE_EXT;
                         
                         sequence.push({"id": sentence.id, "rel_filepath":rel_filepath, "title":sentence.title});
@@ -76,7 +78,7 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
                     for(r = 0; r < nrepetitions; r++)
                     {
                         var rel_filepath    = rel_folder_root + "/"+ StringSrv.removeExtension(sentence.filename);
-                        if(add_rep_cnt)     rel_filepath += "_" + r.toString() + EnumsSrv.RECORD.FILE_EXT;
+                        if(add_rep_cnt)     rel_filepath += separator_filename_rep + r.toString() + EnumsSrv.RECORD.FILE_EXT;
                         else                rel_filepath += EnumsSrv.RECORD.FILE_EXT;
                         sequence.push({"id": sentence.id, "rel_filepath":rel_filepath, "title":sentence.title});
                     }
@@ -86,7 +88,7 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
         })
         .catch(function(error)
         {
-            if(new_folder)  FileSystemSrv.deleteFolder(rel_folder_root);
+            if(new_folder)  FileSystemSrv.deleteDir(rel_folder_root);
             alert(error.message);
             return null;
         });
@@ -136,6 +138,11 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
         return null;
     };
     
+    
+    getSeparator = function()
+    {
+        return separator_filename_rep;
+    }
     //================================================================================
     return {
         calculateSequence: calculateSequence,
@@ -145,7 +152,8 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
         getNextSentenceId: getNextSentenceId,
         getSentenceById: getSentenceById,
         getSentenceBySequenceId: getSentenceBySequenceId,
-        getSequenceLength: getSequenceLength
+        getSequenceLength: getSequenceLength,
+        getSeparator: getSeparator
     };
 };
 

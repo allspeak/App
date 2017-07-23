@@ -5,26 +5,44 @@
  */
 
 
-function SubjectsSrv($http, $q, FileSystemSrv, StringSrv)
+function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
 {
     var subjects                = null;
-    var subjects_json_relpath   = ""; //'./json/vocabulary.json';
-//    var subjects_relpath        = "";
-    
-    
-    getSubjects = function (path) {
-        if (path)
-            subjects_json_relpath = path;
+    var initSubjectsJson        = {"subjects" : []}
 
-//        if (subjects) return Promise.resolve(subjects);
-        return FileSystemSrv.readJSON(subjects_json_relpath)
+    // values taken by defaults.json
+    var subjects_filerel_path   = "";   // AllSpeak/json/subjects.json
+    var audio_folder   = "";            // AllSpeak/audiofiles
+    
+    //-----------------------------------------------------------------------------------------------------------------
+    init = function(default_paths)
+    {
+        subjects_filerel_path   = default_paths.subjects_filerel_path;
+        audio_folder            = default_paths.audio_folder;
+        
+        return FileSystemSrv.existFile(subjects_filerel_path)
+        .then(function(exist){
+            if(exist)   return getSubjects();
+            else        return FileSystemSrv.createFile(subjects_filerel_path, JSON.stringify(initSubjectsJson)); 
+        })
+        .catch(function(error){
+            return $q.reject(error);            
+        });        
+    };
+    //-----------------------------------------------------------------------------------------------------------------
+    // read from json and return it
+    getSubjects = function (path) {
+        if (path)  subjects_filerel_path = path;
+
+        if (subjects) return Promise.resolve(subjects);
+        
+        return FileSystemSrv.readJSON(subjects_filerel_path)
         .then(function(content){
             subjects = content.subjects;
             return subjects;
         });
     };
 
-    
     getHttpSubjects = function (path) {
         return $http.get(path)
         .then(function(res){
@@ -44,6 +62,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv)
         }
         return null;
     };
+    
     getSubjectSentence = function (subject_id, sentence_id) {
            
         if (subject_id == null || sentence_id == null || subjects == null)
@@ -57,19 +76,6 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv)
         }            
         return null;
     };    
-    
-    
-    getSubjectVocabularyFiles = function(vocabulary, relpath)    // return filesname without extension
-    {
-        return getSubjectAudioFiles(relpath)
-        .then(function(files){
-            // I get only wav file names without extension
-            return parseVocabularyFiles(vocabulary, files);// writes subject.vocabulary[:].files[]
-        })
-        .catch(function(error){
-            return $q.reject(error);
-        });         
-    };
     
     // get files from subject (sub)folder and remove extension
     getSubjectAudioFiles = function(relpath)    
@@ -88,61 +94,38 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv)
             return $q.reject(error);
         });   
     };
+        
+    getSubjectVocabularyFiles = function(vocabulary, relpath)    // return filesname without extension
+    {
+        if (vocabulary == null)
+            return null;
+        
+        return getSubjectAudioFiles(relpath)
+        .then(function(files){
+            // I get only wav file names without extension
+            return VocabularySrv.parseVocabularyFiles(vocabulary, files);// writes subject.vocabulary[:].files[]
+        })
+        .catch(function(error){
+            return $q.reject(error);
+        });         
+    };
     
     // return filesname without extension
-    getSubjectSentenceAudioFiles = function(sentence, relpath){    
+    getSubjectSentenceAudioFiles = function(sentence, relpath)
+    {    
         if (sentence == null)
             return null;
         
         return getSubjectAudioFiles(relpath)
         .then(function(files){
             // I get only wav file names without extension
-            return parseSentenceFiles(sentence, files);// writes subject.vocabulary[:].files[]
+            return VocabularySrv.parseSentenceFiles(sentence, files);// writes subject.vocabulary[:].files[]
         })
         .catch(function(error){
             return $q.reject(error);
         });       
     };    
-    
-    
-    parseVocabularyFiles = function(vocabulary, files)
-    {
-        for (s=0; s<vocabulary.length; s++)
-            vocabulary[s] = parseSentenceFiles(vocabulary[s], files);
-        
-        return vocabulary;
-    };     
-    
-    // files is: wav file list without extension
-    parseSentenceFiles = function(sentence, files)
-    {
-        sentence.existwav       = 0;
-        sentence.firstValidId   = 0;
-        sentence.files          = [];
 
-        var len_files           = files.length;
-        var max                 = 0;
-        for (f=0; f<len_files; f++)
-        {
-            var filelabel_number = StringSrv.splitStringNumber(files[f]);
-            
-            if(!filelabel_number[0].length || filelabel_number.length == 1)
-                return null;
-            
-            if(filelabel_number[0] == sentence.label)
-            {
-                var id = filelabel_number[1];
-                if(id > max )   
-                    max = id;
-                
-                sentence.files[sentence.existwav] = {label: files[f]};
-                sentence.existwav++;
-                sentence.firstValidId = max + 1;
-            }
-        }
-        return sentence;
-    };        
-    
     getHighestID = function(){
         return getSubjects()
         .then(function(subjects){
@@ -186,9 +169,11 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv)
         else        return $q.reject({"message": "subject id not found....very bad error!"});
     };
     
-    insertSubject = function(subject, root_folder){
+    insertSubject = function(subject, root_folder)
+    {
         subject.vocabulary  = [];
         subject.folder      = StringSrv.format2filesystem(subject.label);
+        subject.path        = audio_folder + "/" + subject.folder;
         
         return getHighestID()
         .then(function(id){
@@ -206,7 +191,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv)
     
     setSubjects = function (arrsubjects) {
         var json = {"subjects" : arrsubjects};
-        return FileSystemSrv.overwriteFile(subjects_json_relpath, JSON.stringify(json))
+        return FileSystemSrv.overwriteFile(subjects_filerel_path, JSON.stringify(json))
         .then(function(){
             return 1;
         });
@@ -224,6 +209,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv)
     // public interface
     //================================================================================
     return {
+        init: init,
         setSubjects: setSubjects,
         getSubjects: getSubjects, 
         createSubjectsFile: createSubjectsFile,
