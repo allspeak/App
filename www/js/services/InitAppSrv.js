@@ -339,6 +339,11 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         return service.config.checks.hasTrainVocabulary;
     };    
     
+    service.setTrainVocabularyPresence = function(present)
+    {
+        service.config.checks.hasTrainVocabulary = present;
+    };    
+    
     //==========================================================================
     // MERGE CURRENT CONFIG WITH POSSIBLE OVERRIDDING FROM CONTROLLERS' CALLS
     // (DOES NOT CHANGE service.config.appConfig.audio_configurations[profile] !!!!)

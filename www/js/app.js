@@ -29,9 +29,14 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
             })
             .catch(function(error)
             {
+                var str;
+                if(error.message)
+                    str = error.message;
+                else
+                    str = error;
                 $ionicPopup.alert({
                     title: 'Errore',
-                    template: "L\'applicazione verra chiusa per il seguente errore:\n" + error.message
+                    template: "L\'applicazione verra chiusa per il seguente errore:\n" + str
                 })
                 .then(function() {
 //                    ionic.Platform.exitApp();

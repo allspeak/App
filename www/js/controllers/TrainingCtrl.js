@@ -131,6 +131,7 @@ function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularyS
         $scope.vocabulary = selected_sentences;
         return VocabularySrv.setTrainVocabulary($scope.vocabulary)
         .then(function(){
+            InitAppSrv.setTrainVocabularyPresence(true);
             $scope.goToEditTrainSequence();
             $scope.$apply();
         });

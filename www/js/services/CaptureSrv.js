@@ -3,7 +3,7 @@
  */
 
 
-function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
+function CaptureSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
 {
     LOCK_TYPES = {
         FREE    : 0,
@@ -31,8 +31,6 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     _capturestopCB          = null; // used by capture
     _captureprogressCB      = null; // used by capture
     _errorCB                = null; // used by all the processes
-    _speechCapturedCB       = null; // used by vad
-    _speechStatusCB         = null; // used by vad
      
     data2bewritten          = 0;
     subsamplingFactor       = 8;
@@ -75,7 +73,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
      * 
      * TODO call it before displaying a page....and prevent the state change
      */
-    init = function(captureCfg, captureProfile, output_chunks, vadCfg)
+    init = function(captureCfg, captureProfile, output_chunks)
     {   
         pluginInterface = InitAppSrv.getPlugin();
         
@@ -92,7 +90,6 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                 speechChunksFilenameRoot    = "chunk_";          
             }
             Cfg.captureCfg  = InitAppSrv.getCaptureCfg(captureCfg, captureProfile);
-            Cfg.vadCfg      = InitAppSrv.getVadCfg(vadCfg);
             
             return Cfg;
         }
@@ -307,154 +304,6 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         ErrorSrv.raiseError(_errorCB, "_onAudioInputError event received: ", error, true);
         lockMode = LOCK_TYPES.FREE;
     };     
-    //==========================================================================
-    //==========================================================================
-    // GET SPEECH DATA
-    //==========================================================================
-    //==========================================================================
-    // PUBLIC ******************************************************************************************************
-    startSpeechRecognition = function (captureCfg, vadCfg, mfccCfg, tfCfg, onstartCB, onstopCB, cbSpeechCaptured, cbSpeechError, cbSpeechStatus, save) 
-    {
-        if(lockMode == LOCK_TYPES.FREE)
-        {        
-            try 
-            {
-                if(pluginInterface.isCapturing())
-                {
-                    ErrorSrv.raiseError(cbSpeechError, "SpeechDetectionServ::startSpeechDetection.....should never happen FREE(SpeechDetectionServ), but running(audioinput)!!! ");
-                    return false;
-                }
-                _clearCounters();
-                if(onstopCB !=  null) _capturestopCB  = onstopCB;    
-                else
-                {
-                    ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::startCapture, _capturestopCB is required but is null");
-                    return false;                    
-                }
-                    
-                if(onstartCB !=  null) _capturestartCB = onstartCB;    
-                else
-                {
-                    ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::startCapture, _capturestartCB is required but is null");
-                    return false;                    
-                }
-                
-                _speechCapturedCB   = cbSpeechCaptured;
-                _errorCB            = cbSpeechError;
-                _speechStatusCB     = cbSpeechStatus;     
-
-                if(save != null)
-                    save_chunk      = save;
-                else
-                    save_chunk      = false;     
-
-                totalNoOfSpeechCaptured = 0;         
-                audioRawDataQueue       = [];
-                sentenceData            = [];
-
-                window.addEventListener('audioinput'        , _onAudioRawInputCapture);
-                window.addEventListener('pluginError'       , _onAudioInputError);
-                window.addEventListener('capturestopped'    , _onStopCapture);
-                window.addEventListener('capturestarted'    , _onStartCapture);
-                window.addEventListener('speechstatus'      , _onSpeechStatus);
-
-                firstGetTime        = new Date().getTime();
-                console.log("start Speech Detection");
-                
-                pluginInterface.startSpeechRecognition(captureCfg, vadCfg, mfccCfg, tfCfg);
-                return true;
-            }
-            catch (e) {
-                ErrorSrv.raiseError(_errorCB, "startSpeechRecognition exception", e, true);
-            }
-        }
-        else
-        {
-            ErrorSrv.raiseWarning("SpeechDetectionSrv::startSpeechDetection service is locked!");
-            return null;
-        }           
-    };
-
-    // PUBLIC ***************************************************************************************************
-    stopSpeechRecognition = function () 
-    {
-        if(lockMode == LOCK_TYPES.CAPTURE)
-        {
-            pluginInterface.stopSpeechRecognition();
-            
-            if(saveFullSpeech)
-            {
-                var wavblob     = _dataArray2BlobWav(Cfg.captureCfg, audioRawDataQueue);
-                var filename    = speechChunksFolderRoot + "/full_speech.wav";
-                return saveBlobWav(wavblob, filename, 1)     
-                .then(function(){
-                    lockMode = LOCK_TYPES.FREE;
-                    if(speechCapturedCB != null)
-                        speechCapturedCB(filename, totalNoOfSpeechCaptured, wavblob); 
-                })
-                .catch(function(error) {
-                    ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::stopSpeechCapture", error);
-                    lockMode = LOCK_TYPES.FREE;
-                });                
-            }
-            totalNoOfSpeechCaptured = 0;
-        }
-        else
-        {
-            ErrorSrv.raiseWarning("SpeechDetectionSrv::stopSpeechDetection service is not on VAD!");
-            return null;
-        }         
-        
-    };
-    
-    // triggered by external js => notify through callback and not $q
-    _onSpeechCaptured = function() {
-        
-        totalNoOfSpeechCaptured++;
-        
-        if(save_chunk)
-        {
-//            var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + "_" + totalNoOfSpeechCaptured.toString() + ".wav";
-            var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + ".wav";
-            wavblob         = _dataArray2BlobWav(Cfg.captureCfg, sentenceData);
-
-            return FileSystemSrv.createFile(filename, wavblob, true)
-            .then(function(){
-                if(_speechCapturedCB != null)
-                    _speechCapturedCB(totalNoOfSpeechCaptured, filename);
-            })
-            .catch(function(error) {
-                if(_onSpeechError != null) _errorCB(error);
-            });
-        }
-        else _speechCapturedCB(totalNoOfSpeechCaptured, null);
-    };
-
-    _onSpeechStatus = function(event) 
-    {
-        var type = event.datatype;
-        switch(type)
-        {
-            case pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_SENTENCE:
-                _onSpeechCaptured();
-                break;
-                        
-            case pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_STARTED:
-                isSpeechStarted         = true;
-                sentenceData            = [];
-                break;
-                        
-            case pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_STOPPED:
-                isSpeechStarted         = false;
-                break;
-        }
-        _speechStatusCB(type);
-    };   
-    
-    _onSpeechError = function (error) {
-        totalNoOfSpeechErrors++;
-        ErrorSrv.raiseError(_errorCB, "SpeechDetectionSrv::_onSpeechError", error);
-    };
     //==============================================
     // PUBLIC ***************************************************************************************************
     // SAVE WAVE (don't need Web Audio API support)
@@ -588,8 +437,6 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         startMicPlayback        : startMicPlayback,
         startRawCapture         : startRawCapture, 
         stopCapture             : stopCapture,
-        startSpeechRecognition  : startSpeechRecognition,
-        stopSpeechRecognition   : stopSpeechRecognition,
         setPlayBackPercVol      : setPlayBackPercVol,
         calcRecConstants        : calcRecConstants,
         getCapturedData         : getCapturedData,
@@ -600,5 +447,5 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     };    
 }
 
-main_module.service('SpeechDetectionSrv', SpeechDetectionSrv);
+main_module.service('CaptureSrv', CaptureSrv);
 

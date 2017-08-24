@@ -20,7 +20,7 @@
             "resolved_odp"                      : ""
         },
         "audio_configurations"      : {
-            "recognition"                       : {
+            "recognition"   : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 512,
                 "nChannels"                     : 1,
@@ -29,9 +29,12 @@
                 "nConcatenateMaxChunks"         : 1,
                 "nNormalize"                    : true,
                 "fNormalizationFactor"          : 32767.0,
-                "nDataDest"                     : 202            
+                "nDataDest"                     : 202,
+                "nDataSubSample"                : 1,
+                "nChunkMaxLengthMS"             : 2000,
+                "sOutputPath"                   : ""            
             },
-            "amplifier"                         : {
+            "amplifier"     : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 512,
                 "nChannels"                     : 1,
@@ -40,9 +43,12 @@
                 "nConcatenateMaxChunks"         : 10,
                 "nNormalize"                    : true,
                 "fNormalizationFactor"          : 32767.0,
-                "nDataDest"                     : 202 
+                "nDataDest"                     : 202,
+                "nDataSubSample"                : 1,
+                "nChunkMaxLengthMS"             : 2000,
+                "sOutputPath"                   : ""   
             },
-            "record"                            : {
+            "record"        : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 1024,
                 "nChannels"                     : 1,
@@ -51,7 +57,10 @@
                 "nConcatenateMaxChunks"         : 10,
                 "nNormalize"                    : true,
                 "fNormalizationFactor"          : 32767.0,
-                "nDataDest"                     : 203 
+                "nDataDest"                     : 206,
+                "nDataSubSample"                : 1,
+                "nChunkMaxLengthMS"             : 20000,
+                "sOutputPath"                   : ""   
             },
             "vad"                               : {
                 "nSpeechDetectionThreshold"     : 15, 
@@ -64,7 +73,7 @@
                 "bDetectOnly"                   : false
             },
             "mfcc"                              : {
-                "nNumberOfMFCCParameters"       : 12,
+                "nNumberOfMFCCParameters"       : 13,
                 "dSamplingFrequency"            : 8000.0,
                 "nNumberofFilters"              : 24,
                 "nFftLength"                    : 256,
@@ -73,6 +82,10 @@
                 "bCalculate0ThCoeff"            : true,
                 "nWindowDistance"               : 80,
                 "nWindowLength"                 : 200,
+                "nDataType"                     : 251,
+                "nDataDest"                     : 231,
+                "nDataOrig"                     : 243,
+                "sOutputPath"                   : "",
                 "nDeltaWindow"                  : 2
             }
         },            
@@ -85,7 +98,8 @@
             "sInputNodeName"        : "inputs/I",   
             "sOutputNodeName"       : "SMO",
             "nDataDest"             : 270,              
-            "bLoaded"               : false
+            "bLoaded"               : false,
+            "fRecognitionThreshold" : 0.1
         },
         "remote"                    : {    
             "patient_id"            : "",

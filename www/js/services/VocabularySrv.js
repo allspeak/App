@@ -38,12 +38,12 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
                 {
                     var voc_string = JSON.stringify({"voicebank_vocabulary":voicebank_vocabulary});
                     return FileSystemSrv.createFile(voicebank_vocabulary_filerel_path, voc_string); 
-                });
+                })
             }
         })
         .then(function()
         {
-            return checkVoiceBankAudioPresence();
+            return checkVoiceBankAudioPresence()
         })
         .then(function()
         {            
@@ -161,7 +161,6 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
             return $q.reject(error);
         });          
     };
-    
     setTrainVocabulary = function (voc) 
     {
         train_vocabulary = voc;
@@ -253,6 +252,10 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
             
             if(!filename.length || filelabel_number.length == 1)
                 return null;
+            
+//            splfilename = filename.split("_"); var l = splfilename.length;  filename = "";
+//            for(s=1; s<l-1; s++)  filename += splfilename[s] + "_";
+//            filename += splfilename[s]
             
             if(filename == StringSrv.removeExtension(sentence.filename))
             {

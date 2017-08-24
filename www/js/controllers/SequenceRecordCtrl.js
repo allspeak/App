@@ -48,8 +48,6 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
 //                                "nAudioSourceType": 1,  //android voice recognition
 //                                "nBufferSize": 1024,
 //                                "nDataDest": 203};   
-    $scope.initMfccParams   = {nDataType: 251, nDataDest: 235};     // get MFFILTERS & write to file
-    
     // buttons text
     $scope.skipButtonLabel  = UITextsSrv.RECORD.BTN_SKIP_TRAIN;
     $scope.nextButtonLabel  = UITextsSrv.RECORD.BTN_NEXT_SINGLE;
@@ -112,17 +110,15 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             $scope.subject         = SubjectsSrv.getSubject($scope.subject_id);
         }        
         //---------------------------------------------------------------------------------------------------------------------
-
-        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(e)
-        {
-            e.preventDefault();
-        }, 100);           
         
         $scope.resetFlags();  
 
         switch ($scope.mode_id)
         {
             case EnumsSrv.RECORD.MODE_SINGLE_BANK:
+                
+                $scope.initMfccParams       = {nDataType: 251, nDataDest: 230};     // get MFFILTERS & DO NOT calculate MFCC
+                
                 $scope.preserveOriginal     = true;
                 $scope.isSequence           = false;
                 
@@ -143,6 +139,9 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 break;            
             
             case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:
+                
+                $scope.initMfccParams       = {nDataType: 251, nDataDest: 230};     // get MFFILTERS & DO NOT calculate MFCC
+                
                 $scope.preserveOriginal     = true;
                 $scope.isSequence           = true;
                 
@@ -164,6 +163,9 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 break;
                 
             case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING:
+
+                $scope.initMfccParams       = {nDataType: 251, nDataDest: 235};     // get MFFILTERS & write 2 file
+                
                 $scope.preserveOriginal     = false;   
                 $scope.isSequence           = true;
                 
@@ -212,8 +214,13 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         });
     });
     
+    $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(e)
+    {
+        e.preventDefault();
+    }, 100);      
+    
    $scope.$on('$ionicView.leave', function(){
-        $scope.deregisterFunc();
+        if($scope.deregisterFunc) $scope.deregisterFunc();
     });    
     //===================================================================================================================================================
     //===================================================================================================================================================

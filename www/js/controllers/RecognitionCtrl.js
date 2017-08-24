@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv)
+function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, StringSrv, $ionicPopup)
 {
                               
     $scope.saveFullSpeechData       = false;
@@ -16,13 +16,12 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
 //    $scope.captureParams            = { "nSampleRate"       : 8000,
 //                                        "nAudioSourceType"  : 1,  //android voice recognition
 //                                        "nBufferSize"       : 512};                      
-    $scope.initVadParams            = {};
-    $scope.initMfccParams           = {nDataType: 2, nDataDest: 0};     // get MFFILTERS & write to file
+    $scope.initMfccParams           = {nDataType: 251, nDataDest: 235};     // calculate MFFILTERS and use them internally
+    
     $scope.initTfParams             = {};
+    $scope.initVadParams            = {};
                     
-    $scope.chunkSaveParams          = { "output_relpath":   null, // it takes it from InitAppSrv.getAudioTempFolder(): "AllSpeak/audiofiles/temp"
-                                        "chunks_root_name": "chunk_"
-                                      };
+    $scope.chunkName                = "chunk.wav"
 
     //--------------------------------------------------------------------------
     // INITIALIZATIONS    
@@ -44,19 +43,15 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     
     $scope.$on("$ionicView.enter", function(event, data)
     {
-        pluginInterface                         = InitAppSrv.getPlugin();            
-        $scope.captureParams.nDataDest          = ($scope.saveSentences ? pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_RAWDB : pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_DB);
-    
-//        $scope.chunkSaveParams.output_relpath   = InitAppSrv.getAudioTempFolder(); // "AllSpeak/audiofiles/temp"
-        $scope.chunkSaveParams.output_relpath   = InitAppSrv.getAudioFolder(); // "AllSpeak/audiofiles"
-        $scope.audio_files_resolved_root        = FileSystemSrv.getResolvedOutDataFolder() + $scope.chunkSaveParams.output_relpath;   // FileSystemSrv.getResolvedOutDataFolder() ends with a slash: "file:///storage/emulated/0/"
-        $scope.relpath_root                     = $scope.chunkSaveParams.output_relpath;
-
+        $scope.pluginInterface                  = InitAppSrv.getPlugin();            
+        $scope.relpath_root                     = InitAppSrv.getAudioTempFolder();
+        $scope.audio_files_resolved_root        = FileSystemSrv.getResolvedOutDataFolder() + $scope.relpath_root ;   // FileSystemSrv.getResolvedOutDataFolder() ends with a slash: "file:///storage/emulated/0/"
         // get standard capture params + overwrite some selected
-        $scope.initVadParams.nAudioResultType   = ($scope.saveSentences ? pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA_SAVE_SENTENCE : pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA);
-        $scope.initTfParams.nDataDest           = pluginInterface.ENUM.PLUGIN.TF_DATADEST_MODEL_FILE;
+        $scope.initVadParams.nAudioResultType   = ($scope.saveSentences ? $scope.pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA_SAVE_SENTENCE : $scope.pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA);
+        $scope.initVadParams.sDebugString       = $scope.audio_files_resolved_root + "/" + $scope.chunkName;
+        $scope.initTfParams.nDataDest           = $scope.pluginInterface.ENUM.PLUGIN.TF_DATADEST_MODEL_FILE;
         
-        $scope.Cfg                              = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
+        $scope.Cfg                              = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, null, $scope.initVadParams); //{"output_relpath":$scope.relpath_root, "chunks_root_name":$scope.chunkName}
         $scope.captureCfg                       = $scope.Cfg.captureCfg;
         $scope.vadCfg                           = $scope.Cfg.vadCfg;
         $scope.mfccCfg                          = MfccSrv.init($scope.initMfccParams).mfccCfg;
@@ -77,7 +72,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
 
         window.addEventListener('headsetstatus', $scope.onHSStatusChange);
 
-        $scope.refreshAudioList($scope.chunkSaveParams.output_relpath);
+        $scope.refreshAudioList($scope.relpath_root);
         $scope.$apply();
     });    
     
@@ -117,6 +112,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     $scope.isSpeaking               = "OFF";
     $scope.isvoicemonitoring        = 0;
     $scope.voiceDB                  = 0;
+    $scope.thresholdDB              = 0;
     $scope.totalNoOfSpeechCaptured  = 0;
     $scope.chunksList               = [];    
         
@@ -144,7 +140,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
             $scope.emptyFolder()
             .then(function(success)
             {
-                SpeechDetectionSrv.startSpeechRecognition($scope.captureCfg, $scope.vadCfg, $scope.mfccCfg, $scope.tfCfg, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, $scope.saveFullSpeechData);
+                SpeechDetectionSrv.startSpeechRecognition($scope.captureCfg, $scope.vadCfg, $scope.mfccCfg, $scope.tfCfg, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
             })
         }
         else SpeechDetectionSrv.stopSpeechRecognition();
@@ -182,7 +178,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     $scope.onSpeechCaptured = function(totalNoOfSpeechCaptured, filename)
     {    
         $scope.totalNoOfSpeechCaptured = totalNoOfSpeechCaptured;
-        $scope.refreshAudioList($scope.chunkSaveParams.output_relpath);
+        $scope.refreshAudioList($scope.relpath_root);
     };
     
     $scope.onCaptureError = function(error)
@@ -193,7 +189,8 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     // called by plugin interface _pluginEvent::cordova.fireWindowEvent("audiometer",...
     $scope.onDBMETER = function(event)
     {    
-        $scope.voiceDB = event.decibels;
+        $scope.voiceDB      = event.decibels;
+        $scope.thresholdDB  = event.threshold;
         $scope.$apply();
     };
     
@@ -201,6 +198,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     $scope.onRecognitionResults = function(event)
     {    
         $scope.recognizedItems = event.items;
+        cordova.plugin.pDialog.dismiss();        
         $scope.$apply();
     };
     
@@ -213,17 +211,17 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     {    
         switch(code)
         {
-            case pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_STARTED:
+            case $scope.pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_STARTED:
                 $scope.isSpeaking = "ON"
                 $scope.$apply();
                 break;
 
-            case pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_STOPPED:
+            case $scope.pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_STOPPED:
                 $scope.isSpeaking = "OFF"
                 $scope.$apply();
                 break;
                 
-            case pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_SENTENCE:
+            case $scope.pluginInterface.ENUM.PLUGIN.SPEECH_STATUS_SENTENCE:
                 $scope.$apply();
                 break;
         }
@@ -233,14 +231,14 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     
     $scope.onHSStatusChange = function(event)
     {    
-        $scope.HeadsetAvailable = (event.datatype == pluginInterface.ENUM.PLUGIN.HEADSET_CONNECTED ? true : false);
+        $scope.HeadsetAvailable = (event.datatype == $scope.pluginInterface.ENUM.PLUGIN.HEADSET_CONNECTED ? true : false);
         $scope.HeadsetSelected = false;
         $scope.$apply();
     };
     
     $scope.onHeadsetChange = function(value)
     {    
-        pluginInterface.startSCOConnection(value);
+        $scope.pluginInterface.startSCOConnection(value);
     };
     
     //=====================================================================================
@@ -324,15 +322,102 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     //=====================================================================================       
     // DEBUG 
     //=====================================================================================        
-    $scope.recognize = function(filename)
+    $scope.debugActionA = function(filename)
     {      
-        cordova.exec($scope.onRecognitionResults, $scope.onRecognitionError,"SpeechRecognitionPlugin", "recognizeCepstraFile", [$scope.chunkSaveParams.output_relpath + "/" + filename]);
+        if(StringSrv.getExtension(filename) == "dat")
+        {
+                cordova.exec($scope.onRecognitionResults, $scope.onRecognitionError,"SpeechRecognitionPlugin", "recognizeCepstraFile", [$scope.relpath_root + "/" + filename]);
+                cordova.plugin.pDialog.init({
+                    theme : 'HOLO_DARK',
+                    progressStyle : 'HORIZONTAL',
+                    cancelable : false,
+                    title : 'Please Wait...',
+                    message : 'Recognizing Cepstra file...'
+                });                
+        }
+        else
+            $scope.playAudio(filename);
+    };
+    
+    $scope.debugActionB = function(filename)
+    {      
+        if(StringSrv.getExtension(filename) == "dat")
+        {
+            if(filename.substring(0,3) != "ctx")
+                var a;//create context file : $scope.chunkSaveParams.output_relpath + "/" + filename]);
+            else
+                alert("error while trying to calculate context file: dat file is already a ctx file");
+        }
+        else
+            $scope.extractFeatures(filename);   // create cepstra.dat from wav
     };
     
     $scope.onRecognitionError = function(error)
     { 
+        cordova.plugin.pDialog.dismiss();
+    };  
+    
+    //==============================================================================================================================
+    $scope.extractFeatures = function(filename) 
+    {  
+        $scope.nCurFile             = 0;
+        $scope.nFiles               = 1;
+        var overwrite_existing_files= true;
         
-    };   
+        return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi sovrascrivere i file esistenti?'})
+        .then(function(res) 
+        {
+            if (res) overwrite_existing_files=true; 
+        
+            window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
+            window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
+            window.addEventListener('pluginError'       , $scope.onMFCCError);
+
+            if(MfccSrv.getMFCCFromFile( $scope.relpath_root + "/" + filename, 
+                                        $scope.mfccCfg.nDataType,
+                                        $scope.pluginInterface.ENUM.PLUGIN.MFCC_DATADEST_FILE,
+                                        overwrite_existing_files))     // does not overwrite existing (and valid) mfcc files
+            {
+                cordova.plugin.pDialog.init({
+                    theme : 'HOLO_DARK',
+                    progressStyle : 'HORIZONTAL',
+                    cancelable : true,
+                    title : 'Please Wait...',
+                    message : 'Extracting CEPSTRA filters from folder \'s files...',
+                    max : $scope.nFiles
+                });
+                cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
+            }
+        });
+
+    };    
+    
+    $scope.onMFCCError = function(error){
+        alert(error.message);
+        $scope.resetExtractFeatures();
+        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+    };
+    
+    $scope.onMFCCProgressFile = function(res){
+        $scope.nCurFile++;
+        if($scope.nCurFile < $scope.nFiles) cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
+        else
+        {
+            $scope.resetExtractFeatures();
+            $scope.refreshAudioList($scope.relpath_root);
+            $scope.$apply();            
+        }
+        
+        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+    };
+    
+    $scope.resetExtractFeatures = function()
+    {
+        cordova.plugin.pDialog.dismiss();
+        window.removeEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
+        window.removeEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
+        window.removeEventListener('pluginerror'       , $scope.onMFCCError);  
+    };    
     //=====================================================================================        
 };
 controllers_module.controller('RecognitionCtrl', RecognitionCtrl)   
