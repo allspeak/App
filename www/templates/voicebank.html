@@ -1,36 +1,31 @@
 <ion-view view-title="Voice Bank">
-    
-    
-    
- <ion-nav-bar class="bar-positive">    
-    <ion-nav-back-button class="button-clear" ui-sref="home">
-        <i class="ion-arrow-left-c"></i>Home
-    </ion-nav-back-button>    
+
+    <ion-nav-bar class="bar-positive">    
+        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button>    
      
-    <ion-nav-buttons side="right">
-        <button class="button" ng-disabled="isBusy" ng-click="recordAudioSequence()">REGISTRA
-            <!--<i class="icon ion-mic-a"></i>-->
-        </button>
-    </ion-nav-buttons>       
-  </ion-nav-bar> 
-
-
-
-    
-   
+        <ion-nav-buttons side="right">
+            <button class="button" ng-click="newSentence()">
+                <i class="icon ion-plus-round"></i>
+            </button>        
+            <button class="button" ng-disabled="isBusy" ng-click="recordAudioSequence()">REGISTRA
+                <!--<i class="icon ion-mic-a"></i>-->
+            </button>
+        </ion-nav-buttons>       
+    </ion-nav-bar> 
     
     <ion-content>
-     
         <ion-list>
-            <ion-item class="item-button-right" ng-repeat="file in voicebankSentences"> {{file.title}}
+            <ion-item class="item-button-right" ng-repeat="sent in voicebankSentences"> {{sent.title}}
                 <div class="buttons">
-                    <button class="button button-clear button-balanced" ng-disabled="isBusy" ng-show="file.existwav" ng-click="playAudio(file.filename)">
+                    <button class="button button-clear button-balanced" ng-disabled="isBusy" ng-show="sent.existwav" ng-click="playAudio(sent.filename)">
                         <i class="icon ion-play"></i>
                     </button>
-                    <button class="button button-clear button-assertive" ng-disabled="isBusy" ng-click="recordAudio(file.id)">
+                    <button class="button button-clear button-assertive" ng-disabled="isBusy" ng-click="recordAudio(sent.id)">
                         <i class="icon ion-record"></i>
                     </button>
-                    <button class="button button-clear button-assertive" ng-disabled="isBusy" ng-disabled="isBusy" ng-show="file.existwav" ng-click="deleteAudio(file.filename)">
+                    <button class="button button-clear button-assertive" ng-disabled="isBusy" ng-show="sent.editable" ng-click="deleteSentence(sent)">
                         <i class="icon ion-trash-a"></i>
                     </button>
                 </div>                

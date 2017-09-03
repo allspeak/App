@@ -4,8 +4,8 @@
  * and open the template in the editor.
  */
 
-function ServerConnectionCtrl($scope)
+function SettingsServerCtrl($scope)
 {
 };
-controllers_module.controller('ServerConnectionCtrl', ServerConnectionCtrl);   
+controllers_module.controller('SettingsServerCtrl', SettingsServerCtrl);   
   

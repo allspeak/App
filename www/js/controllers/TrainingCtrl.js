@@ -175,6 +175,7 @@ function TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, VocabularyS
                                                             $scope.selectedTrainingModality.value, 
                                                             $scope.repetitionsCount, 
                                                             record_relpath,
+                                                            "audio",
                                                             true)                      //  add #repetition to file name
             .then(function(sequence)
             {

@@ -30,9 +30,10 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
     //        seq_folder          = rel_folder_root + "/training_" + StringSrv.formatDate();
     //        $scope.voicebankSentences.map(function(item) { return item.id; })
     // sentences_ids
-    calculateSequence = function(sentences, mode, nrepetitions, rel_folder_root, add_rep_cnt)
+    calculateSequence = function(sentences, mode, nrepetitions, rel_folder_root, file_prefix, add_rep_cnt)
     {
         clear();
+        if(file_prefix == null) file_prefix = "audio";
         if(add_rep_cnt == null) add_rep_cnt = true;
         var modality            = mode;
         var repetitions         = nrepetitions;
@@ -61,7 +62,7 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
                     for(s = 0; s < nsentences; s++)
                     {
                         var sentence        = sentences[s];
-                        var rel_filepath    = rel_folder_root + "/"+ StringSrv.removeExtension(sentence.filename);
+                        var rel_filepath    = rel_folder_root + "/"+ file_prefix + separator_filename_rep + sentence.id.toString();
                         if(add_rep_cnt)     rel_filepath += separator_filename_rep + r.toString() + EnumsSrv.RECORD.FILE_EXT;
                         else                rel_filepath += EnumsSrv.RECORD.FILE_EXT;
                         
@@ -77,7 +78,7 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
                     var sentence = sentences[s];
                     for(r = 0; r < nrepetitions; r++)
                     {
-                        var rel_filepath    = rel_folder_root + "/"+ StringSrv.removeExtension(sentence.filename);
+                        var rel_filepath    = rel_folder_root + "/"+ file_prefix + separator_filename_rep + sentence.id.toString();
                         if(add_rep_cnt)     rel_filepath += separator_filename_rep + r.toString() + EnumsSrv.RECORD.FILE_EXT;
                         else                rel_filepath += EnumsSrv.RECORD.FILE_EXT;
                         sequence.push({"id": sentence.id, "rel_filepath":rel_filepath, "title":sentence.title});
