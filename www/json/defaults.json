@@ -72,7 +72,8 @@
                 "bCompressPauses"               : false,
                 "nAnalysisChunkLength"          : 64,
                 "nAudioResultType"              : 262,
-                "bDetectOnly"                   : false
+                "sDebugString"                  : "",
+                "bAutoPause"                    : true
             },
             "mfcc"                              : {
                 "nNumberOfMFCCParameters"       : 13,
@@ -88,7 +89,8 @@
                 "nDataDest"                     : 231,
                 "nDataOrig"                     : 243,
                 "sOutputPath"                   : "",
-                "nDeltaWindow"                  : 2
+                "nDeltaWindow"                  : 2,
+                "nProcessingScheme"             : 252
             }
         },            
         "tf"                        : {

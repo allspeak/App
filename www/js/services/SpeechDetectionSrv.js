@@ -376,6 +376,12 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     };
 
     // PUBLIC ***************************************************************************************************
+    resumeSpeechRecognition = function () 
+    {
+        pluginInterface.resumeSpeechRecognition();
+    };
+    
+    // PUBLIC ***************************************************************************************************
     stopSpeechRecognition = function () 
     {
         if(lockMode == LOCK_TYPES.CAPTURE)
@@ -589,6 +595,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         startRawCapture         : startRawCapture, 
         stopCapture             : stopCapture,
         startSpeechRecognition  : startSpeechRecognition,
+        resumeSpeechRecognition : resumeSpeechRecognition,
         stopSpeechRecognition   : stopSpeechRecognition,
         setPlayBackPercVol      : setPlayBackPercVol,
         calcRecConstants        : calcRecConstants,

@@ -1,35 +1,31 @@
 <ion-view view-title="TRAINING">
 
-    
     <ion-nav-bar class="bar-positive">    
         <ion-nav-back-button class="button-clear" ui-sref="home">
             <i class="ion-arrow-left-c"></i>Home
         </ion-nav-back-button>    
-        
-<!--        <ion-nav-buttons side="right">
-            <button class="button" ng-if="editTrainSequence" ng-click="editTrainVocabulary()">EDIT
-            </button>
-        </ion-nav-buttons>          -->
-        
     </ion-nav-bar>  
     
+    <ion-header-bar class='bar-assertive bar-subheader bar-dark'>
+        <ion-toggle class="item item-dark" ng-model="toogleSelectAll" ng-if="editTrainVocabulary || editTrainSequence" ng-click="selectAll(toogleSelectAll)">
+            {{labelToggleSentences}}
+        </ion-toggle>    
+    </ion-header-bar>  
     
     <ion-footer-bar class="bar-positive">
-        
         <div class="button-bar" ng-if="editTrainVocabulary">        
             <button class="button button-custom button-block button-positive" ng-click="saveTrainVocabulary()">SALVA</button>
-            <button class="bu button button-custom button-block button-positive" ng-click="goToEditTrainSequence()">RITORNA</button>
+            <button class="bu button button-custom button-block button-positive" ng-click="showTrainVocabulary()">RITORNA</button>
         </div> 
         
         <div class="button-bar" ng-if="editTrainSequence">        
             <button class="button button-custom button-block button-positive" ng-click="startTraining()">{{labelStartTraining}}</button>        
             <button class="button button-custom button-block button-positive" ng-click="doEditTrainVocabulary()">{{labelEditTrainVocabulary}}</button>        
         </div>          
-        
     </ion-footer-bar>    
     
+    <!--<ion-content multiple-headers>-->
     <ion-content>
-
         <ion-item class="item-button-right" ng-if="editTrainSequence">Numero di ripetizioni: {{repetitionsCount}}
             <div class="buttons">
                 <button class="button button-large" ng-click="decrementRepCount();">-</button>
@@ -38,15 +34,7 @@
         </ion-item>   
             
         <button class="button button-full button-positive" ng-if="selectList" ng-click="selectSentences()">{{labelSelectSentences}}</button>  
-         
 
-<!--        <select class="button " ng-if="editTrainVocabulary" ng-model="selectedSentences">
-            <option ng-repeat="sentence in vocabulary" value="{{sentence.id}}"> {{sentence.title}}</option>
-        </select>        -->
-        
-        <ion-toggle class="item item-dark" ng-model="toogleSelectAll" ng-if="editTrainVocabulary || editTrainSequence" ng-click="selectAll(toogleSelectAll)">{{labelToggleSentences}}
-        </ion-toggle>
-        
         <ion-list>
             <ion-toggle
                     ng-repeat="sentence in vocabulary"
@@ -55,22 +43,7 @@
                     class="item item-text-wrap">
                     {{sentence.title}}
             </ion-toggle>            
-<!--            <ion-item ng-repeat="sentence in vocabulary">
-                <input type="checkbox" class="largerCheckbox" checklist-model="user.sentenceids2betrained" checklist-value="sentence.id"> {{sentence.title}}
-            </ion-item>            -->
-
         </ion-list>     
-        
     </ion-content>
-
-<style type="text/css">
-    input.largerCheckbox
-    {
-        width: 25px;
-        height: 25px;
-        vertical-align:middle; 
-    }
-</style>    
-    
 </ion-view>
 

@@ -12,6 +12,10 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.isBusy               = 0;
     $scope.isInsertingNewSent   = false;
     
+    $scope.subheaderAll         = "TUTTI I COMANDI"
+    $scope.subheaderTrained     = "COMANDI ADDESTRATI"
+    $scope.showOnlyTrained      = true;
+    
     $scope.record_by_sentences  = 1;
     
     $scope.successState         = "voicebank";
@@ -29,10 +33,18 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
             else                            $scope.closeModal();
         }, 100);   
         
+        $scope.showOnlyTrained      = true;        
         $scope.rel_rootpath         = InitAppSrv.getVoiceBankFolder(); 
         $scope.resolved_rootpath    = FileSystemSrv.getResolvedOutDataFolder() + $scope.rel_rootpath;
         $scope.sentencesCategories  = VocabularySrv.getVocabularyCategories();
-        $scope.refreshAudioList();
+        
+        return VocabularySrv.hasVoicesTrainVocabulary()
+        .then(function(res)
+        {
+            if(res) $scope.refreshAudioList();          // all training commands has their voice, display all VB items
+            else    $scope.refreshTrainingAudioList();  // some training commands doesn't have a recorded wav, display only commands belonging to the training list
+        })
+        
    });
 
     // ask user's confirm after pressing back (thus trying to exit from the App)
@@ -40,14 +52,39 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
  
     //==================================================================================================================
     //==================================================================================================================    
-    // get VB voc from service, thus updates UI, return 1 or 0 if failure
+    // get ALL VB voc elements from service, thus updates UI, return 1 or 0 if failure
     $scope.refreshAudioList = function()
     {
         $scope.isBusy    = 1;
         return VocabularySrv.checkVoiceBankAudioPresence()
-        .then(function(voc){
-            $scope.voicebankSentences = voc;
+        .then(function(voc)
+        {
+            $scope.voicebankSentences   = voc;
+            $scope.isBusy               = 0;
+            $scope.showOnlyTrained      = false; 
+            $scope.subHeaderTitle       = $scope.subheaderAll;
+            $scope.$apply();
+            return 1;
+        })
+        .catch(function(error){
+            alert(error.message);
             $scope.isBusy    = 0;
+            $scope.$apply();
+            return 0;
+        });
+    };
+    
+    // get ONLY those VB voc elements that belongs to the training list, thus updates UI, return 1 or 0 if failure
+    $scope.refreshTrainingAudioList = function()
+    {
+        $scope.isBusy    = 1;
+        return VocabularySrv.checkTrainVocabularyAudioPresence()
+        .then(function(voc)
+        {
+            $scope.voicebankSentences   = voc;
+            $scope.isBusy               = 0;
+            $scope.showOnlyTrained      = true; 
+            $scope.subHeaderTitle       = $scope.subheaderTrained;
             $scope.$apply();
             return 1;
         })
@@ -147,7 +184,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         {
             var volume       = 1; //$scope.volume/100;
             $scope.isBusy    = 1;
-            IonicNativeMediaSrv.playAudio($scope.resolved_rootpath + "/" + filename , volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
+            IonicNativeMediaSrv.playAudio($scope.resolved_rootpath + "/" + filename + ".wav", volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
         }
     };
     

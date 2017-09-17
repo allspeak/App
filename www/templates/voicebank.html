@@ -15,9 +15,21 @@
         </ion-nav-buttons>       
     </ion-nav-bar> 
     
+    
+    <ion-header-bar class='bar-assertive bar-subheader bar-dark'>
+        <h2 class='title'>{{subHeaderTitle}}</h2>
+    </ion-header-bar>
+    
+    <ion-footer-bar class="bar-positive">
+        <div class="button-bar">        
+            <button class="button button-custom button-block button-positive" ng-disabled="!showOnlyTrained" ng-click="refreshAudioList()">TUTTI</button>        
+            <button class="button button-custom button-block button-positive" ng-disabled="showOnlyTrained" ng-click="refreshTrainingAudioList()">ADDESTRATI</button>        
+        </div>             
+    </ion-footer-bar>      
+    
     <ion-content>
         <ion-list>
-            <ion-item class="item-button-right" ng-repeat="sent in voicebankSentences"> {{sent.title}}
+            <ion-item class="item-button-right" ng-repeat="sent in voicebankSentences track by $index"> {{sent.title}}
                 <div class="buttons">
                     <button class="button button-clear button-balanced" ng-disabled="isBusy" ng-show="sent.existwav" ng-click="playAudio(sent.filename)">
                         <i class="icon ion-play"></i>

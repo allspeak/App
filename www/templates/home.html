@@ -15,8 +15,8 @@
         <button class="button button-block button-large button-positive" ng-if="canRecognize" ng-click="goRecognition()">Riconosci</button>
         <button class="button button-block button-large button-assertive" ng-if="!canRecognize" ng-click="goRecognition()">Riconosci</button>
         
-        <button class="button button-block button-large button-positive" ng-if="vocabularyTrained" ui-sref="training">Addestra</button>
-        <button class="button button-block button-large button-assertive" ng-if="!vocabularyTrained" ui-sref="training">Addestra</button>
+        <button class="button button-block button-large button-positive" ng-if="modelLoaded" ui-sref="training">Addestra</button>
+        <button class="button button-block button-large button-assertive" ng-if="!modelLoaded" ui-sref="training">Addestra</button>
 
         <button class="button button-block button-large button-positive" ng-if="vocabularyHasVoices"ui-sref="voicebank">Registra la voce</button>        
         <button class="button button-block button-large button-assertive" ng-if="!vocabularyHasVoices"ui-sref="voicebank">Registra la voce</button

@@ -24,15 +24,24 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
     
         $scope.modelLoaded          = InitAppSrv.isModelLoaded();
         $scope.vocabularyPresent    = InitAppSrv.isTrainVocabularyPresent();
-        return VocabularySrv.hasVoicesTrainVocabulary()
-        .then(function(res)
+        if($scope.vocabularyPresent)
         {
-            $scope.vocabularyHasVoices = res;
-            
-            if($scope.modelLoaded && $scope.vocabularyPresent && $scope.vocabularyHasVoices)
-                        $scope.canRecognize = true;
-            else        $scope.canRecognize = false;
-        })
+            return VocabularySrv.hasVoicesTrainVocabulary()
+            .then(function(res)
+            {
+                $scope.vocabularyHasVoices = res;
+
+                if($scope.modelLoaded && $scope.vocabularyPresent && $scope.vocabularyHasVoices)
+                            $scope.canRecognize = true;
+                else        $scope.canRecognize = false;
+            })
+        }
+        else
+        {
+            $scope.vocabularyHasVoices  = false;
+            $scope.canRecognize         = false;
+        }
+        $scope.$apply();
     });
     
     $scope.$on('$ionicView.leave', function(){
