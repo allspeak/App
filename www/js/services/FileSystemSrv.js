@@ -282,6 +282,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         });
     };
     
+    // returns extension without dot
     service.removeExtension = function(fullname)
     {
         var arr = fullname.split(".");

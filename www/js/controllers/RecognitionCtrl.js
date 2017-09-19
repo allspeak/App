@@ -38,6 +38,8 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     $scope.HeadsetAvailable         = false;
     $scope.HeadsetSelected          = false;
     
+    $scope.modelsList = [];
+    
     //--------------------------------------------------------------------------                    
     $scope.$on("$ionicView.beforeLeave", function(event, data)
     {
@@ -48,6 +50,8 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     {
         $scope.pluginInterface                  = InitAppSrv.getPlugin();            
 
+        $scope.rel_modelsrootpath               = InitAppSrv.getTFModelsFolder();
+        
         $scope.rel_vbrootpath                   = InitAppSrv.getVoiceBankFolder();
         $scope.voicebank_resolved_root          = FileSystemSrv.getResolvedOutDataFolder() + $scope.rel_vbrootpath;   // FileSystemSrv.getResolvedOutDataFolder() ends with a slash: "file:///storage/emulated/0/"
 
@@ -59,7 +63,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
         $scope.captureCfg                       = $scope.Cfg.captureCfg;
         $scope.vadCfg                           = $scope.Cfg.vadCfg;
         $scope.mfccCfg                          = MfccSrv.init($scope.initMfccParams).mfccCfg;
-        $scope.tfCfg                            = TfSrv.init($scope.initTfParams).tfCfg;
+        $scope.tfCfg                            = TfSrv.change($scope.initTfParams).tfCfg;
 
         $scope.selectedSF                       = $scope.captureCfg.nSampleRate;
         $scope.selectedCBS                      = $scope.captureCfg.nBufferSize;
@@ -75,7 +79,8 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
         }
         else 
             $scope.initVadParams.sDebugString       = "";
-//        $scope.$apply();
+        
+        $scope.refreshModelsList($scope.rel_modelsrootpath);
     });    
     
     $scope.selectObjByValue = function(value, objarray)
@@ -288,6 +293,55 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     {    
         $scope.pluginInterface.startSCOConnection(value);
     };
+
+    
+    
+    
+    $scope.loadModel = function(value)
+    {    
+        
+    }; 
+
+    $scope.selectModel = function(index)
+    {
+        for(s=0; s<$scope.modelsList.length; s++)
+            if(s != index)
+                $scope.modelsList[s].checked = false;
+    };    
+    //=====================================================================================
+    // ACCESSORY
+    //=====================================================================================
+    $scope.refreshModelsList = function(dir)
+    {    
+        return FileSystemSrv.listFilesInDir(dir, ["json"])
+        .then(function(dirs)
+        {
+            var len = dirs.length;
+            $scope.modelsJson = [];
+            for (d=0; d<len; d++)
+            {
+                if (!dirs[d].isDirectory)
+                {
+                    $scope.modelsJson[d] = {"jsonname":StringSrv.removeExtension(dirs[d])};
+//                    return FileSystemSrv.readJSON($scope.rel_modelsrootpath + "/" + dirs[d])
+//                    .then(function(model)
+//                    {
+//                        $scope.modelsList[d] = model;
+//                    })
+//                    .catch(function(error)
+//                    {
+//                        console.log("RecognitionCtrl::refreshModelsList " + error.message);
+//                    });
+                }
+            }
+            $scope.$apply();
+            return 1;
+        }).catch(function(error){
+            alert(error.message);
+            return 0;
+        });
+    };
+    
     
     //=============================================================================================================================================================================
     // ---------- here starts the DEBUG section -----------------------------------------------------------------------------------------------------------------------------------

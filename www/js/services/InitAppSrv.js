@@ -23,7 +23,7 @@
  */
 
 
-function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
+function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, RemoteSrv)
 {
     var service                     = {}; 
     service.default_json_www_path   = "./json/defaults.json";
@@ -42,9 +42,14 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
         service.config.vocabulary                       = [];
         service.config.defaults                         = {};        
         service.config.checks                           = {};        
-        service.config.checks.hasTrainVocabulary        = false;        
+        service.config.checks.vocabularyPresent         = false;        
+        service.config.checks.vocabularyHasVoices       = false;        
+        service.config.checks.modelLoaded               = false;        
         service.config.checks.hasModelTrained           = false;        
         service.config.checks.isConnected               = false;        
+        service.config.checks.canRecognize              = false;        
+        
+        service.config.appConfig.tf_active_model        = "controls_fsc.json"; // must corresponds to : defaults.file_system.tf_default_model
     };
     service.initConfigStructure();    
    
@@ -181,8 +186,11 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
             service.config.defaults         = configdata.defaults;
             service.config.appConfig.device = HWSrv.getDevice();
             service.config.appConfig.plugin = eval(service.config.defaults.plugin_interface_name);
+            
             if(service.config.appConfig.plugin == null)
                 return $q.reject({"message": "audioinput plugin is not present"});
+
+            TfSrv.init(service.config.defaults.tf, service.config.defaults.file_system.tf_models_folder, service.config.appConfig.plugin);
         })         
         .catch(function(error){ 
             return $q.reject(error);               
@@ -206,20 +214,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
     // load the user's trained model
     service.loadTFModel = function()
     {
-        return FileSystemSrv.existFile(service.getTFModelsFolder() + "/" + service.config.defaults.tf.sModelFileName + ".pb")
-        .then(function(exist)
-        {
-            if (!exist) return 0;
-            else 
-                return service.config.appConfig.plugin.loadTFModel(service.getTfCfg())
-                .then(function()
-                {
-                    return 1;
-                })
-                .catch(function(error){ 
-                    return $q.reject(error);              
-                });                
-        })
+        return TfSrv.loadTFModel(service.getTFModelsFolder() + "/" + service.config.appConfig.tf_active_model)
         .then(function(res)
         {
             service.config.appConfig.tf.bLoaded = res;

@@ -10,7 +10,7 @@
             "voicebank_folder"                      : "AllSpeak/voicebank",
             "audio_temp_folder"                     : "AllSpeak/audiofiles/temp",
             "tf_models_folder"                      : "AllSpeak/models",
-            "tf_default_model"                      : "AllSpeak/models/default_it",
+            "tf_default_model"                      : "controls_fsc.json",
             "temp_folder"                           : "AllSpeak/temp",
             "json_folder"                           : "AllSpeak/json",
             "config_filerel_path"                   : "AllSpeak/json/config.json",
@@ -94,16 +94,18 @@
             }
         },            
         "tf"                        : {
+            "sLabel"                : "controls FSC 23",
             "nInputParams"          : 792,
             "nContextFrames"        : 11,
-            "nItems2Recognize"      : 25,
-            "sModelFileName"        : "trained",   
-            "sLabelFileName"        : "trained",   
+            "nItems2Recognize"      : 23,
+            "sModelFileName"        : "controls_fsc",   
             "sInputNodeName"        : "inputs/I",   
             "sOutputNodeName"       : "SMO",
+            "fRecognitionThreshold" : 0,
+            "nProcessingScheme"     : 252,
+            "sCreationTime"         : "13092017",
             "nDataDest"             : 270,              
-            "bLoaded"               : false,
-            "fRecognitionThreshold" : 0.1
+            "bLoaded"               : false            
         },
         "remote"                    : {    
             "patient_id"            : "",

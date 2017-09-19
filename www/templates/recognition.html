@@ -46,6 +46,17 @@
 
         <button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}}</button> 
         
+<!--        <ion-list>
+            <ion-toggle
+                    ng-repeat="model in modelsJson track by $index"
+                    ng-checked="model.checked"
+                    ng-model="model.checked"
+                    ng-click="selectModel($index)
+                    class="item item-text-wrap">
+                    {{model.jsonname]}}
+            </ion-toggle>            
+        </ion-list>  -->
+        
         <ion-list>
             <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
                 <div class="buttons">
@@ -61,6 +72,12 @@
                 </div>                
             </ion-item>
         </ion-list>
+        
+        <ion-list>
+            <ion-item ng-repeat="model in modelsJson track by $index">
+                <label>{{model.jsonname}}</label>
+            </ion-item>
+        </ion-list>         
         
         <ion-list>
             <ion-item ng-repeat="item in recognizedItems track by $index">
