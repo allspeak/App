@@ -69,7 +69,8 @@
             "sInputNodeName"        : "inputs/I",   
             "sOutputNodeName"       : "SMO",             
             "nDataDest"             : 270,
-            "bLoaded"               : false
+            "bLoaded"               : false,
+            "fRecognitionThreshold" : 0.1
         },       
         "remote"                    : {    
             "patient_id": "",

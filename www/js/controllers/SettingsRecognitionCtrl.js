@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function SetupRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSrv, $ionicPopup, $ionicHistory)
+function SettingsRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSrv, $ionicPopup, $ionicHistory)
 {
     $scope.captureProfile   = "recognition";
     $scope.captureParams    = null;
@@ -209,5 +209,5 @@ function SetupRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSrv, 
     // ============================================================================================
         
 };
-controllers_module.controller('SetupRecognitionCtrl', SetupRecognitionCtrl)   
+controllers_module.controller('SettingsRecognitionCtrl', SettingsRecognitionCtrl)   
   

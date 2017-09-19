@@ -14,14 +14,13 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     service.existFile = function(relative_path)
     {
         return $cordovaFile.checkFile(service.resolved_output_data_root, relative_path)
-        .then(function (success) {
+        .then(function (success){
             return 1;  
         })
-        .catch(function (error)   {
+        .catch(function (error){
             return $q.resolve(0);
         });        
     };
-    
     //--------------------------------------------------------------------------
     service.readJSON = function(relative_path)
     {
@@ -39,16 +38,19 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     // 2 : overwrite explicitly set to true  => do ovewrite
     // 1 : overwrite not specified           => ask if can overwrite
     // 0 : overwrite explicitly set to false => doesn't ovewrite
+    // textobj is {title: 'xxxxxx', template: 'yyyyyyyyyyyyyyyyyyyyy'}
     //--------------------------------------------------------------------------
-    service.createFile = function(relative_path, content, overwrite)
+    service.createFile = function(relative_path, content, overwrite, textobj)
     {
         var _overwrite = 1; // default behaviour: ask before overwriting
-        
-        if(overwrite != null){
+        if(overwrite != null)
+        {
             if(overwrite)   _overwrite = 2;
             else            _overwrite = 0;
         }
-        
+        if(textobj == null) textobj = { title: 'Attenzione', template: 'Il File esiste già, vuoi sovrascriverlo?'}
+
+        //-----------------------------------------------------------------------------------------------------------------------------    
         // already exist?
         return service.existFile(relative_path)
         .then(function(exist){
@@ -60,7 +62,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
                         
                     case 1:
                         // prompt for overwrite permissions
-                        return $ionicPopup.confirm({ title: 'Attenzione', template: 'File already exist, do you want to overwrite it?'})
+                        return $ionicPopup.confirm(textobj)
                         .then(function(res) 
                         {
                             if(res)     return service.overwriteFile(relative_path, content);               

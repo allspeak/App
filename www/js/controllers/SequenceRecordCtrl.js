@@ -26,12 +26,12 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     $scope.sentence_id      = -1;
     $scope.subject_id       = -1;       // used by multi-users Apps like VoiceRecorder
 
-    
+
     // behaviour switchers
-    $scope.preserveOriginal = false;        // if yes show two buttons group and let user choose the favourite
+    $scope.preserveOriginal = false;    // if yes show two buttons group and let user choose the favourite
     $scope.isSequence       = false;
-    $scope.existNewFile     = false;     // define whether enabling the Next & Exit buttons
-    $scope.existOriginalFile= false;     // define whether enabling the Next & Exit buttons
+    $scope.existNewFile     = false;    // define whether enabling the Next & Exit buttons
+    $scope.existOriginalFile= false;    // define whether enabling the Next & Exit buttons
     
     // rel path of wav files
     $scope.rel_filepath             = ""; 
@@ -48,8 +48,6 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
 //                                "nAudioSourceType": 1,  //android voice recognition
 //                                "nBufferSize": 1024,
 //                                "nDataDest": 203};   
-    $scope.initMfccParams   = {nDataType: 251, nDataDest: 235};     // get MFFILTERS & write to file
-    
     // buttons text
     $scope.skipButtonLabel  = UITextsSrv.RECORD.BTN_SKIP_TRAIN;
     $scope.nextButtonLabel  = UITextsSrv.RECORD.BTN_NEXT_SINGLE;
@@ -89,6 +87,12 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     
     $scope.$on("$ionicView.enter", function(event, data)
     {
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(e)
+        {
+            e.preventDefault();
+            $scope.cancel();
+        }, 100);         
+        
         //---------------------------------------------------------------------------------------------------------------------
         // manage input params
         //---------------------------------------------------------------------------------------------------------------------
@@ -112,17 +116,16 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             $scope.subject         = SubjectsSrv.getSubject($scope.subject_id);
         }        
         //---------------------------------------------------------------------------------------------------------------------
-
-        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(e)
-        {
-            e.preventDefault();
-        }, 100);           
         
         $scope.resetFlags();  
-
+        $scope.existNewFile     = false;
+        
         switch ($scope.mode_id)
         {
             case EnumsSrv.RECORD.MODE_SINGLE_BANK:
+                
+                $scope.initMfccParams       = {nDataType: 251, nDataDest: 230};     // get MFFILTERS & DO NOT calculate MFCC
+                
                 $scope.preserveOriginal     = true;
                 $scope.isSequence           = false;
                 
@@ -137,12 +140,14 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                     $scope.filename         = $scope.sentence.filename;                 // "ho_sete.wav"
                     $scope.audioFolder      = InitAppSrv.getVoiceBankFolder();          // AllSpeak/voicebank       
                     $scope.rel_filepath     = $scope.audioFolder + "/" + $scope.filename;
-                    
                 }
                 else                        alert("SequenceRecordCtrl::$ionicView.enter error : sentence is empty");
                 break;            
             
             case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:
+                
+                $scope.initMfccParams       = {nDataType: 251, nDataDest: 230};     // get MFFILTERS & DO NOT calculate MFCC
+                
                 $scope.preserveOriginal     = true;
                 $scope.isSequence           = true;
                 
@@ -164,6 +169,9 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 break;
                 
             case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING:
+
+                $scope.initMfccParams       = {nDataType: 251, nDataDest: 235};     // get MFFILTERS & write 2 file
+                
                 $scope.preserveOriginal     = false;   
                 $scope.isSequence           = true;
                 
@@ -211,9 +219,10 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             $scope.$apply();
         });
     });
+     
     
-   $scope.$on('$ionicView.leave', function(){
-        $scope.deregisterFunc();
+    $scope.$on('$ionicView.leave', function(){
+        if($scope.deregisterFunc) $scope.deregisterFunc();
     });    
     //===================================================================================================================================================
     //===================================================================================================================================================
@@ -227,7 +236,8 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     {
         if (!$scope.isRecording)
         {
-            $scope.mfccCfg.sOutputPath  = StringSrv.removeExtension($scope.rel_filepath);
+            $scope.mfccCfg.sOutputPath      = StringSrv.removeExtension($scope.rel_filepath);
+            $scope.captureCfg.sOutputPath   = StringSrv.removeExtension($scope.rel_filepath);
             SpeechDetectionSrv.startRawCapture($scope.captureCfg, $scope.refreshMonitoring, $scope.onStartCapture, $scope.onStopCapture, $scope.onCaptureError, $scope.mfccCfg);
         }
         else
@@ -247,25 +257,17 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     $scope.onStopCapture = function()
     {
         $scope.isRecording      = false;        
-        $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);        
+        $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);     
+        $ionicLoading.hide();  
+        $scope.existNewFile   = true;        
         $scope.$apply();
-        return $scope.saveAudio()
-        .then(function(){
-            $ionicLoading.hide();       
-//                $scope.getMFCC();
-        })
-        .catch(function(error){
-            $ionicLoading.hide();
-            console.log("startRecording .....ERROR while saving " + $scope.filename + ": " + JSON.stringify(error));
-        });            
     };
     
     $scope.refreshMonitoring = function(received_data, elapsed, npackets, bitrate, data_params, data){};    
-    EnumsSrv.RECORD.MODE_SINGLE_BANK
+
     $scope.onCaptureError = function(error)
     {
 //        window.removeEventListener('pluginerror', $scope.onCaptureError);
-        
         $ionicLoading.hide();
         $scope.isRecording      = false;
         $scope.recButtonLabel   = $scope.bLabelStart;      

@@ -1,0 +1,28 @@
+<ion-view view-title="Recording Session">
+    
+    <ion-nav-buttons side="right">
+        <button class="button" ng-click="deleteSession()">
+            <i class="icon ion-trash-a"></i>
+        </button>
+    </ion-nav-buttons>     
+    
+    <ion-content>
+        <ion-item >Subject Name : <span class="badge"> {{subject.label}} </span></ion-item>    
+        <ion-item >Session Name : <span class="badge"> {{sessionName}} </span></ion-item>    
+        
+        
+        <ion-item class="item-button-right">Recorded Sentences
+            <div class="buttons">
+                <button class="button button-balanced" ng-click="extractFeatures();">
+                    <i class="icon ion-stats-bars"></i>
+                </button>
+            </div>                
+        </ion-item>    
+
+        <ion-list>
+            <ion-item ng-repeat="sentence in subject.vocabulary track by sentence.id" ng-show="sentence.existwav>0" href="#/sentence/{{subject.id}}/{{sessionName}}/{{sentence.id}}">
+                {{sentence.title}} <span class="badge"> {{sentence.existwav}} </span>
+            </ion-item>
+        </ion-list>
+    </ion-content>    
+</ion-view>

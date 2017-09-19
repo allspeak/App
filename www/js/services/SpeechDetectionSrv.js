@@ -313,7 +313,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     //==========================================================================
     //==========================================================================
     // PUBLIC ******************************************************************************************************
-    startSpeechRecognition = function (captureCfg, vadCfg, mfccCfg, tfCfg, onstartCB, onstopCB, cbSpeechCaptured, cbSpeechError, cbSpeechStatus, save_full_speech) 
+    startSpeechRecognition = function (captureCfg, vadCfg, mfccCfg, tfCfg, onstartCB, onstopCB, cbSpeechCaptured, cbSpeechError, cbSpeechStatus, save) 
     {
         if(lockMode == LOCK_TYPES.FREE)
         {        
@@ -343,10 +343,10 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                 _errorCB            = cbSpeechError;
                 _speechStatusCB     = cbSpeechStatus;     
 
-                if(save_full_speech != null)
-                    saveFullSpeech      = save_full_speech;
+                if(save != null)
+                    save_chunk      = save;
                 else
-                    saveFullSpeech      = false;     
+                    save_chunk      = false;     
 
                 totalNoOfSpeechCaptured = 0;         
                 audioRawDataQueue       = [];
@@ -375,6 +375,12 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         }           
     };
 
+    // PUBLIC ***************************************************************************************************
+    resumeSpeechRecognition = function () 
+    {
+        pluginInterface.resumeSpeechRecognition();
+    };
+    
     // PUBLIC ***************************************************************************************************
     stopSpeechRecognition = function () 
     {
@@ -412,7 +418,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         
         totalNoOfSpeechCaptured++;
         
-        if(Cfg.vadCfg.nAudioResultType == pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA_SAVE_SENTENCE || Cfg.vadCfg.nAudioResultType == pluginInterface.ENUM.PLUGIN.VAD_RESULT_SAVE_SENTENCE)
+        if(save_chunk)
         {
 //            var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + "_" + totalNoOfSpeechCaptured.toString() + ".wav";
             var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + ".wav";
@@ -589,6 +595,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         startRawCapture         : startRawCapture, 
         stopCapture             : stopCapture,
         startSpeechRecognition  : startSpeechRecognition,
+        resumeSpeechRecognition : resumeSpeechRecognition,
         stopSpeechRecognition   : stopSpeechRecognition,
         setPlayBackPercVol      : setPlayBackPercVol,
         calcRecConstants        : calcRecConstants,

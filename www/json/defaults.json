@@ -4,23 +4,25 @@
         "assisted": 0,
         "plugin_interface_name"     : "window.speechrecognition",
         "file_system"               : {
-            "output_data_root"                  : "externalRootDirectory",
-            "app_folder"                        : "AllSpeak",
-            "audio_folder"                      : "AllSpeak/audiofiles",
-            "voicebank_folder"                  : "AllSpeak/voicebank",
-            "audio_temp_folder"                 : "AllSpeak/audiofiles/temp",
-            "tf_models_folder"                  : "AllSpeak/models",
-            "tf_default_model"                  : "AllSpeak/models/default_it",
-            "temp_folder"                       : "AllSpeak/temp",
-            "json_folder"                       : "AllSpeak/json",
-            "config_filerel_path"               : "AllSpeak/json/config.json",
-            "voicebank_vocabulary_www_path"     : "./json/voicebank_vocabulary.json",
-            "voicebank_vocabulary_filerel_path" : "AllSpeak/json/voicebank_vocabulary.json",
-            "train_vocabulary_filerel_path"     : "AllSpeak/json/train_vocabulary.json",
-            "resolved_odp"                      : ""
+            "output_data_root"                      : "externalRootDirectory",
+            "app_folder"                            : "AllSpeak",
+            "audio_folder"                          : "AllSpeak/audiofiles",
+            "voicebank_folder"                      : "AllSpeak/voicebank",
+            "audio_temp_folder"                     : "AllSpeak/audiofiles/temp",
+            "tf_models_folder"                      : "AllSpeak/models",
+            "tf_default_model"                      : "AllSpeak/models/default_it",
+            "temp_folder"                           : "AllSpeak/temp",
+            "json_folder"                           : "AllSpeak/json",
+            "config_filerel_path"                   : "AllSpeak/json/config.json",
+            "voicebank_vocabulary_www_path"         : "./json/voicebank_vocabulary.json",
+            "voicebank_vocabulary_filerel_path"     : "AllSpeak/json/voicebank_vocabulary.json",
+            "voicebank_uservocabulary_www_path"     : "./json/voicebank_uservocabulary.json",
+            "voicebank_uservocabulary_filerel_path" : "AllSpeak/json/voicebank_uservocabulary.json",
+            "train_vocabulary_filerel_path"         : "AllSpeak/json/train_vocabulary.json",
+            "resolved_odp"                          : ""
         },
         "audio_configurations"      : {
-            "recognition"                       : {
+            "recognition"   : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 512,
                 "nChannels"                     : 1,
@@ -29,9 +31,12 @@
                 "nConcatenateMaxChunks"         : 1,
                 "nNormalize"                    : true,
                 "fNormalizationFactor"          : 32767.0,
-                "nDataDest"                     : 202            
+                "nDataDest"                     : 202,
+                "nDataSubSample"                : 1,
+                "nChunkMaxLengthMS"             : 2000,
+                "sOutputPath"                   : ""            
             },
-            "amplifier"                         : {
+            "amplifier"     : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 512,
                 "nChannels"                     : 1,
@@ -40,9 +45,12 @@
                 "nConcatenateMaxChunks"         : 10,
                 "nNormalize"                    : true,
                 "fNormalizationFactor"          : 32767.0,
-                "nDataDest"                     : 202 
+                "nDataDest"                     : 202,
+                "nDataSubSample"                : 1,
+                "nChunkMaxLengthMS"             : 2000,
+                "sOutputPath"                   : ""   
             },
-            "record"                            : {
+            "record"        : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 1024,
                 "nChannels"                     : 1,
@@ -51,7 +59,10 @@
                 "nConcatenateMaxChunks"         : 10,
                 "nNormalize"                    : true,
                 "fNormalizationFactor"          : 32767.0,
-                "nDataDest"                     : 203 
+                "nDataDest"                     : 206,
+                "nDataSubSample"                : 1,
+                "nChunkMaxLengthMS"             : 20000,
+                "sOutputPath"                   : ""   
             },
             "vad"                               : {
                 "nSpeechDetectionThreshold"     : 15, 
@@ -61,10 +72,11 @@
                 "bCompressPauses"               : false,
                 "nAnalysisChunkLength"          : 64,
                 "nAudioResultType"              : 262,
-                "bDetectOnly"                   : false
+                "sDebugString"                  : "",
+                "bAutoPause"                    : true
             },
             "mfcc"                              : {
-                "nNumberOfMFCCParameters"       : 12,
+                "nNumberOfMFCCParameters"       : 13,
                 "dSamplingFrequency"            : 8000.0,
                 "nNumberofFilters"              : 24,
                 "nFftLength"                    : 256,
@@ -73,7 +85,12 @@
                 "bCalculate0ThCoeff"            : true,
                 "nWindowDistance"               : 80,
                 "nWindowLength"                 : 200,
-                "nDeltaWindow"                  : 2
+                "nDataType"                     : 251,
+                "nDataDest"                     : 231,
+                "nDataOrig"                     : 243,
+                "sOutputPath"                   : "",
+                "nDeltaWindow"                  : 2,
+                "nProcessingScheme"             : 252
             }
         },            
         "tf"                        : {
@@ -85,7 +102,8 @@
             "sInputNodeName"        : "inputs/I",   
             "sOutputNodeName"       : "SMO",
             "nDataDest"             : 270,              
-            "bLoaded"               : false
+            "bLoaded"               : false,
+            "fRecognitionThreshold" : 0.1
         },
         "remote"                    : {    
             "patient_id"            : "",

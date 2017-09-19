@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function DeviceCtrl($scope, InitAppSrv)
+function SettingsDeviceCtrl($scope, InitAppSrv)
 {
     $scope.device = null;
     $scope.$on("$ionicView.enter", function(event, data)
@@ -33,5 +33,5 @@ function DeviceCtrl($scope, InitAppSrv)
         }
     }
 };
-controllers_module.controller('DeviceCtrl', DeviceCtrl)   
+controllers_module.controller('SettingsDeviceCtrl', SettingsDeviceCtrl)   
   

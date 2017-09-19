@@ -29,12 +29,17 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
             })
             .catch(function(error)
             {
+                var str;
+                if(error.message)
+                    str = error.message;
+                else
+                    str = error;
                 $ionicPopup.alert({
                     title: 'Errore',
-                    template: "L\'applicazione verra chiusa per il seguente errore:\n" + error.message
+                    template: "L\'applicazione verra chiusa per il seguente errore:\n" + str
                 })
                 .then(function() {
-//                    ionic.Platform.exitApp();
+//                    ionic.Platform.exitApp(); // to uncomment in production
                 });                
                 console.log(error.message);
             });
@@ -50,8 +55,8 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
     });
 });
 
-main_module.config(function($stateProvider, $urlRouterProvider) {
-  
+main_module.config(function($stateProvider, $urlRouterProvider) 
+{
     $stateProvider
     .state('init', {
         url: '/',
@@ -97,6 +102,60 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
         templateUrl: 'templates/show_recording_session.html',
         controller: 'ShowRecordingSessionCtrl'
     })    
+    .state('settings', {
+        url: '/settings',
+        abstract: 'true',
+        templateUrl: 'templates/settings_tabs.html'
+    })
+    .state('settings.device', {
+        url: '/device',
+        views: 
+        {
+            'device-settings' : 
+            {
+                templateUrl: 'templates/settings_device.html',
+                controller: 'SettingsDeviceCtrl'
+            }
+        }
+    })
+    .state('settings.recognition', {
+        url: '/recognition_settings',
+        views: 
+        {
+        'recognition-settings' : 
+            {
+                templateUrl: 'templates/settings_recognition.html',  
+                controller: 'SettingsRecognitionCtrl'                               
+            }
+        }
+    })
+    .state('settings.bluetooth', {
+        url: '/bluetooth',
+        views: 
+        {
+        'bluetooth-settings' : 
+            {
+                templateUrl: 'templates/settings_bluetooth.html',
+                controller: 'SettingsBluetoothCtrl'
+            }
+        }
+    })
+    .state('settings.server_connection', {
+        url: '/server_connection',
+        views: 
+        {
+        'server-settings' : 
+            {
+                templateUrl: 'templates/settings_connection.html',
+                controller: 'SettingsServerCtrl'
+            }
+        }
+    });
+  
+  $urlRouterProvider.otherwise("/");
+  
+});
+
 
     
     
@@ -127,7 +186,7 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
 //        'edit-vocabulary' : 
 //            {
 //                templateUrl: 'templates/vocabulary_edit.html',  
-//                controller: 'SetupRecognitionCtrl'                               
+//                controller: 'SettingsRecognitionCtrl'                               
 //            }
 //        }
 //    })
@@ -138,7 +197,7 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
 //        'train-vocabulary' : 
 //            {
 //                templateUrl: 'templates/vocabulary_train.html',
-//                controller: 'BluetoothCtrl'
+//                controller: 'SettingsBluetoothCtrl'
 //            }
 //        }
 //    })
@@ -153,63 +212,6 @@ main_module.config(function($stateProvider, $urlRouterProvider) {
 //            }
 //        }
 //    })
-    .state('settings', {
-        url: '/settings',
-        abstract: 'true',
-        templateUrl: 'templates/settings_tabs.html'
-    })
-    .state('settings.device', {
-        url: '/device',
-        views: 
-        {
-            'device-settings' : 
-            {
-                templateUrl: 'templates/settings_device.html',
-                controller: 'DeviceCtrl'
-            }
-        }
-    })
-    .state('settings.recognition', {
-        url: '/recognition_settings',
-        views: 
-        {
-        'recognition-settings' : 
-            {
-                templateUrl: 'templates/settings_recognition.html',  
-                controller: 'SetupRecognitionCtrl'                               
-            }
-        }
-    })
-    .state('settings.bluetooth', {
-        url: '/bluetooth',
-        views: 
-        {
-        'bluetooth-settings' : 
-            {
-                templateUrl: 'templates/settings_bluetooth.html',
-                controller: 'BluetoothCtrl'
-            }
-        }
-    })
-    .state('settings.server_connection', {
-        url: '/server_connection',
-        views: 
-        {
-        'server-settings' : 
-            {
-                templateUrl: 'templates/settings_connection.html',
-                controller: 'ServerConnectionCtrl'
-            }
-        }
-    });
-  
-  $urlRouterProvider.otherwise("/");
-  
-});
-
-
-
-
 //    .state('vocabulary', {
 //        url: '/vocabulary',
 //        templateUrl: 'templates/vocabulary.html',

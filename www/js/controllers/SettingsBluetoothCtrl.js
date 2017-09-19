@@ -14,8 +14,8 @@ connected:
 
  */
 
-//function BluetoothCtrl($scope, $cordovaBLE)
-function BluetoothCtrl($scope, $cordovaBLE, $ionicPopup, $ionicPlatform, InitAppSrv)
+//function SettingsBluetoothCtrl($scope, $cordovaBLE)
+function SettingsBluetoothCtrl($scope, $cordovaBLE, $ionicPopup, $ionicPlatform, InitAppSrv)
 {
     $scope.bluetoothEnabled = false;
     $scope.BTOFF    = "Bluetooth spento, premi per attivare";
@@ -190,5 +190,5 @@ function BluetoothCtrl($scope, $cordovaBLE, $ionicPopup, $ionicPlatform, InitApp
     };
    
 };
-controllers_module.controller('BluetoothCtrl', BluetoothCtrl)   
+controllers_module.controller('SettingsBluetoothCtrl', SettingsBluetoothCtrl)   
   

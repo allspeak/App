@@ -194,7 +194,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
     // check if voice bank audio files are present
     service.LoadVocabularies = function()
     {
-        return VocabularySrv.init(service.config.defaults.file_system)
+        return VocabularySrv.initApp(service.config.defaults.file_system)
         .then(function(res){ 
             service.config.checks.hasTrainVocabulary = res;
         })       
@@ -337,6 +337,11 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, RemoteSrv)
     service.isTrainVocabularyPresent = function()
     {
         return service.config.checks.hasTrainVocabulary;
+    };    
+    
+    service.setTrainVocabularyPresence = function(present)
+    {
+        service.config.checks.hasTrainVocabulary = present;
     };    
     
     //==========================================================================
