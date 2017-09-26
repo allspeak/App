@@ -48,8 +48,6 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
         service.config.checks.hasModelTrained           = false;        
         service.config.checks.isConnected               = false;        
         service.config.checks.canRecognize              = false;        
-        
-        service.config.appConfig.tf_active_model        = "controls_fsc.json"; // must corresponds to : defaults.file_system.tf_default_model
     };
     service.initConfigStructure();    
    
@@ -172,7 +170,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
             else
             {
                 // file://.../config.json file does not exist, copy defaults subfields to appConfig subfields 
-                service._fillAppConfig();
+                service._createAppConfig();
                 var confString = JSON.stringify(service.config);
                 return FileSystemSrv.createFile(localConfigJson, confString)
                 .then(function(){
@@ -190,7 +188,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
             if(service.config.appConfig.plugin == null)
                 return $q.reject({"message": "audioinput plugin is not present"});
 
-            TfSrv.init(service.config.defaults.tf, service.config.defaults.file_system.tf_models_folder, service.config.appConfig.plugin);
+            TfSrv.init(service.config.defaults.tf, service.config.defaults.file_system.tf_models_folder, service.config.appConfig.tf_active_model, service.config.appConfig.plugin);
         })         
         .catch(function(error){ 
             return $q.reject(error);               
@@ -211,10 +209,10 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
         });
     }; 
     
-    // load the user's trained model
+    // load the active model
     service.loadTFModel = function()
     {
-        return TfSrv.loadTFModel(service.getTFModelsFolder() + "/" + service.config.appConfig.tf_active_model)
+        return TfSrv.loadTFModel()      // if no params => set the following path : service.getTFModelsFolder() + "/" + service.config.appConfig.tf_active_model
         .then(function(res)
         {
             service.config.appConfig.tf.bLoaded = res;
@@ -263,7 +261,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
    //==========================================================================
    // PRIVATE
    //==========================================================================
-    service._fillAppConfig =  function()
+    service._createAppConfig =  function()
     {
         service.config.appConfig.assisted                   = 0;
         service.config.appConfig.plugin                     = null;
@@ -275,8 +273,9 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
         service.config.appConfig.remote                     = service.config.defaults.remote;
         service.config.appConfig.device                     = HWSrv.getDevice();
         
-        service.config.appConfig.tf.sModelFilePath          = service.config.appConfig.file_system.resolved_odp + service.config.defaults.file_system.tf_models_folder + "/" + service.config.appConfig.tf.sModelFileName + ".pb";
-        service.config.appConfig.tf.sLabelFilePath          = service.config.appConfig.file_system.resolved_odp + service.config.defaults.file_system.tf_models_folder + "/" + service.config.appConfig.tf.sLabelFileName + ".txt";
+        service.config.appConfig.tf_active_model            = service.config.defaults.file_system.tf_default_model;
+//        service.config.appConfig.tf.sModelFilePath          = service.config.appConfig.file_system.resolved_odp + service.config.defaults.file_system.tf_models_folder + "/" + service.config.appConfig.tf.sModelFileName + ".pb";
+//        service.config.appConfig.tf.sLabelFilePath          = service.config.appConfig.file_system.resolved_odp + service.config.defaults.file_system.tf_models_folder + "/" + service.config.appConfig.tf.sLabelFileName + ".txt";
     };
 
     // try to connect the registered devices

@@ -5,7 +5,7 @@
     "nItems2Recognize": 23,
     "sModelFilePath": "controls_fsc.pb",
     "sInputNodeName": "inputs/I",
-    "sOutputNodeName": "O",
+    "sOutputNodeName": "SMO",
     "fRecognitionThreshold": 0,
     "nProcessingScheme": 252,
     "sCreationTime": "13092017",

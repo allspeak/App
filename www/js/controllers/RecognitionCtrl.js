@@ -38,8 +38,9 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     $scope.HeadsetAvailable         = false;
     $scope.HeadsetSelected          = false;
     
-    $scope.modelsList = [];
-    
+    $scope.modelsList               = [];
+    $scope.loadedJsonFile           = "";
+    $scope.loadedToggleId           = 0;        // id of the enabled toggle
     //--------------------------------------------------------------------------                    
     $scope.$on("$ionicView.beforeLeave", function(event, data)
     {
@@ -129,13 +130,11 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     };
     
     $scope.initMonitoring();
-    
-    
-    $scope.vm_voice_label_start = "Start Voice Activity Monitoring";
-    $scope.vm_voice_label_stop  = "Stop Voice Activity Monitoring";
+
+    $scope.vm_voice_label_start = "INIZIA";
+    $scope.vm_voice_label_stop  = "INTERROMPI";
     $scope.vm_voice_label       = $scope.vm_voice_label_start;
 
-   
     // ====================================================================================================
     // ====================================================================================================
     // called from DOM
@@ -281,7 +280,8 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
         console.log("code: " + code + " = " +$scope.speech_status_label[code]);
     }; 
 
-    
+    //=====================================================================================
+    // headset
     $scope.onHSStatusChange = function(event)
     {    
         $scope.HeadsetAvailable = (event.datatype == $scope.pluginInterface.ENUM.PLUGIN.HEADSET_CONNECTED ? true : false);
@@ -294,25 +294,38 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
         $scope.pluginInterface.startSCOConnection(value);
     };
 
-    
-    
-    
-    $scope.loadModel = function(value)
-    {    
-        
-    }; 
-
+    //=====================================================================================
+    // MODEL CHANGE
+    //=====================================================================================
     $scope.selectModel = function(index)
     {
-        for(s=0; s<$scope.modelsList.length; s++)
+        var currentId = $scope.loadedToggleId;
+        for(s=0; s<$scope.modelsJson.length; s++)
             if(s != index)
-                $scope.modelsList[s].checked = false;
-    };    
-    //=====================================================================================
-    // ACCESSORY
-    //=====================================================================================
+                $scope.modelsJson[s].checked = false;
+        return TfSrv.loadTFModel($scope.rel_modelsrootpath + "/" + $scope.modelsJson[index].jsonname + ".json")
+        .then(function(res)
+        {
+             console.log("selectModel success:" + res.toString());       
+             $scope.loadedToggleId = index;
+             $scope.$apply();
+        })
+        .catch(function(error)
+        {
+            if(error.message)   alert(error.message);        
+            else                alert("Errore durante il caricamento del nuovo modello: " + error);
+            
+            $scope.modelsJson[index].checked = false;
+            $scope.modelsJson[currentId].checked = true;
+            console.log("selectModel ERROR:" + error.message); 
+            return $scope.selectModel(currentId);
+//            $scope.$apply();
+        })
+    };
+    
     $scope.refreshModelsList = function(dir)
     {    
+        $scope.loadedJsonFile = TfSrv.getLoadedJsonFile();
         return FileSystemSrv.listFilesInDir(dir, ["json"])
         .then(function(dirs)
         {
@@ -323,15 +336,11 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
                 if (!dirs[d].isDirectory)
                 {
                     $scope.modelsJson[d] = {"jsonname":StringSrv.removeExtension(dirs[d])};
-//                    return FileSystemSrv.readJSON($scope.rel_modelsrootpath + "/" + dirs[d])
-//                    .then(function(model)
-//                    {
-//                        $scope.modelsList[d] = model;
-//                    })
-//                    .catch(function(error)
-//                    {
-//                        console.log("RecognitionCtrl::refreshModelsList " + error.message);
-//                    });
+                    if($scope.loadedJsonFile == dirs[d])
+                    {
+                        $scope.modelsJson[d].checked = true;
+                        $scope.loadedToggleId = d;
+                    }
                 }
             }
             $scope.$apply();
@@ -341,6 +350,9 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
             return 0;
         });
     };
+    //=====================================================================================        
+};
+controllers_module.controller('RecognitionCtrl', RecognitionCtrl)   
     
     
     //=============================================================================================================================================================================
@@ -364,155 +376,152 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     //=============================================================================================================================================================================
     // PLAYBACK CHUNKS
     //=====================================================================================
-    $scope.deleteAudio = function(filename)
-    {
-        var relpath = $scope.relpath_root;        
-        if (!$scope.isPlaying)
-        {        
-            FileSystemSrv.deleteFile($scope.relpath_root + "/" + filename)
-            .then(function(success){
-               $scope.refreshAudioList(relpath);
-            })
-            .catch(function(error){
-                alert(error.message);
-            });
-        }
-    };    
-    
-    //=====================================================================================
-    // ACCESSORY
-    //=====================================================================================
-    $scope.refreshAudioList = function(dir)
-    {    
-        var that = $scope;        
-        return FileSystemSrv.listDir(dir)
-        .then(function(dirs){
-            var len = dirs.length;
-            that.chunksList = [];
-            for (d=0; d<len; d++)
-            {
-                if (!dirs[d].isDirectory)
-                    that.chunksList[d] = dirs[d].name;
-            }
-            that.$apply();
-            return 1;
-        }).catch(function(error){
-            alert(error.message);
-            return 0;
-        });
-    };
-    
-    $scope.emptyFolder = function()
-    {
-        return FileSystemSrv.deleteDir($scope.relpath_root)
-        .then(function(success){
-           return FileSystemSrv.createDir($scope.relpath_root, 1);
-        })
-        .then(function(success){
-            $scope.refreshAudioList($scope.relpath_root);
-        })
-        .catch(function(error){
-            alert(error.message);
-            return 0;
-        });
-    };    
-    //=====================================================================================       
-    // DEBUG 
-    //=====================================================================================        
-    $scope.debugActionA = function(filename)
-    {      
-        if(StringSrv.getExtension(filename) == "dat")
-        {
-                cordova.exec($scope.onRecognitionResults, $scope.onRecognitionError,"SpeechRecognitionPlugin", "recognizeCepstraFile", [$scope.relpath_root + "/" + filename]);
-                cordova.plugin.pDialog.init({
-                    theme : 'HOLO_DARK',
-                    progressStyle : 'HORIZONTAL',
-                    cancelable : false,
-                    title : 'Please Wait...',
-                    message : 'Recognizing Cepstra file...'
-                });                
-        }
-        else
-            $scope.playAudio(filename);
-    };
-    
-    $scope.debugActionB = function(filename)
-    {      
-        if(StringSrv.getExtension(filename) == "dat")
-        {
-            if(filename.substring(0,3) != "ctx")
-                var a;//create context file : $scope.chunkSaveParams.output_relpath + "/" + filename]);
-            else
-                alert("error while trying to calculate context file: dat file is already a ctx file");
-        }
-        else
-            $scope.extractFeatures(filename);   // create cepstra.dat from wav
-    };
-
-    //==============================================================================================================================
-    $scope.extractFeatures = function(filename) 
-    {  
-        $scope.nCurFile             = 0;
-        $scope.nFiles               = 1;
-        var overwrite_existing_files= true;
-        
-        return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi sovrascrivere i file esistenti?'})
-        .then(function(res) 
-        {
-            if (res) overwrite_existing_files=true; 
-        
-            window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
-            window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
-            window.addEventListener('pluginError'       , $scope.onMFCCError);
-
-            if(MfccSrv.getMFCCFromFile( $scope.relpath_root + "/" + filename, 
-                                        $scope.mfccCfg.nDataType,
-                                        $scope.pluginInterface.ENUM.PLUGIN.MFCC_DATADEST_FILE,
-                                        overwrite_existing_files))     // does not overwrite existing (and valid) mfcc files
-            {
-                cordova.plugin.pDialog.init({
-                    theme : 'HOLO_DARK',
-                    progressStyle : 'HORIZONTAL',
-                    cancelable : true,
-                    title : 'Please Wait...',
-                    message : 'Extracting CEPSTRA filters from folder \'s files...',
-                    max : $scope.nFiles
-                });
-                cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
-            }
-        });
-
-    };    
-    
-    $scope.onMFCCError = function(error){
-        alert(error.message);
-        $scope.resetExtractFeatures();
-        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
-    };
-    
-    $scope.onMFCCProgressFile = function(res){
-        $scope.nCurFile++;
-        if($scope.nCurFile < $scope.nFiles) cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
-        else
-        {
-            $scope.resetExtractFeatures();
-            if($scope.saveSentences) $scope.refreshAudioList($scope.relpath_root);
-            $scope.$apply();            
-        }
-        
-        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
-    };
-    
-    $scope.resetExtractFeatures = function()
-    {
-        cordova.plugin.pDialog.dismiss();
-        window.removeEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
-        window.removeEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
-        window.removeEventListener('pluginerror'       , $scope.onMFCCError);  
-    };    
-    //=====================================================================================        
-};
-controllers_module.controller('RecognitionCtrl', RecognitionCtrl)   
+//    $scope.deleteAudio = function(filename)
+//    {
+//        var relpath = $scope.relpath_root;        
+//        if (!$scope.isPlaying)
+//        {        
+//            FileSystemSrv.deleteFile($scope.relpath_root + "/" + filename)
+//            .then(function(success){
+//               $scope.refreshAudioList(relpath);
+//            })
+//            .catch(function(error){
+//                alert(error.message);
+//            });
+//        }
+//    };    
+//    
+//    //=====================================================================================
+//    // ACCESSORY
+//    //=====================================================================================
+//    $scope.refreshAudioList = function(dir)
+//    {    
+//        var that = $scope;        
+//        return FileSystemSrv.listDir(dir)
+//        .then(function(dirs){
+//            var len = dirs.length;
+//            that.chunksList = [];
+//            for (d=0; d<len; d++)
+//            {
+//                if (!dirs[d].isDirectory)
+//                    that.chunksList[d] = dirs[d].name;
+//            }
+//            that.$apply();
+//            return 1;
+//        }).catch(function(error){
+//            alert(error.message);
+//            return 0;
+//        });
+//    };
+//    
+//    $scope.emptyFolder = function()
+//    {
+//        return FileSystemSrv.deleteDir($scope.relpath_root)
+//        .then(function(success){
+//           return FileSystemSrv.createDir($scope.relpath_root, 1);
+//        })
+//        .then(function(success){
+//            $scope.refreshAudioList($scope.relpath_root);
+//        })
+//        .catch(function(error){
+//            alert(error.message);
+//            return 0;
+//        });
+//    };    
+//    //=====================================================================================       
+//    // DEBUG 
+//    //=====================================================================================        
+//    $scope.debugActionA = function(filename)
+//    {      
+//        if(StringSrv.getExtension(filename) == "dat")
+//        {
+//                cordova.exec($scope.onRecognitionResults, $scope.onRecognitionError,"SpeechRecognitionPlugin", "recognizeCepstraFile", [$scope.relpath_root + "/" + filename]);
+//                cordova.plugin.pDialog.init({
+//                    theme : 'HOLO_DARK',
+//                    progressStyle : 'HORIZONTAL',
+//                    cancelable : false,
+//                    title : 'Please Wait...',
+//                    message : 'Recognizing Cepstra file...'
+//                });                
+//        }
+//        else
+//            $scope.playAudio(filename);
+//    };
+//    
+//    $scope.debugActionB = function(filename)
+//    {      
+//        if(StringSrv.getExtension(filename) == "dat")
+//        {
+//            if(filename.substring(0,3) != "ctx")
+//                var a;//create context file : $scope.chunkSaveParams.output_relpath + "/" + filename]);
+//            else
+//                alert("error while trying to calculate context file: dat file is already a ctx file");
+//        }
+//        else
+//            $scope.extractFeatures(filename);   // create cepstra.dat from wav
+//    };
+//
+//    //==============================================================================================================================
+//    $scope.extractFeatures = function(filename) 
+//    {  
+//        $scope.nCurFile             = 0;
+//        $scope.nFiles               = 1;
+//        var overwrite_existing_files= true;
+//        
+//        return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi sovrascrivere i file esistenti?'})
+//        .then(function(res) 
+//        {
+//            if (res) overwrite_existing_files=true; 
+//        
+//            window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
+//            window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
+//            window.addEventListener('pluginError'       , $scope.onMFCCError);
+//
+//            if(MfccSrv.getMFCCFromFile( $scope.relpath_root + "/" + filename, 
+//                                        $scope.mfccCfg.nDataType,
+//                                        $scope.pluginInterface.ENUM.PLUGIN.MFCC_DATADEST_FILE,
+//                                        overwrite_existing_files))     // does not overwrite existing (and valid) mfcc files
+//            {
+//                cordova.plugin.pDialog.init({
+//                    theme : 'HOLO_DARK',
+//                    progressStyle : 'HORIZONTAL',
+//                    cancelable : true,
+//                    title : 'Please Wait...',
+//                    message : 'Extracting CEPSTRA filters from folder \'s files...',
+//                    max : $scope.nFiles
+//                });
+//                cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
+//            }
+//        });
+//
+//    };    
+//    
+//    $scope.onMFCCError = function(error){
+//        alert(error.message);
+//        $scope.resetExtractFeatures();
+//        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+//    };
+//    
+//    $scope.onMFCCProgressFile = function(res){
+//        $scope.nCurFile++;
+//        if($scope.nCurFile < $scope.nFiles) cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
+//        else
+//        {
+//            $scope.resetExtractFeatures();
+//            if($scope.saveSentences) $scope.refreshAudioList($scope.relpath_root);
+//            $scope.$apply();            
+//        }
+//        
+//        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+//    };
+//    
+//    $scope.resetExtractFeatures = function()
+//    {
+//        cordova.plugin.pDialog.dismiss();
+//        window.removeEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
+//        window.removeEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
+//        window.removeEventListener('pluginerror'       , $scope.onMFCCError);  
+//    };    
 
 
 

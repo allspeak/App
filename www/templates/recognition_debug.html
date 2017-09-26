@@ -1,49 +1,86 @@
 <ion-view view-title="RICONOSCIMENTO">
     
- <ion-nav-bar class="bar-positive">    
-    <ion-nav-back-button class="button-clear" ui-sref="home">
-        <i class="ion-arrow-left-c"></i>Home
-    </ion-nav-back-button> 
-     
-    <ion-nav-buttons side="right">
-        <button class="button" ng-disabled="isvoicemonitoring" ng-click="go2settings()">
-            <i class="icon ion-mic-a"></i>
-        </button>
-    </ion-nav-buttons>      
-     
-  </ion-nav-bar>     
-     
-   
-  <ion-content>
-    <div class="list">
-       
-        <label class="item">is Speaking : <span class="badge">{{isSpeaking}}</span></label>        
-        <label class="item">Voice Intensity : <span class="badge">{{voiceDB}}/{{thresholdDB}}</span></label>        
+    <ion-nav-bar class="bar-positive">    
+        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button> 
 
-        <button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}}</button> 
-        
-        <ion-list>
-            <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
-                <div class="buttons">
-                    
-                    <button class="button button-clear button-balanced" ng-click="debugActionA(chunk)">
-                        <i class="icon ion-play"></i>
-                    </button>
-                    
-                    <button class="button button-clear button-balanced" ng-click="debugActionB(chunk)">
-                        <i class="icon ion-stats-bars"></i>
-                    </button>
-                   
-                </div>                
-            </ion-item>
-        </ion-list>
-        
-        <ion-list>
-            <ion-item ng-repeat="item in recognizedItems track by $index">
-                <label>{{item.title}}<span class="badge">{{item.confidence}}</span></label>
-            </ion-item>
-        </ion-list>         
-        
-    </div>      
-  </ion-content>
+        <ion-nav-buttons side="right">
+            <button class="button" ng-disabled="isvoicemonitoring" ng-click="go2settings()">
+                <i class="icon ion-mic-a"></i>
+            </button>
+        </ion-nav-buttons>      
+    </ion-nav-bar>     
+
+    <ion-footer-bar class="bar-positive">
+        <button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}}></button> 
+        <!--<button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}} <span class="badge" ng-class="isSpeaking == 'ON' ? 'color-green' : 'color-red'"></button>--> 
+    </ion-footer-bar>   
+
+    <ion-content>
+        <div class="list">
+            <label class="item">Voice Intensity : <span class="badge" ng-class="isSpeaking == 'ON' ? 'color-green' : 'color-red'">{{voiceDB}}/{{thresholdDB}}</span></label>        
+            
+            <ion-list>
+                <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
+                    <div class="buttons">
+                        <button class="button button-clear button-balanced" ng-click="debugActionA(chunk)">
+                            <i class="icon ion-play"></i>
+                        </button>
+
+                        <button class="button button-clear button-balanced" ng-click="debugActionB(chunk)">
+                            <i class="icon ion-stats-bars"></i>
+                        </button>
+                    </div>                
+                </ion-item>
+            </ion-list>
+
+            <div class="card">
+                <div class="item item-divider">
+                    MODELLI UTILIZZABILI
+                </div>
+                <ion-list>
+                    <ion-toggle
+                            ng-repeat="model in modelsJson"
+                            ng-checked="model.checked"
+                            ng-model="model.checked"
+                            ng-click="selectModel($index)"
+                            ng-disabled="isvoicemonitoring"
+                            class="item item-text-wrap">
+                            {{model.jsonname}}
+                    </ion-toggle>            
+                </ion-list>  
+            </div>
+
+            <div class="card">
+                <div class="item item-divider">COMANDO RICONOSCIUTO</div>
+                <ion-list>
+                    <ion-item ng-repeat="item in recognizedItems track by $index">
+                        <label>{{item.title}}<span class="badge">{{item.confidence}}</span></label>
+                    </ion-item>
+                </ion-list>         
+            </div>                
+        </div>      
+    </ion-content>
+    
+    <style type="text/css">
+
+        .color-green {
+          color: green;
+        }
+
+        .color-blue {
+          color: blue;
+        }
+
+        .color-red {
+          color: red;
+        }        
+        .bar-footer{
+            height:50px !important;
+        }     
+    
+    </style>     
 </ion-view>
+
+

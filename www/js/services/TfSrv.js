@@ -3,7 +3,7 @@
  */
 
 
-function TfSrv(FileSystemSrv)
+function TfSrv(FileSystemSrv, $q)
 {
     // Management of default values:
     // each time I call : init (captureCfg, captureProfile, output_chunks, vadCfg, mfccCfg)
@@ -11,9 +11,10 @@ function TfSrv(FileSystemSrv)
     // 2) overwrite with App defaults (according to init.json)
     // 3) overwrite with possible controllers defaults                 
     tfCfg         = null;
-    
-    // hold standard Capture Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
-    standardTfCfg = null;    
+    modelJson    = ""       // json file containing model info
+    modelLabel    = ""      // corresponds to tfCfg.sLabel....must be unique !!
+    standardTfCfg = null;   // hold standard TF Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
+    oldTfCfg = null;        // copied while loading a new model, restored if something fails
     modelsFolder = "";
     
     //==========================================================================
@@ -21,10 +22,11 @@ function TfSrv(FileSystemSrv)
     //==========================================================================
     //
     // PUBLIC ********************************************************************************************************
-    init = function(jsonTfCfg, modelsfolder, plugin)
+    init = function(jsonTfCfg, modelsfolder, modeljson, plugin)
     {  
         standardTfCfg   = jsonTfCfg;
         modelsFolder    = modelsfolder;
+        modelJson       = modeljson;
         pluginInterface = plugin;
         plugin_enum     = pluginInterface.ENUM.tf;
     };
@@ -40,18 +42,45 @@ function TfSrv(FileSystemSrv)
     {
         return tfCfg;
     };    
+    //--------------------------------------------------------------------------
+     // PUBLIC *************************************************************************************************
+   getLoadedJsonFile = function()
+    {
+        return modelJson;
+    };    
     //  end DEFAULT VALUES MANAGEMENT
     //--------------------------------------------------------------------------
      // PUBLIC *************************************************************************************************
     loadTFModel = function(model_relpath)
     {
-        return FileSystemSrv.readJSON(model_relpath)
+        if(model_relpath == null)   model_relpath = modelsFolder + "/" + modelJson;
+        return _getModel(model_relpath)
         .then(function(model)
-        {   
-            model.sModelFilePath = FileSystemSrv.getResolvedOutDataFolder() + modelsFolder + "/" + model.sModelFilePath;
+        {     
             return pluginInterface.loadTFModel(model);
         })
+        .catch(function(error)
+        {
+            return $q.reject(error);
+        })        
     };    
+    
+    _getModel = function(model_relpath)
+    {
+        oldTfCfg = tfCfg;        
+        return FileSystemSrv.readJSON(model_relpath)
+        .then(function(model)
+        {
+            model.sModelFilePath = FileSystemSrv.getResolvedOutDataFolder() + modelsFolder + "/" + model.sModelFilePath;
+            tfCfg = model;    
+            return tfCfg;
+        })        
+        .catch(function(error)
+        {
+            tfCfg = oldTfCfg;
+            return $q.reject(error);
+        })        
+    };
     //  end DEFAULT VALUES MANAGEMENT
 
     getUpdateCfg = function (tfCfg)
@@ -72,6 +101,7 @@ function TfSrv(FileSystemSrv)
         init                : init,
         change              : change,
         getCfg              : getCfg,
+        getLoadedJsonFile   : getLoadedJsonFile,
         loadTFModel         : loadTFModel
     };    
 }
