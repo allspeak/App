@@ -21,6 +21,8 @@
         <div class="list">
             <label class="item">Voice Intensity : <span class="badge" ng-class="isSpeaking == 'ON' ? 'color-green' : 'color-red'">{{voiceDB}}/{{thresholdDB}}</span></label>        
             
+            <ion-toggle class="item" ng-model="headsetSelected" ng-disabled="isvoicemonitoring || !headsetAvailable" ng-click="useHS(headsetSelected)">Attiva Microfono esterno</ion-toggle>             
+            
             <ion-list>
                 <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
                     <div class="buttons">

@@ -35,8 +35,8 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     $scope.mfccCfg                  = null;        
     $scope.tfCfg                    = null;  
 
-    $scope.HeadsetAvailable         = false;
-    $scope.HeadsetSelected          = false;
+    $scope.headsetAvailable         = true;
+    $scope.headsetSelected          = false;
     
     $scope.modelsList               = [];
     $scope.loadedJsonFile           = "";
@@ -239,7 +239,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
         }
     }; 
     
-    // send resumeRecognition commando to plugin
+    // send resumeRecognition command to plugin
     $scope.OnPlaybackCompleted = function(success)
     {
         $scope.isPlaying    = 0;
@@ -281,19 +281,21 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     }; 
 
     //=====================================================================================
-    // headset
+    // HEADSET
+    //=====================================================================================
+    // plugin callback
     $scope.onHSStatusChange = function(event)
-    {    
-        $scope.HeadsetAvailable = (event.datatype == $scope.pluginInterface.ENUM.PLUGIN.HEADSET_CONNECTED ? true : false);
-        $scope.HeadsetSelected = false;
+    {   
+        var res                 = (event.datatype == $scope.pluginInterface.ENUM.PLUGIN.HEADSET_CONNECTED ? true : false);
+        $scope.headsetAvailable = res;
+        $scope.headsetSelected  = res;
         $scope.$apply();
     };
     
-    $scope.onHeadsetChange = function(value)
+    $scope.useHS = function(bool)
     {    
-        $scope.pluginInterface.startSCOConnection(value);
+        $scope.pluginInterface.startSCOConnection(bool);
     };
-
     //=====================================================================================
     // MODEL CHANGE
     //=====================================================================================
