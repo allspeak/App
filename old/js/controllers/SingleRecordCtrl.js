@@ -24,7 +24,7 @@ function SingleRecordCtrl($scope, $window, $q, $ionicHistory, $ionicPopup, Speec
         if ($scope.sentence)
         {
             $scope.filename     = StringSrv.removeExtension($scope.sentence.filename) + $scope.sentence.firstValidId + ".wav";
-            $scope.audioFolder  = InitAppSrv.appData.file_system.audio_folder; 
+            $scope.audioFolder  = InitAppSrv.appData.file_system.training_folder; 
             $scope.relwavpath   = $scope.audioFolder + "/" + $scope.subject.folder + "/" + $scope.filename;                
         }
     });

@@ -34,14 +34,15 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
                 if($scope.modelLoaded && $scope.vocabularyPresent && $scope.vocabularyHasVoices)
                             $scope.canRecognize = true;
                 else        $scope.canRecognize = false;
+                $scope.$apply();                
             })
         }
         else
         {
             $scope.vocabularyHasVoices  = false;
             $scope.canRecognize         = false;
+            $scope.$apply();            
         }
-        $scope.$apply();
     });
     
     $scope.$on('$ionicView.leave', function(){

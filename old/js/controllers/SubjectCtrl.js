@@ -35,7 +35,7 @@ function SubjectCtrl($scope, $ionicModal, $ionicPopup, $state, SubjectsSrv, Init
     
     $scope.refreshAudioList = function()
     {
-        SubjectsSrv.getSubjectVocabularyFiles($scope.vocabulary, $scope.subject.label, InitAppSrv.appData.file_system.audio_folder)
+        SubjectsSrv.getSubjectVocabularyFiles($scope.vocabulary, $scope.subject.label, InitAppSrv.appData.file_system.training_folder)
         .then(function(vocabulary){
             $scope.subject.vocabulary = vocabulary;
             $scope.$apply();
@@ -124,7 +124,7 @@ function SubjectCtrl($scope, $ionicModal, $ionicPopup, $state, SubjectsSrv, Init
     //==============================================================================================================================
     //==============================================================================================================================
     $scope.deleteSubject = function() {
-        SubjectsSrv.deleteSubject($scope.subject.id, InitAppSrv.appData.file_system.audio_folder)
+        SubjectsSrv.deleteSubject($scope.subject.id, InitAppSrv.appData.file_system.training_folder)
         .then(function(){
              $state.go("subjects");       
         })

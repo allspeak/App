@@ -152,9 +152,9 @@ function SettingsRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSr
     
     $scope.save = function(doexit)
     {
-            return InitAppSrv.saveAudioConfigField('vad', $scope.vadCfg)
+            return InitAppSrv.saveCaptureConfigField('vad', $scope.vadCfg)
         .then(function(){
-            return InitAppSrv.saveAudioConfigField('recognition', $scope.captureCfg);
+            return InitAppSrv.saveCaptureConfigField('recognition', $scope.captureCfg);
         })
         .then(function(){        
             if(doexit)  $ionicHistory.goBack(); // back ! 

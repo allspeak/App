@@ -23,7 +23,7 @@
  */
 
 
-function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, RemoteSrv)
+function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, SpeechDetectionSrv, TfSrv, MfccSrv, RemoteAPISrv)
 {
     var service                     = {}; 
     service.default_json_www_path   = "./json/defaults.json";
@@ -65,6 +65,9 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
         })
         .then( function() {
             return service.loadConfigFile();        
+        })        
+        .then( function() {
+            return service.initServices();        
         })        
         .then( function() {
             return service.LoadVocabularies();
@@ -137,7 +140,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
         
             return FileSystemSrv.createDir(default_file_system.app_folder, false)
         .then(function(){        
-            return FileSystemSrv.createDir(default_file_system.audio_folder, false);
+            return FileSystemSrv.createDir(default_file_system.training_folder, false);
         })
         .then(function(){        
             return FileSystemSrv.createDir(default_file_system.voicebank_folder, false);
@@ -159,7 +162,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
         });        
     };     
     //====================================================================================================================
-    // if config.json is not present in file:/// , create it
+    // if config.json is not present in file:/// , create it from asset folder
     service.loadConfigFile = function()
     {
         var localConfigJson = service.config.defaults.file_system.config_filerel_path;
@@ -187,12 +190,20 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
             
             if(service.config.appConfig.plugin == null)
                 return $q.reject({"message": "audioinput plugin is not present"});
-
-            TfSrv.init(service.config.defaults.tf, service.config.defaults.file_system.tf_models_folder, service.config.appConfig.tf_active_model, service.config.appConfig.plugin);
         })         
         .catch(function(error){ 
             return $q.reject(error);               
         });        
+    };
+    
+    //====================================================================================================================
+    // init the main 4 data services
+    service.initServices = function()
+    {
+        SpeechDetectionSrv.init(service.config.defaults.capture_configurations, service.config.defaults.vad, service.config.appConfig.plugin);
+        TfSrv.init(service.config.defaults.tf, service.config.defaults.file_system.tf_models_folder, service.config.appConfig.tf_active_model, service.config.appConfig.plugin);
+        MfccSrv.init(service.config.defaults.mfcc, service.config.appConfig.plugin);
+        RemoteAPISrv.init(service.config.defaults.remote, service.config.appConfig.plugin);
     };
     
     //====================================================================================================================
@@ -221,8 +232,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
         })        
         .catch(function(error){ 
             service.config.appConfig.tf.bLoaded = false;
-            service.config.checks.hasModelTrained = false;
-            return $q.reject(error);              
+            service.config.checks.hasModelTrained = false;            return $q.reject(error);              
         });
     };
     //====================================================================================================================
@@ -246,7 +256,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
     service.loginServer = function(remote)
     {
         // ********************* TODO *****************
-        return RemoteSrv.loginServer(remote)
+        return RemoteAPISrv.loginServer(remote)
         .then(function(success)
         {
             service.config.checks.isConnected = true;
@@ -290,7 +300,7 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
     //==========================================================================
     service.getAudioFolder = function()
     {
-        return service.config.defaults.file_system.audio_folder;
+        return service.config.defaults.file_system.training_folder;
     }; 
     
     service.getVoiceBankFolder = function()
@@ -306,6 +316,11 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
     service.getTempFolder = function()
     {
         return service.config.defaults.file_system.temp_folder;
+    }; 
+    
+    service.getDefaultTrainingFolder = function()
+    {
+        return service.config.defaults.file_system.default_training_folder;
     }; 
     
     service.getTFModelsFolder = function()
@@ -337,60 +352,6 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
     {
         service.config.checks.hasTrainVocabulary = present;
     };    
-    
-    //==========================================================================
-    // MERGE CURRENT CONFIG WITH POSSIBLE OVERRIDDING FROM CONTROLLERS' CALLS
-    // (DOES NOT CHANGE service.config.appConfig.audio_configurations[profile] !!!!)
-    //==========================================================================
-    // receive some cfg params from the controller and overwrite the standard values, returns the full object (controllers params + other as default)
-    service.getCaptureCfg = function (captureCfg, profile)
-    {
-        var cfg = service.config.appConfig.audio_configurations[profile];
-        
-        if (captureCfg != null)
-        {
-            for (item in captureCfg)
-                cfg[item] = captureCfg[item];
-        }        
-        return cfg;
-    };    
-    
-    service.getVadCfg = function (vadCfg)
-    {
-        var cfg = service.config.appConfig.audio_configurations.vad;
-        
-        if (vadCfg != null)
-        {
-            for (item in vadCfg)
-                cfg[item] = vadCfg[item];
-        }        
-        return cfg;
-    };     
-    
-    service.getMfccCfg = function (mfccCfg)
-    {
-        var cfg = service.config.appConfig.audio_configurations.mfcc;
-        
-        if (mfccCfg != null)
-        {
-            for (item in mfccCfg)
-                cfg[item] = mfccCfg[item];
-        }        
-        return cfg;
-    };     
-    
-    service.getTfCfg = function (tfCfg)
-    {
-        var cfg = service.config.appConfig.tf;
-        
-        if (tfCfg != null)
-        {
-            for (item in tfCfg)
-                cfg[item] = tfCfg[item];
-        }        
-        return cfg;
-    };     
-    
     //==========================================================================
     // UPDATE INIT.json
     //==========================================================================
@@ -404,17 +365,14 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
                 case "capture":
                 case "record":
                 case "recognition":
+                    service.config.appConfig.capture_configurations[field] = service.config.defaults.capture_configurations[field];
+                    break;
+
                 case "vad":
                 case "mfcc":
-                    service.config.appConfig.audio_configurations[field] = service.config.defaults.audio_configurations[field];
-                    break;
-                    
                 case "tf":
-                    service.config.appConfig[field] = service.config.defaults[field];
-                    break;
-                    
                 case "remote":
-                    service.config.appConfig.remote = service.config.defaults.remote;
+                    service.config.appConfig[field] = service.config.defaults[field];
                     break;
             }
         }
@@ -428,17 +386,17 @@ function InitAppSrv($http, $q, VocabularySrv, FileSystemSrv, HWSrv, TfSrv, Remot
         });
     };
 
-    service.saveAudioConfigField = function(field, obj)
+    service.saveCaptureConfigField = function(field, obj)
     {
-        var old_conf = service.config.appConfig.audio_configurations[field];
-        service.config.appConfig.audio_configurations[field] = obj;
+        var old_conf = service.config.appConfig.capture_configurations[field];
+        service.config.appConfig.capture_configurations[field] = obj;
         // writes data to JSON
         return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
         .then(function(){
             return 1;
         })
         .catch(function(error){ 
-            service.config.appConfig.audio_configurations[field] = old_conf;
+            service.config.appConfig.capture_configurations[field] = old_conf;
             return $q.reject(error);              
         });
     };

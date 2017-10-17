@@ -12,13 +12,13 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
 
     // values taken by defaults.json
     var subjects_filerel_path   = "";   // AllSpeak/json/subjects.json
-    var audio_folder   = "";            // AllSpeak/audiofiles
+    var training_folder   = "";            // AllSpeak/audiofiles
     
     //-----------------------------------------------------------------------------------------------------------------
     init = function(default_paths)
     {
         subjects_filerel_path   = default_paths.subjects_filerel_path;
-        audio_folder            = default_paths.audio_folder;
+        training_folder            = default_paths.training_folder;
         
         return FileSystemSrv.existFile(subjects_filerel_path)
         .then(function(exist){
@@ -103,7 +103,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
         return getSubjectAudioFiles(relpath)
         .then(function(files){
             // I get only wav file names without extension
-            return VocabularySrv.parseVocabularyFiles(vocabulary, files);// writes subject.vocabulary[:].files[]
+            return VocabularySrv.updateVocabularyFiles(vocabulary, files);// writes subject.vocabulary[:].files[]
         })
         .catch(function(error){
             return $q.reject(error);
@@ -118,8 +118,8 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
         
         return getSubjectAudioFiles(relpath)
         .then(function(files){
-            // I get only wav file names without extension
-            return VocabularySrv.parseSentenceFiles(sentence, files);// writes subject.vocabulary[:].files[]
+            // files = [wav file names without extension]
+            return VocabularySrv.updateSentenceFiles(sentence, files);// writes subject.vocabulary[:].files[]
         })
         .catch(function(error){
             return $q.reject(error);
@@ -142,7 +142,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
      * returns  : updated subjects array
      * called by: subjectCtrl
      */
-    deleteSubject = function(subject_id, audio_folder){
+    deleteSubject = function(subject_id, training_folder){
 
         var len_subjs   = subjects.length;
         var id          = -1;
@@ -157,7 +157,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
             subjects.splice(id, 1);
             return setSubjects(subjects)
             .then(function(){
-                return FileSystemSrv.deleteDir(audio_folder + "/" + dir2delete); /// mettere anche audiofolder......non trova la cartella ma non dice niente...malissimo
+                return FileSystemSrv.deleteDir(training_folder + "/" + dir2delete); /// mettere anche audiofolder......non trova la cartella ma non dice niente...malissimo
             })
             .then(function(){
                 return subjects;
@@ -173,7 +173,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
     {
         subject.vocabulary  = [];
         subject.folder      = StringSrv.format2filesystem(subject.label);
-        subject.path        = audio_folder + "/" + subject.folder;
+        subject.path        = training_folder + "/" + subject.folder;
         
         return getHighestID()
         .then(function(id){

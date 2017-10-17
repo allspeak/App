@@ -12,7 +12,7 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
 {
     var sequence            = [];   // array of sentences to be recorded
     var modality            = 1;    // by sentence....blocks of nrepetition sentences
-    var repetitions         = 5;
+    var repetitions         = EnumsSrv.RECORD.SESSION_MIN_REPETITIONS;
     var curr_sequence_id    = 0;
     var seq_folder          = "";
     
@@ -94,6 +94,11 @@ function SequencesRecordingSrv(FileSystemSrv, StringSrv, EnumsSrv)
             return null;
         });
     };
+
+    completeSequence = function(sentences, mode, nrepetitions, rel_folder_root, file_prefix, add_rep_cnt)
+    {
+        
+    }
     
     getSequenceLength = function()
     {

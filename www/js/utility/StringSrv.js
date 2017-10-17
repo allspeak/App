@@ -16,32 +16,42 @@ function StringSrv()
         return str;
     };
     
+    //  AllSpeak/training_sessions/default/training_vocabulary.json => AllSpeak/training_sessions/default/training_vocabulary
     service.removeExtension = function(fullname)
     {
+        var str;
         var arr = fullname.split(".");
-        arr.splice(-1,1);
-        str = arr.join(".");
+        if(arr.length == 1) str = arr[0];
+        else
+        {
+            arr.splice(-1,1);
+            str = arr.join(".");
+        }
         return str;
     };    
     
+    //  AllSpeak/training_sessions/default/training_vocabulary.json => json
     service.getExtension = function(fullname)
     {
         var arr = fullname.split(".");
         return arr[arr.length-1];
     };    
     
+    //  AllSpeak/training_sessions/default/training_vocabulary.json => training_vocabulary.json
     service.getFileNameExt = function(fullname)
     {
         var arr = fullname.split("/");
         return arr[arr.length-1];
     };    
 
+    //  AllSpeak/training_sessions/default/training_vocabulary.json => training_vocabulary
     service.getFileNameNoExt = function(fullname)
     {
         var arr = fullname.split("/");
         return service.removeExtension(arr[arr.length-1]);
     };    
 
+    //  AllSpeak/training_sessions/default/training_vocabulary.json => AllSpeak/training_sessions/default
     service.getFileFolder = function(fullname)
     {
         var arr = fullname.split("/");
@@ -49,6 +59,15 @@ function StringSrv()
         return arr.join("/");
     };    
 
+    //  AllSpeak/training_sessions/default/training_vocabulary.json => default
+    service.getFileFolderName = function(fullname)
+    {
+        var folder  = service.getFileFolder(fullname);
+        var arr     = folder.split("/");
+        return arr[arr.length-1];
+    };    
+
+    //  AllSpeak/training_sessions/default/training_vocabulary.json => AllSpeak/training_sessions
     service.getFileParentFolder = function(fullname)
     {
         var arr = service.getFileFolder(fullname);
@@ -57,7 +76,14 @@ function StringSrv()
         return arr.join("/");
     };    
     
-    
+    //  AllSpeak/training_sessions/default/training_vocabulary.json => training_sessions
+    service.getFileParentFolderName = function(fullname)
+    {
+        var parentfolder    = service.getFileParentFolderName(fullname);
+        arr                 = parentfolder.split("/");
+        return arr[arr.length-1];
+    };    
+
     // split a string in : string + final number (e.g. "gigi23" -> ["gigi", 23]
     // start from the last char and check if is a number, if NO => ["string"]
     // if yes, take the last-last char ...and so on
@@ -86,14 +112,13 @@ function StringSrv()
             }
         }
     };     
-
     
     service.formatDate = function(inputFormat) 
     {
         function pad(s) { return (s < 10) ? "0" + s.toString() : s.toString(); }
         var d = new Date();
         return pad(d.getDate()) + pad(d.getMonth()+1) + d.getFullYear().toString() + "_" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
-    };  
+    };   
     
     return service;
 };

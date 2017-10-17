@@ -27,6 +27,17 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     $scope.subject_id       = -1;       // used by multi-users Apps like VoiceRecorder
 
 
+    // over-ride params
+    $scope.captureProfile       = "record";
+    $scope.initCaptureParams    = {};
+    $scope.initMfccParams       = {nDataType: 251, nDataDest: 235};     // calculate MFFILTERS and use them internally
+    
+    $scope.Cfg                  = {};
+    $scope.Cfg.captureCfg       = {};
+    $scope.Cfg.vadCfg           = null; 
+    $scope.Cfg.mfccCfg          = {};
+
+
     // behaviour switchers
     $scope.preserveOriginal = false;    // if yes show two buttons group and let user choose the favourite
     $scope.isSequence       = false;
@@ -41,13 +52,6 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     $scope.sentence         = null;
     $scope.subject          = null;     // used by multi-users Apps like VoiceRecorder
 
-    // capture params
-    $scope.captureProfile   = "record";
-    $scope.captureParams    = {};
-//                                "nSampleRate": 8000,
-//                                "nAudioSourceType": 1,  //android voice recognition
-//                                "nBufferSize": 1024,
-//                                "nDataDest": 203};   
     // buttons text
     $scope.skipButtonLabel  = UITextsSrv.RECORD.BTN_SKIP_TRAIN;
     $scope.nextButtonLabel  = UITextsSrv.RECORD.BTN_NEXT_SINGLE;
@@ -137,7 +141,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 
                 if ($scope.sentence)
                 {
-                    $scope.filename         = $scope.sentence.filename;                 // "ho_sete.wav"
+                    $scope.filename         = $scope.sentence.filename;                 // "vb_1102.wav"
                     $scope.audioFolder      = InitAppSrv.getVoiceBankFolder();          // AllSpeak/voicebank       
                     $scope.rel_filepath     = $scope.audioFolder + "/" + $scope.filename;
                 }
@@ -187,7 +191,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 {
                     $scope.rel_filepath     = $scope.sentence.rel_filepath;
                     $scope.filename         = StringSrv.getFileNameExt($scope.rel_filepath);
-                    $scope.audioFolder      = InitAppSrv.getAudioFolder();          // AllSpeak/voicebank or AllSpeakRecorder/audio_files/SUBJ_LABEL           
+                    $scope.audioFolder      = InitAppSrv.getAudioFolder();          // AllSpeak/training_sessions/ or AllSpeakRecorder/audio_files/
                 }
                 else                        alert("SequenceRecordCtrl::$ionicView.enter error : sentence is empty");                          
                 break;
@@ -195,13 +199,17 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         //-------------------------------------------------------------------------------
         //capture params
         $scope.pluginInterface      = InitAppSrv.getPlugin();        
-        $scope.plugin_enum          = $scope.pluginInterface.ENUM.PLUGIN;        
+        $scope.plugin_enum          = $scope.pluginInterface.ENUM.PLUGIN; 
+        
         // get standard capture params + overwrite some selected
-        $scope.Cfg                  = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile);
-        $scope.captureCfg           = $scope.Cfg.captureCfg;
+        $scope.Cfg.captureCfg       = $scope.initCaptureParams;
+        $scope.Cfg.vadCfg           = null;
+        $scope.Cfg                  = SpeechDetectionSrv.getUpdatedCfg($scope.Cfg, $scope.captureProfile);        
+
+        $scope.Cfg.mfccCfg          = MfccSrv.getUpdatedCfg($scope.initMfccParams);
+        
         
         // MFCC service
-        $scope.mfccCfg              = MfccSrv.init($scope.initMfccParams).mfccCfg;
         //-------------------------------------------------------------------------------
         return FileSystemSrv.existFile($scope.rel_filepath)
         .then(function(exist)
@@ -236,9 +244,9 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     {
         if (!$scope.isRecording)
         {
-            $scope.mfccCfg.sOutputPath      = StringSrv.removeExtension($scope.rel_filepath);
-            $scope.captureCfg.sOutputPath   = StringSrv.removeExtension($scope.rel_filepath);
-            SpeechDetectionSrv.startRawCapture($scope.captureCfg, $scope.refreshMonitoring, $scope.onStartCapture, $scope.onStopCapture, $scope.onCaptureError, $scope.mfccCfg);
+            $scope.Cfg.mfccCfg.sOutputPath      = StringSrv.removeExtension($scope.rel_filepath);
+            $scope.Cfg.captureCfg.sOutputPath   = StringSrv.removeExtension($scope.rel_filepath);
+            SpeechDetectionSrv.startRawCapture($scope.Cfg.captureCfg, $scope.refreshMonitoring, $scope.onStartCapture, $scope.onStopCapture, $scope.onCaptureError, $scope.Cfg.mfccCfg);
         }
         else
         {
@@ -294,7 +302,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
         window.addEventListener('pluginerror'       , $scope.onMFCCError);                
 
-        MfccSrv.getMFCCFromFile(filepath_noext, $scope.mfccCfg.nDataType, $scope.mfccCfg.nDataDest);
+        MfccSrv.getMFCCFromFile(filepath_noext, $scope.Cfg.mfccCfg.nDataType, $scope.Cfg.mfccCfg.nDataDest);
 
 //        var data = SpeechDetectionSrv.getCapturedData();MfccSrv.getMFCCFromData(data, $scope.plugin_enum.MFCC_DATATYPE_MFFILTERS, $scope.plugin_enum.MFCC_DATADEST_ALL, filepath_noext);        
     };
@@ -453,7 +461,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 {
                     // sequence terminated
                     if($scope.successState != "")
-                        $state.go($scope.successState, {sessionPath:StringSrv.getFileParentFolder($scope.rel_filepath)});
+                        $state.go($scope.successState, {trainingPath: StringSrv.getFileParentFolderName($scope.rel_filepath), sessionPath:StringSrv.getFileFolderName($scope.rel_filepath), subjId:""});
                     else
                         $ionicHistory.goBack();
                 }
@@ -494,7 +502,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 .then(function()
                 {
                     if($scope.successState != "")
-                        $state.go($scope.successState, {sessionPath:StringSrv.getFileParentFolder($scope.rel_filepath)});
+                        $state.go($scope.successState, {trainingPath: StringSrv.getFileParentFolderName($scope.rel_filepath), sessionPath:StringSrv.getFileFolderName($scope.rel_filepath), subjId:""});
                     else
                         $ionicHistory.goBack();
                 })

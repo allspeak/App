@@ -6,9 +6,10 @@
         "file_system"               : {
             "output_data_root"                      : "externalRootDirectory",
             "app_folder"                            : "AllSpeak",
-            "audio_folder"                          : "AllSpeak/audiofiles",
+            "training_folder"                       : "AllSpeak/training_sessions",
+            "default_training_folder"               : "AllSpeak/training_sessions/default",
             "voicebank_folder"                      : "AllSpeak/voicebank",
-            "audio_temp_folder"                     : "AllSpeak/audiofiles/temp",
+            "audio_temp_folder"                     : "AllSpeak/training_sessions/temp",
             "tf_models_folder"                      : "AllSpeak/models",
             "tf_default_model"                      : "controls_fsc.json",
             "temp_folder"                           : "AllSpeak/temp",
@@ -18,10 +19,10 @@
             "voicebank_vocabulary_filerel_path"     : "AllSpeak/json/voicebank_vocabulary.json",
             "voicebank_uservocabulary_www_path"     : "./json/voicebank_uservocabulary.json",
             "voicebank_uservocabulary_filerel_path" : "AllSpeak/json/voicebank_uservocabulary.json",
-            "train_vocabulary_filerel_path"         : "AllSpeak/json/train_vocabulary.json",
+            "train_vocabulary_filerel_path"         : "AllSpeak/training_sessions/default/train_vocabulary.json",
             "resolved_odp"                          : ""
         },
-        "audio_configurations"      : {
+        "capture_configurations"      : {
             "recognition"   : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 512,
@@ -63,40 +64,41 @@
                 "nDataSubSample"                : 1,
                 "nChunkMaxLengthMS"             : 20000,
                 "sOutputPath"                   : ""   
-            },
-            "vad"                               : {
-                "nSpeechDetectionThreshold"     : 15, 
-                "nSpeechDetectionAllowedDelay"  : 400,
-                "nSpeechDetectionMaximum"       : 10000,
-                "nSpeechDetectionMinimum"       : 500,
-                "bCompressPauses"               : false,
-                "nAnalysisChunkLength"          : 64,
-                "nAudioResultType"              : 262,
-                "sDebugString"                  : "",
-                "bAutoPause"                    : true
-            },
-            "mfcc"                              : {
-                "nNumberOfMFCCParameters"       : 13,
-                "dSamplingFrequency"            : 8000.0,
-                "nNumberofFilters"              : 24,
-                "nFftLength"                    : 256,
-                "bIsLifteringEnabled"           : true,
-                "nLifteringCoefficient"         : 22,
-                "bCalculate0ThCoeff"            : true,
-                "nWindowDistance"               : 80,
-                "nWindowLength"                 : 200,
-                "nDataType"                     : 251,
-                "nDataDest"                     : 231,
-                "nDataOrig"                     : 243,
-                "sOutputPath"                   : "",
-                "nDeltaWindow"                  : 2,
-                "nProcessingScheme"             : 252
             }
-        },            
+        },   
+        "vad"                               : {
+            "nSpeechDetectionThreshold"     : 15, 
+            "nSpeechDetectionAllowedDelay"  : 400,
+            "nSpeechDetectionMaximum"       : 10000,
+            "nSpeechDetectionMinimum"       : 500,
+            "bCompressPauses"               : false,
+            "nAnalysisChunkLength"          : 64,
+            "nAudioResultType"              : 262,
+            "sDebugString"                  : "",
+            "bAutoPause"                    : true
+        },
+        "mfcc"                              : {
+            "nNumberOfMFCCParameters"       : 13,
+            "dSamplingFrequency"            : 8000.0,
+            "nNumberofFilters"              : 24,
+            "nFftLength"                    : 256,
+            "bIsLifteringEnabled"           : true,
+            "nLifteringCoefficient"         : 22,
+            "bCalculate0ThCoeff"            : true,
+            "nWindowDistance"               : 80,
+            "nWindowLength"                 : 200,
+            "nDataType"                     : 251,
+            "nDataDest"                     : 231,
+            "nDataOrig"                     : 243,
+            "sOutputPath"                   : "",
+            "nDeltaWindow"                  : 2,
+            "nProcessingScheme"             : 252
+        },
         "tf"                        : {
             "sLabel"                : "controls FSC 23",
+            "nModelType"            : 273,
             "nInputParams"          : 792,
-            "nContextFrames"        : 11,
+            "nContextFrames"        : 5,
             "nItems2Recognize"      : 23,
             "sModelFileName"        : "controls_fsc",   
             "sInputNodeName"        : "inputs/I",   
@@ -111,7 +113,12 @@
             "patient_id"            : "",
             "url"                   : "",
             "login"                 : "",
-            "password"              : ""
+            "password"              : "",
+            "api"                   : {
+                                        "login": "login",
+                                        "upload_training_session": "upload-training-session",
+                                        "get_net": "get-net"
+                                      }
         },
         "bluetooth"                 : {
             "paired_devices"        : [], 

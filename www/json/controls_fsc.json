@@ -1,5 +1,6 @@
 {
     "sLabel":"controls FSC 23",
+    "nModelType":273,
     "nInputParams": 792,
     "nContextFrames": 5,
     "nItems2Recognize": 23,
@@ -9,7 +10,7 @@
     "fRecognitionThreshold": 0,
     "nProcessingScheme": 252,
     "sCreationTime": "13092017",
-    "items":
+    "vocabulary":
     [
         { "title": "Chiama", "id": 1305},
         { "title": "Ciao", "id": 1404},

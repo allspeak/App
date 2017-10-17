@@ -69,7 +69,7 @@ function Vocabulary_TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, 
         return VocabularySrv.getTrainVocabulary()       // train_vocabulary could be empty => add promise
         .then(function(voc)
         {
-            $scope.vocabulary               = voc;
+            $scope.vocabulary               = voc.vocabulary;
             $scope.repetitionsCount         = SequencesRecordingSrv.getRepetitions(); 
             $scope.selectedTrainingModality = SequencesRecordingSrv.getModalities()[1]; 
             
@@ -144,7 +144,7 @@ function Vocabulary_TrainingCtrl($scope, $state, $ionicHistory, $ionicPlatform, 
         return VocabularySrv.getTrainVocabulary()       // should not be necessary => nevertheless, add promise
         .then(function(voc)
         {
-            $scope.vocabulary           = voc;
+            $scope.vocabulary           = voc.vocabulary;
         });       
     };
     

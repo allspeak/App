@@ -196,11 +196,17 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     };    
     
     //--------------------------------------------------------------------------
-    service.listDir = function(relative_path, valid_extensions)
+    // return only folders' name
+    service.listDir = function(relative_path)
     {
         return $cordovaFile.listDir(service.resolved_output_data_root, relative_path)
-        .then(function(dirs){
-            return dirs;
+        .then(function(dirs)
+        {
+            var onlydirs = [];
+            for(d=0; d<dirs.length; d++)    
+                if(dirs[d].isDirectory)
+                    onlydirs.push(dirs[d]);
+            return onlydirs;
         })
         .catch(function(error){
             console.log("FileSystemSrv::listDir" + JSON.stringify(error));            

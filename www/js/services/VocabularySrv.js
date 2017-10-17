@@ -26,7 +26,8 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
     voicebank_vocabulary                    = null;
     voicebank_vocabulary_by_category        = null;
     vocabulary_categories                   = null;
-    train_vocabulary                        = null;
+    
+    train_object                            = {"vocabulary":null};
     
     voicebank_vocabulary_www_path           = "";   //      ./json/voicebank_vocabulary.json
     voicebank_vocabulary_filerel_path       = "";   //      AllSpeak/json/voicebank_vocabulary.json
@@ -34,10 +35,12 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
     voicebank_uservocabulary_filerel_path   = "";   //      AllSpeak/json/voicebank_uservocabulary.json
     voicebank_uservocabulary_www_path       = "";   //      ./json/voicebank_uservocabulary.json
 
-    train_vocabulary_filerel_path           = "";   //      AllSpeak/json/train_vocabulary.json
+    train_vocabulary_filerel_path           = "";   //      AllSpeak/training_sessions/default/train_vocabulary.json
     
     voicebank_folder                        = "";   //      AllSpeak/voice_bank
     training_folder                         = "";   //      AllSpeak/audio_files
+    
+    exists_train_vocabulary                 = false;
     //========================================================================
     // set inner paths, load:
     // - voicebank user vocabulary
@@ -58,7 +61,7 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
         train_vocabulary_filerel_path           = default_paths.train_vocabulary_filerel_path;
         
         voicebank_folder                        = default_paths.voicebank_folder;
-        training_folder                         = default_paths.audio_folder;
+        training_folder                         = default_paths.training_folder;
         
         return FileSystemSrv.existFile(voicebank_uservocabulary_filerel_path)
         .then(function(exist)
@@ -93,25 +96,21 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
                 .then(function()
                 {
                     // merge dVB + uVB vocabularies
-                    voicebank_vocabulary = _mergeVBVocabularies(voicebank_vocabulary, voicebank_uservocabulary);
-                    var voc_string = JSON.stringify({"vocabulary_categories":vocabulary_categories, "voicebank_vocabulary":voicebank_vocabulary});
+                    voicebank_vocabulary    = _mergeVBVocabularies(voicebank_vocabulary, voicebank_uservocabulary);
+                    var voc_string          = JSON.stringify({"vocabulary_categories":vocabulary_categories, "voicebank_vocabulary":voicebank_vocabulary});
                     return FileSystemSrv.createFile(voicebank_vocabulary_filerel_path, voc_string); 
                 })
             }
         })
         .then(function()
         {
-            voicebank_vocabulary_by_category    = _splitVocabularyByCategory(voicebank_vocabulary)            
+            voicebank_vocabulary_by_category = _splitVocabularyByCategory(voicebank_vocabulary)            
             return checkVoiceBankAudioPresence();
         })
         .then(function()
         {            
-            return getTrainVocabulary(train_vocabulary_filerel_path);
-        })
-        .then(function(voc)
-        {
-            if(voc.length)  return 1;
-            else            return 0;
+            // load, if necessary, trainvocabulary & set exists_train_vocabulary
+            return existsTrainVocabulary(train_vocabulary_filerel_path);
         })
         .catch(function(error)
         {
@@ -129,7 +128,7 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
         train_vocabulary_filerel_path       = default_paths.train_vocabulary_filerel_path;
         
         voicebank_folder                    = default_paths.voicebank_folder;
-        training_folder                     = default_paths.audio_folder;
+        training_folder                     = default_paths.training_folder;
         
         return FileSystemSrv.existFile(voicebank_vocabulary_filerel_path)
         .then(function(exist)
@@ -198,42 +197,12 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
         }
         else return Promise.resolve(voicebank_uservocabulary);
     };       
-    
-    getTrainVocabulary = function (path) 
-    {
-        if(train_vocabulary == null)
-        {
-            if(path) train_vocabulary_filerel_path = path;
-            return FileSystemSrv.existFile(train_vocabulary_filerel_path)            
-            .then(function(exist)
-            {
-                if(exist)   return FileSystemSrv.readJSON(train_vocabulary_filerel_path);
-                else        return null;
-            })
-            .then(function(content)
-            {
-                if(content == null)     train_vocabulary =  [];
-                else                    train_vocabulary = content.train_vocabulary;
-                
-                return train_vocabulary;
-            });
-        }
-        else return Promise.resolve(train_vocabulary);
-    }; 
-    
+
     getVocabularyCategories = function(path)
     {
         return vocabulary_categories;
     };
-    // ---------------------------------------------------------------------------------------
-    setTrainVocabulary = function(trainvoc) 
-    {
-        train_vocabulary = trainvoc;
-        var train_voc_string = JSON.stringify({"train_vocabulary": trainvoc});
-        return FileSystemSrv.createFile(train_vocabulary_filerel_path, train_voc_string);
-    }; 
     
-    // writes VB
     setVoiceBankVocabulary = function(vbvoc, overwrite) 
     {
         if(overwrite == null)   overwrite = 1; // will ask by default
@@ -241,7 +210,37 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
         
         return FileSystemSrv.createFile(voicebank_vocabulary_filerel_path, vb_string, overwrite, { title: 'Attenzione', template: 'Stai aggiornando la lista dei tuoi comandi, sei sicuro?'})
     }; 
-    
+       
+    setVoiceBankSentenceFilename = function(sentence_id, filename)
+    {
+        var len_voc = voicebank_vocabulary.length;
+        for(v=0; v<len_voc;v++)
+            if(sentence_id == voicebank_vocabulary[v].id)
+            {
+                voicebank_vocabulary[v].filename = filename;
+                break;
+            }
+        return setVoiceBankVocabulary(voicebank_vocabulary, 2);
+    };
+
+    getVoiceBankSentence = function(sentence_id) 
+    {
+        return _getSentence(voicebank_vocabulary, sentence_id);
+    };
+
+    checkVoiceBankAudioPresence = function() 
+    {
+        return _checkVocabularyAudioPresence(voicebank_vocabulary, voicebank_folder)
+        .then(function(voc)
+        {
+            voicebank_vocabulary = voc;
+            return voc;
+        });
+    };
+        
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
     // writes uVB & VB
     setVoiceBankUserVocabulary = function(vbvoc, uservbvoc) 
     {
@@ -323,28 +322,111 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
             return voicebank_vocabulary;
         });        
     };
+     
     // ---------------------------------------------------------------------------------------
-    getVoiceBankSentence = function(sentence_id) 
+    //  TRAIN VOCABULARIES -------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+    getTrainVocabulary = function (path) 
     {
-        return _getSentence(voicebank_vocabulary, sentence_id);
-    };
+        if(train_object.vocabulary == null)
+        {
+            if(path) train_vocabulary_filerel_path = path;
+            return FileSystemSrv.existFile(train_vocabulary_filerel_path)            
+            .then(function(exist)
+            {
+                if(exist)   return FileSystemSrv.readJSON(train_vocabulary_filerel_path);
+                else        return null;
+            })
+            .then(function(content)
+            {
+                if(content == null)   train_object        = {"vocabulary":null};
+                else                  train_object        = content;
+                
+                return train_object;
+            })
+            .catch(function(err)
+            {
+                alert("Error in VocabularySrv : " + err.message);
+                train_object        = {"vocabulary":null};
+                return train_object;
+            });
+            
+        }
+        else return Promise.resolve(train_object);
+    }; 
     
+    getTempVocabulary = function(path) 
+    {
+        return FileSystemSrv.existFile(path)            
+        .then(function(exist)
+        {
+            if(exist)   return FileSystemSrv.readJSON(path);
+            else        
+            {
+                alert("Error in VocabularySrv::getTempVocabulary :  input file does not exist " + path);
+                return null;
+            }
+        })
+        .catch(function(err)
+        {
+            alert("Error in VocabularySrv::getTempVocabulary : " + err.message);
+            return null;
+        });
+
+    }; 
+        
+    setTrainVocabulary = function(train_obj, filepath) 
+    {
+        if(filepath == null)    filepath = train_vocabulary_filerel_path;
+        
+        var localpath = StringSrv.getFileFolder(filepath);
+        
+        train_object                    = train_obj;
+        train_object.nItems2Recognize   = train_object.vocabulary.length;
+        train_object.rel_local_path     = localpath;    
+        var train_voc_string            = JSON.stringify(train_object);
+
+        return FileSystemSrv.createFile(filepath, train_voc_string);
+    }; 
+    
+    // return voc.vocabulary.length ? 1 : 0 
+    existsTrainVocabulary = function(path)
+    {
+        return getTrainVocabulary(path)
+        .then(function(voc)
+        {
+            if(voc.vocabulary != null)
+            {
+                if(voc.vocabulary.length)
+                {
+                    exists_train_vocabulary = true;
+                    return true;
+                }    
+            }
+            exists_train_vocabulary = false;
+            return exists_train_vocabulary;
+        });
+    };
+
     getTrainSentence = function(sentence_id) 
     {
-        return _getSentence(train_vocabulary, sentence_id);
+        return _getSentence(train_object.vocabulary, sentence_id);
     };
-    
-    setVoiceBankSentenceFilename = function(sentence_id, filename)
-    {
-        var len_voc = voicebank_vocabulary.length;
-        for(v=0; v<len_voc;v++)
-            if(sentence_id == voicebank_vocabulary[v].id)
-            {
-                voicebank_vocabulary[v].filename = filename;
-                break;
-            }
-        return setVoiceBankVocabulary(voicebank_vocabulary, 2);
-    };
+
+    // return { , files:[filesname with extension]
+    getTrainSentenceAudioFiles = function(sentence, relpath)
+    {    
+        if (sentence == null)
+            return null;
+        return FileSystemSrv.listFilesInDir(relpath, ["wav"])
+        .then(function(files){
+            // files = [wav file names with extension]
+            return updateSentenceFiles(sentence, files);// update sentence.files[]
+        })         
+        .catch(function(error){
+            return $q.reject(error);
+        });         
+    }; 
 
     getTrainSentencesByArrIDs = function(voc, arr_ids) 
     {
@@ -359,36 +441,43 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
             {
                 if(id == voc[v].id)
                 {
-                    sentences.push(train_vocabulary[v]);
+                    sentences.push(train_object.vocabulary[v]);
                     break;
                 }
             }
         }
         return sentences;
     };    
-    //---------------------------------------------------------------------------
+
+    getTrainVocabularyIDLabels = function()
+    {
+        var ids = [];
+        var len = train_object.vocabulary.length;
+        for(s=0; s<len; s++)  ids.push({"title": train_object.vocabulary[s].title, "id":train_object.vocabulary[s].id});
+        return ids;
+    };    
+
+    getTrainVocabularyIDs = function()
+    {
+        var ids = [];
+        var len = train_object.vocabulary.length;
+        for(s=0; s<len; s++)  ids.push(train_object.vocabulary[s].id);
+        return ids;
+    };    
+
+    //-----------------------------------------------------------
     // audio files
     getTrainVocabularyFiles = function(relpath)
     {
         return FileSystemSrv.listFilesInDir(relpath, ["wav"])
         .then(function(files){
             // I get only wav file names with extension
-            return parseSentenceFiles(train_vocabulary, files);// writes subject.vocabulary[:].files[]
+            return updateVocabularyFiles(train_object.vocabulary, files);// writes subject.vocabulary[:].files[]
         })        
         .catch(function(error){
             return $q.reject(error);
         });          
     };    
-
-    checkVoiceBankAudioPresence = function() 
-    {
-        return _checkVocabularyAudioPresence(voicebank_vocabulary, voicebank_folder)
-        .then(function(voc)
-        {
-            voicebank_vocabulary = voc;
-            return voc;
-        });
-    };
 
     // presently never called..ed io la faccio lo stesso !
     checkUserVoiceBankAudioPresence = function() 
@@ -406,10 +495,10 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
         .then(function(vbvoc)
         {
             var isComplete = true;
-            var len = train_vocabulary.length;
+            var len = train_object.vocabulary.length;
             for(s=0; s<len; s++)
             {
-                var id = train_vocabulary[s].id;
+                var id = train_object.vocabulary[s].id;
                 if(!_getSentenceProperty(voicebank_vocabulary, id, "existwav")) return false;
             }  
             return true; // 
@@ -419,11 +508,11 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
     getTrainVocabularyVoicesPath = function() 
     {
         var arr = [];
-        var lent = train_vocabulary.length;
+        var lent = train_object.vocabulary.length;
         var lenv = voicebank_vocabulary.length;
         for(t=0; t<lent; t++) 
         {
-            var id = train_vocabulary[t].id;
+            var id = train_object.vocabulary[t].id;
             for(v=0; v<lenv; v++) 
             {
                 if(id == voicebank_vocabulary[v].id)
@@ -439,10 +528,10 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
     checkTrainVocabularyAudioPresence = function(relpath) 
     {
         if(relpath == null) relpath = voicebank_folder;
-        return _checkVocabularyAudioPresence(train_vocabulary, relpath)
+        return _checkVocabularyAudioPresence(train_object.vocabulary, relpath)
         .then(function(voc)
         {
-            train_vocabulary = voc;
+            train_object.vocabulary = voc;
             return voc;    
         });       
     };
@@ -450,17 +539,17 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
     //---------------------------------------------------------------------------    
     // GENERAL
     //---------------------------------------------------------------------------    
-    parseVocabularyFiles = function(vocabulary, files)
+    updateVocabularyFiles = function(vocabulary, files)
     {
         for (s=0; s<vocabulary.length; s++)
-            vocabulary[s] = parseSentenceFiles(vocabulary[s], files);
+            vocabulary[s] = updateSentenceFiles(vocabulary[s], files);
         
         return vocabulary;
     };     
     
     // calculate audio repetitions number of a given sentence
-    // files is: wav file list without extension (e.g. ["vb_123_11", "vb_123_10", ..., "vb_123_0"] 
-    parseSentenceFiles = function(sentence, files)
+    // files is: wav file list with extension (e.g. ["vb_123_11.wav", "vb_123_10.wav", ..., "vb_123_0.wav"] 
+    updateSentenceFiles = function(sentence, files)
     {
         sentence.existwav       = 0;
         sentence.firstValidId   = 0;
@@ -604,17 +693,21 @@ main_module.service('VocabularySrv', function($http, $q, FileSystemSrv, StringSr
         removeUserVoiceBankSentence         : removeUserVoiceBankSentence,
         
         getTrainVocabulary                  : getTrainVocabulary,
+        existsTrainVocabulary               : existsTrainVocabulary,
         setTrainVocabulary                  : setTrainVocabulary,
+        getTrainVocabularyIDs               : getTrainVocabularyIDs,
+        getTrainVocabularyIDLabels          : getTrainVocabularyIDLabels,
         getTrainVocabularyFiles             : getTrainVocabularyFiles,
         checkTrainVocabularyAudioPresence   : checkTrainVocabularyAudioPresence,
         hasVoicesTrainVocabulary            : hasVoicesTrainVocabulary,     // check if all the to-be-recognized commands have their corresponding playback wav
+        getTrainSentenceAudioFiles          : getTrainSentenceAudioFiles,   // get the audio files associated to the given sentence, updated with respect to path and exist
         getTrainVocabularyVoicesPath        : getTrainVocabularyVoicesPath, // get the rel paths of the to-be-recognized wav files 
 
         getTrainSentence                    : getTrainSentence,
         getTrainSentencesByArrIDs           : getTrainSentencesByArrIDs,
 
         getVocabularyCategories             : getVocabularyCategories,
-        parseSentenceFiles                  : parseSentenceFiles,
-        parseVocabularyFiles                : parseVocabularyFiles
+        updateSentenceFiles                  : updateSentenceFiles,
+        updateVocabularyFiles                : updateVocabularyFiles
     };
 });

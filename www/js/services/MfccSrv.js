@@ -3,28 +3,52 @@
  */
 
 
-function MfccSrv(ErrorSrv, InitAppSrv)
+function MfccSrv(ErrorSrv)
 {
     // Management of default values:
     // each time I call : init (mfccCfg)
     // 1) take the values defined in InitAppSrv (according to config.json)
     // 2) overwrite with possible controllers defaults (which are usually tests)              
-    Cfg                     = {};
-    Cfg.mfccCfg             = null;
+    mCfg            = null;
+    standardCfg     = null;   // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
+    oldCfg          = null;   // copied while loading a new model, restored if something fails
+    pluginInterface = null;
+    plugin_enum     = null;
     
-    // PUBLIC ********************************************************************************************************
-    init = function(mfccCfg)
+     // PUBLIC ********************************************************************************************************
+    init = function(jsonCfg, plugin)
     {  
-        pluginInterface         = InitAppSrv.getPlugin();
-        Cfg.mfccCfg             = InitAppSrv.getMfccCfg(mfccCfg);
-        return Cfg;
+        mCfg            = jsonCfg;
+        standardCfg     = jsonCfg;
+        oldCfg          = jsonCfg;
+        pluginInterface = plugin;
+        
+        plugin_enum     = pluginInterface.ENUM.mfcc;
+    };//
+    // PUBLIC ********************************************************************************************************
+    changeCfg = function(cfg)
+    {  
+        mCfg = getUpdateCfg(cfg);
+        return mCfg;
     };
+    //--------------------------------------------------------------------------
      // PUBLIC *************************************************************************************************
-   getCfg = function()
+    getCfg = function()
     {
-        return Cfg.mfccCfg;
-    };    
-    
+        return mCfg;
+    };     
+     // PUBLIC *************************************************************************************************
+    // called by any controller pretending to override some default properties 
+    getUpdatedCfg = function (ctrlcfg)
+    {
+        var cfg = standardCfg;
+        
+        if (ctrlcfg != null)
+            for (item in ctrlcfg)
+                cfg[item] = ctrlcfg[item];
+        return cfg;
+    };
+
     //==========================================================================
     // M F C C
     //==========================================================================
@@ -120,6 +144,8 @@ function MfccSrv(ErrorSrv, InitAppSrv)
     //==========================================================================
     return {
         init                : init,
+        changeCfg           : changeCfg, 
+        getUpdatedCfg       : getUpdatedCfg, 
         getCfg              : getCfg, 
         getMFCCFromData     : getMFCCFromData,
         getMFCCFromFile     : getMFCCFromFile,

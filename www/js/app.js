@@ -1,6 +1,6 @@
-main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native', 'checklist-model']);
+main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native']);
 
-main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootScope) 
+main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootScope, $cordovaSplashscreen) 
 {
     $ionicPlatform.ready(function() 
     {
@@ -24,7 +24,7 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
             InitAppSrv.initApp()
             .then(function(success)
             {
-                //$cordovaSplashscreen.hide();   
+                $cordovaSplashscreen.hide();   
                 $state.go('home');
             })
             .catch(function(error)
@@ -97,10 +97,20 @@ main_module.config(function($stateProvider, $urlRouterProvider)
         templateUrl: 'templates/training.html',
         controller: 'TrainingCtrl'
     })
+    .state('dotraining', {
+        url: '/dotraining/:foldername/:modeId',
+        templateUrl: 'templates/dotraining.html',
+        controller: 'DoTrainingCtrl'
+    })
     .state('show_session', {
-        url: '/show_session/:sessionPath/:subjId',
+        url: '/show_session/:trainingPath/:sessionPath/:subjId',
         templateUrl: 'templates/show_recording_session.html',
         controller: 'ShowRecordingSessionCtrl'
+    })    
+    .state('sentence', {
+        url: '/sentence/:trainingPath/:sessionPath/:sentenceId/:subjId',
+        templateUrl: 'templates/sentence.html',
+        controller: 'SessionSentenceCtrl'
     })    
     .state('settings', {
         url: '/settings',

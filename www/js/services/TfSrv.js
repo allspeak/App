@@ -10,37 +10,56 @@ function TfSrv(FileSystemSrv, $q)
     // 1) take the values defined in window.audioinput (capture) & window.speechcapture (vad) & here
     // 2) overwrite with App defaults (according to init.json)
     // 3) overwrite with possible controllers defaults                 
-    tfCfg         = null;
-    modelJson    = ""       // json file containing model info
-    modelLabel    = ""      // corresponds to tfCfg.sLabel....must be unique !!
-    standardTfCfg = null;   // hold standard TF Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
-    oldTfCfg = null;        // copied while loading a new model, restored if something fails
-    modelsFolder = "";
+    mCfg            = null;     // hold current configuration (got from json file)
+    standardCfg     = null;     // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
+    oldCfg          = null;     // copied while loading a new model, restored if something fails
+    pluginInterface = null;
+    plugin_enum     = null;
+
+
+    modelJson       = ""       // json file containing model info
+    modelLabel      = ""      // corresponds to mCfg.sLabel....must be unique !!
+    modelsFolder    = "";
     
     //==========================================================================
     // DEFAULT CONFIG VALUES MANAGEMENT
     //==========================================================================
     //
     // PUBLIC ********************************************************************************************************
-    init = function(jsonTfCfg, modelsfolder, modeljson, plugin)
+    init = function(jsonCfg, modelsfolder, modeljson, plugin)
     {  
-        standardTfCfg   = jsonTfCfg;
+        mCfg            = jsonCfg;
+        standardCfg     = jsonCfg;
+        oldCfg          = jsonCfg;
+        pluginInterface = plugin;
+        
+        plugin_enum     = pluginInterface.ENUM.tf;
+        
         modelsFolder    = modelsfolder;
         modelJson       = modeljson;
-        pluginInterface = plugin;
-        plugin_enum     = pluginInterface.ENUM.tf;
     };
     
-    change = function(tfCfg)
+    changeCfg = function(cfg)
     {  
-        tfCfg = getUpdateCfg(tfCfg);
-        return {tfCfg : tfCfg };
+        mCfg = getUpdateCfg(cfg);
+        return mCfg;
     };
-    //--------------------------------------------------------------------------
      // PUBLIC *************************************************************************************************
-   getCfg = function()
+    getCfg = function()
     {
-        return tfCfg;
+        return mCfg;
+    };    
+
+    // PUBLIC *************************************************************************************************
+    // called by any controller pretending to override some default properties 
+    getUpdatedCfg = function (ctrlcfg)
+    {
+        var cfg = standardCfg;
+        
+        if (ctrlcfg != null)
+            for (item in ctrlcfg)
+                cfg[item] = ctrlcfg[item];
+        return cfg;
     };    
     //--------------------------------------------------------------------------
      // PUBLIC *************************************************************************************************
@@ -67,42 +86,40 @@ function TfSrv(FileSystemSrv, $q)
     
     _getModel = function(model_relpath)
     {
-        oldTfCfg = tfCfg;        
+        oldCfg = mCfg;        
         return FileSystemSrv.readJSON(model_relpath)
         .then(function(model)
         {
             model.sModelFilePath = FileSystemSrv.getResolvedOutDataFolder() + modelsFolder + "/" + model.sModelFilePath;
-            tfCfg = model;    
-            return tfCfg;
+            model.localModelPath = model_relpath;
+            mCfg = model;    
+            return mCfg;
         })        
         .catch(function(error)
         {
-            tfCfg = oldTfCfg;
+            mCfg = oldCfg;
             return $q.reject(error);
         })        
     };
     //  end DEFAULT VALUES MANAGEMENT
-
-    getUpdateCfg = function (tfCfg)
+    
+    // the crucial params are: sLabel, vocabulary, nProcessingScheme (taken from default)
+    createTrainingDataJSON = function(train_obj, filepath)
     {
-        var cfg = standardTfCfg;
-        
-        if (tfCfg != null)
-        {
-            for (item in tfCfg)
-                cfg[item] = tfCfg[item];
-        }        
-        return cfg;
-    };   
+        var tf      = getUpdatedCfg(train_obj);
+        return FileSystemSrv.createFile(filepath, JSON.stringify(tf));
+    };
     //==========================================================================
     // public interface
     //==========================================================================
     return {
-        init                : init,
-        change              : change,
-        getCfg              : getCfg,
-        getLoadedJsonFile   : getLoadedJsonFile,
-        loadTFModel         : loadTFModel
+        init                    : init,
+        changeCfg               : changeCfg, 
+        getUpdatedCfg           : getUpdatedCfg, 
+        getCfg                  : getCfg, 
+        getLoadedJsonFile       : getLoadedJsonFile,
+        loadTFModel             : loadTFModel,
+        createTrainingDataJSON  : createTrainingDataJSON
     };    
 }
 

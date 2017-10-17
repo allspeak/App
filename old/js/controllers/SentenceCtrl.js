@@ -20,7 +20,7 @@ function SentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNativeMed
         $scope.subject      = SubjectsSrv.getSubject(subjectId);
         if ($scope.subject)
         {        
-            $scope.relpath                      = InitAppSrv.appData.file_system.audio_folder + "/" + $scope.subject.folder ; 
+            $scope.relpath                      = InitAppSrv.appData.file_system.training_folder + "/" + $scope.subject.folder ; 
             $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.relpath;
             $scope.sentence                     = SubjectsSrv.getSubjectSentence(subjectId, sentenceId);
             $scope.refreshAudioList();

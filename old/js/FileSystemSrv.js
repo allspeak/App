@@ -1,4 +1,4 @@
-//      /storage/emulated/0/Android/data/com.ionicframework.allspeak/files/audio_sentences
+//      /storage/emulated/0/AllSpeak/audio_sentences
 
 
 function FileSystemSrv($cordovaFile, $ionicPopup)
@@ -8,8 +8,8 @@ function FileSystemSrv($cordovaFile, $ionicPopup)
     service.init = function(file_system_app_data)
     {
         service.output_data_root    = file_system_app_data.output_data_root;
-        service.audio_folder        = file_system_app_data.audio_folder;
-        return service.createDir(service.audio_folder, 0)
+        service.training_folder     = file_system_app_data.training_folder;
+        return service.createDir(service.training_folder, 0)
         .then(function(success){
             return 1;
         });
