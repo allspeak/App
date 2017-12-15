@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function SettingsRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSrv, $ionicPopup, $ionicHistory)
+function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, $ionicPopup, SpeechDetectionSrv, InitAppSrv, ErrorSrv)
 {
     $scope.captureProfile   = "recognition";
     $scope.captureParams    = null;
@@ -24,7 +24,10 @@ function SettingsRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSr
     $scope.$on("$ionicView.enter", function(event, data)
     {
         // take control of BACK buttons
-        
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
+        {
+            $state.go("home");
+        }, 100);    
         
         
         pluginInterface             = InitAppSrv.getPlugin();            
@@ -54,13 +57,11 @@ function SettingsRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSr
 
         $scope.$apply();
     });      
-    
-    
-    $scope.$on('$ionicView.beforeLeave', function()
-    {
-      // here I will restore the normal back button functions
-    });    
 
+    $scope.$on('$ionicView.leave', function(){
+        if($scope.deregisterFunc)   $scope.deregisterFunc();
+    });     
+    
     $scope.captureCfg = null;
     
     $scope.selectObjByValue = function(value, objarray)

@@ -1,0 +1,19 @@
+<ion-modal-view>
+    <ion-content>
+
+        <div class="card">
+            <div class="item item-text-wrap">
+                {{createNewVocabularyText}}
+            </div>
+            <label class="item item-input">
+                <input type="text" placeholder="inserisci qui il nome del vocabolario" ng-model="apikey.label">
+            </label>            
+            <div class="button-bar">        
+                <button class="button button-custom button-block button-positive" ng-click="onApiKey(apikey)">CREA</button>
+                <button class="bu button button-custom button-block button-positive" ng-click="onApiKey()">CANCELLA</button>
+            </div>            
+        </div>        
+        
+
+    </ion-content>
+</ion-modal-view>

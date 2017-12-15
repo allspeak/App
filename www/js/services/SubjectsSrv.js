@@ -69,10 +69,10 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
             return null;
 
         var subject = getSubject(subject_id);
-        for(se=0; se<subject.vocabulary.length; se++)
+        for(se=0; se<subject.commands.length; se++)
         {
-            if(subject.vocabulary[se].id == parseInt(sentence_id))
-                return subject.vocabulary[se];
+            if(subject.commands[se].id == parseInt(sentence_id))
+                return subject.commands[se];
         }            
         return null;
     };    
@@ -95,15 +95,15 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
         });   
     };
         
-    getSubjectVocabularyFiles = function(vocabulary, relpath)    // return filesname without extension
+    getSubjectVocabularyFiles = function(commands, relpath)    // return filesname without extension
     {
-        if (vocabulary == null)
+        if (commands == null)
             return null;
         
         return getSubjectAudioFiles(relpath)
         .then(function(files){
             // I get only wav file names without extension
-            return VocabularySrv.updateVocabularyFiles(vocabulary, files);// writes subject.vocabulary[:].files[]
+            return VocabularySrv.updateCommandsFiles(commands, files);// writes subject.commands[:].files[]
         })
         .catch(function(error){
             return $q.reject(error);
@@ -119,7 +119,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
         return getSubjectAudioFiles(relpath)
         .then(function(files){
             // files = [wav file names without extension]
-            return VocabularySrv.updateSentenceFiles(sentence, files);// writes subject.vocabulary[:].files[]
+            return VocabularySrv.updateSentenceFiles(sentence, files);// writes subject.commands[:].files[]
         })
         .catch(function(error){
             return $q.reject(error);
@@ -171,7 +171,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
     
     insertSubject = function(subject, root_folder)
     {
-        subject.vocabulary  = [];
+        subject.commands  = [];
         subject.folder      = StringSrv.format2filesystem(subject.label);
         subject.path        = training_folder + "/" + subject.folder;
         

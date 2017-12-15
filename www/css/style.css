@@ -1,51 +1,31 @@
 /* Empty. Add your own CSS if you like */
 
-.chart {
-  border-left: 1px solid black;
-  border-right: 1px solid black;
-  border-top: 1px solid black;
-  border-bottom: 1px solid black;
-  margin: 60px auto;
-  position: relative;
-}
+.button-maxi{
+    height:120px !important;
+}  
 
-.y {
-  position: absolute;
-  transform: rotate(-90deg);
-  transform-origin: bottom left;
-  bottom: 0;
-  padding: 5px;
-}
+.button-tall{
+    height:90px !important;
+}  
 
-.x {
-  position: absolute;
-  top: 100%;
-  width: 100%;
-  padding: 5px;
-}
+.toggle-tall{
+    height:90px !important;
+}  
 
-.dot {
-  background: blue;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  position: absolute;
-}
-
-.bar {
-  background: blue;
-  position: absolute;
-  bottom: 0;
-}
 
 .bar-footer{
-    position : absolute;
-    bottom : 10;
-    height : 40px;
-    margin-top : 40px;
+    height:50px !important;
+    .bar-footer .button{
+        font-size: 12;
+    }
 }
 
-.bar-footer .button-custom{
+/*.bar-footer-button{
+    width:100%;
+    margin-top: 0
+}*/
+
+/*.bar-footer .button-custom{
   font-size: 34px !important;
   border-style: none;
   border-top-left-radius: 0;
@@ -56,4 +36,22 @@
   padding: 0;
   background-color: #ed4949;
   color: white;
+}*/
+
+.color-green {
+  color: green;
 }
+
+.color-blue {
+  color: blue;
+}
+
+.color-red {
+  color: red;
+}        
+        
+.card
+{
+     margin-bottom: 0px !important;
+     margin-top: 0px !important;
+} 

@@ -9,8 +9,8 @@ function MfccSrv(ErrorSrv)
     // each time I call : init (mfccCfg)
     // 1) take the values defined in InitAppSrv (according to config.json)
     // 2) overwrite with possible controllers defaults (which are usually tests)              
-    mCfg            = null;
-    standardCfg     = null;   // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
+    mMfccCfg        = null;
+    standardMfccCfg     = null;   // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
     oldCfg          = null;   // copied while loading a new model, restored if something fails
     pluginInterface = null;
     plugin_enum     = null;
@@ -18,8 +18,8 @@ function MfccSrv(ErrorSrv)
      // PUBLIC ********************************************************************************************************
     init = function(jsonCfg, plugin)
     {  
-        mCfg            = jsonCfg;
-        standardCfg     = jsonCfg;
+        mMfccCfg        = jsonCfg;
+        standardMfccCfg = jsonCfg;
         oldCfg          = jsonCfg;
         pluginInterface = plugin;
         
@@ -28,20 +28,20 @@ function MfccSrv(ErrorSrv)
     // PUBLIC ********************************************************************************************************
     changeCfg = function(cfg)
     {  
-        mCfg = getUpdateCfg(cfg);
-        return mCfg;
+        mMfccCfg = getUpdateCfg(cfg);
+        return mMfccCfg;
     };
     //--------------------------------------------------------------------------
      // PUBLIC *************************************************************************************************
     getCfg = function()
     {
-        return mCfg;
+        return mMfccCfg;
     };     
      // PUBLIC *************************************************************************************************
     // called by any controller pretending to override some default properties 
     getUpdatedCfg = function (ctrlcfg)
     {
-        var cfg = standardCfg;
+        var cfg = standardMfccCfg;
         
         if (ctrlcfg != null)
             for (item in ctrlcfg)
@@ -68,7 +68,7 @@ function MfccSrv(ErrorSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = Cfg.mfccCfg;
+            var currCfg         = mMfccCfg;
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_JSONDATA;            
@@ -93,7 +93,7 @@ function MfccSrv(ErrorSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = Cfg.mfccCfg;
+            var currCfg         = mMfccCfg;
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FILE;            
@@ -118,7 +118,7 @@ function MfccSrv(ErrorSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = Cfg.mfccCfg;
+            var currCfg         = mMfccCfg;
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FOLDER;            

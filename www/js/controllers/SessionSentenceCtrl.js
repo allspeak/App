@@ -1,15 +1,15 @@
 /* 
 manage the following object
-sentence = { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename": "ho_sete.wav", "existwav": 0 }
+sentence = { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename": "ho_sete.wav", "nrepetitions": 0 }
 */
-function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, VocabularySrv, StringSrv)  
+function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, VocabularySrv, CommandsSrv, StringSrv)  
 {
     $scope.subject          = null;
     $scope.subject_label    = "";
     $scope.sentence         = {};
     $scope.isPlaying        = 0;
     
-    $scope.trainingPath     = "";       // standard
+    $scope.foldername       = "";       // standard
     $scope.sessionPath      = "";       // training_XXXXYYZZ    
     //==================================================================================================================
     //==================================================================================================================
@@ -18,28 +18,23 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         // LOAD curr subject/session/sentence info
         
         // standard
-        if(data.stateParams.trainingPath == null) 
+        if(data.stateParams.foldername == null) 
         {
-            alert("SessionSentenceCtrl::$ionicView.enter. error : trainingPath is empty");
-            $state.go("training");
+            alert("SessionSentenceCtrl::$ionicView.enter. error : foldername is empty");
+            $state.go("vocabularies");
         }   
-        else $scope.trainingPath = data.stateParams.trainingPath;
+        else $scope.foldername = data.stateParams.foldername;
         
         // training_XXXXYYZZ
-        if(data.stateParams.sessionPath == null) 
-        {
-            alert("SessionSentenceCtrl::$ionicView.enter. error : sessionPath is empty");
-            $state.go("training");
-        }   
-        else $scope.sessionPath = data.stateParams.sessionPath;        
+        if(data.stateParams.sessionPath != null) $scope.sessionPath = data.stateParams.sessionPath;        
         
         // 1123
-        if(data.stateParams.sentenceId == null) 
+        if(data.stateParams.commandId == null) 
         {
-            alert("SessionSentenceCtrl::$ionicView.enter. error : sentenceId is empty");
-            $state.go("training");
+            alert("SessionSentenceCtrl::$ionicView.enter. error : commandId is empty");
+            $state.go("vocabularies");
         }   
-        else $scope.sentenceId = data.stateParams.sentenceId;        
+        else $scope.commandId = data.stateParams.commandId;        
         
         if(data.stateParams.subjId != null && data.stateParams.subjId != "")
         {        
@@ -50,7 +45,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
             {        
                 $scope.relpath                      = InitAppSrv.getAudioFolder() + "/" + $scope.subject.folder + "/" + $scope.sessionPath; 
                 $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.relpath;
-                $scope.sentence                     = SubjectsSrv.getSubjectSentence(subjectId, $scope.sentenceId);
+                $scope.sentence                     = SubjectsSrv.getSubjectSentence(subjectId, $scope.commandId);
                 $scope.titleLabel                   = $scope.subject.folder + "/" + $scope.sessionPath;
                 $scope.refreshAudioList();
             }
@@ -59,10 +54,10 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         else
         {
             $scope.subject                      = null
-            $scope.relpath                      = InitAppSrv.getAudioFolder() + "/" + $scope.trainingPath + "/" + $scope.sessionPath; 
+            $scope.relpath                      = InitAppSrv.getAudioFolder() + "/" + $scope.foldername + "/" + $scope.sessionPath; 
             $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.relpath;        
-            $scope.sentence                     = VocabularySrv.getTrainSentence($scope.sentenceId);
-            $scope.titleLabel                   = $scope.trainingPath + "/" + $scope.sessionPath;
+            $scope.sentence                     = VocabularySrv.getTrainCommand($scope.commandId);
+            $scope.titleLabel                   = $scope.foldername + "/" + $scope.sessionPath;
             $scope.refreshAudioList();
         }
     });
@@ -79,7 +74,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         }
         else
         {
-            return VocabularySrv.getTrainSentenceAudioFiles($scope.sentence, $scope.relpath)
+            return CommandsSrv.getCommandFilesByPath($scope.sentence, $scope.relpath)
             .then(function(sentence){
                 $scope.sentence = sentence;
                 $scope.$apply();
@@ -123,7 +118,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
     
     $scope.addAudio = function()
     {
-        $state.go("record", {"subjId": $scope.subject.id, "sentenceId": $scope.sentence.id});
+        $state.go("record", {"subjId": $scope.subject.id, "commandId": $scope.sentence.id});
     };
 
     $scope.deleteAudio = function(filename_noext)

@@ -11,7 +11,7 @@
        
         <div class="button-bar" ng-if="!selectList">        
             <button class="button button-full button-positive" ng-click="doEditTrainVocabulary()">{{labelEditTrainVocabulary}}</button>    
-            <button class="button button-full button-positive" ng-click="startTraining()">{{labelStartTraining}}</button>        
+            <button class="button button-full button-positive" ng-click="startTraining()">{{labelStartTrainSession}}</button>        
         </div>          
     </ion-footer-bar>     
     
@@ -26,18 +26,11 @@
         <ion-item class="item item-dark">Sessioni presenti</ion-item>          
         
         <ion-list>
-            <ion-item ng-repeat="session in subject.sessions track by $index" href="#/show_session/{{session.parentdirname}}/{{session.name}}/">
+            <ion-item ng-repeat="session in subject.sessions track by $index" href="#/show_recording_session/{{session.parentdirname}}/{{session.name}}/">
                 {{session.name}}
             </ion-item>
         </ion-list>   
     </ion-content>
-    
-    <style type="text/css">    
-        .bar-footer{
-            height:50px !important;
-            font-size:24 !important;
-        }
-        
-    </style>         
+      
 </ion-view>
 

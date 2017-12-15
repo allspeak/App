@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, StringSrv, $ionicPopup)
+function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, StringSrv, VocabularySrv, $ionicPopup)
 {
     //--------------------------------------------------------------------
     // debug
@@ -36,7 +36,8 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     
     $scope.modelsList               = [];
     $scope.loadedModel              = null;
-    $scope.loadedJsonFile           = "";
+    $scope.loadedJsonFolderName     = ""; 
+    
     $scope.loadedToggleId           = 0;        // id of the enabled toggle
     //--------------------------------------------------------------------------                    
     $scope.$on("$ionicView.beforeLeave", function(event, data)
@@ -47,7 +48,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     $scope.$on("$ionicView.enter", function(event, data)
     {
         $scope.pluginInterface                  = InitAppSrv.getPlugin();            
-        $scope.rel_modelsrootpath               = InitAppSrv.getTFModelsFolder();
+        $scope.rel_modelsrootpath               = InitAppSrv.getVocabulariesFolder();
         $scope.rel_vbrootpath                   = InitAppSrv.getVoiceBankFolder();
         $scope.voicebank_resolved_root          = FileSystemSrv.getResolvedOutDataFolder() + $scope.rel_vbrootpath;   // FileSystemSrv.getResolvedOutDataFolder() ends with a slash: "file:///storage/emulated/0/"
 
@@ -145,13 +146,13 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
                 return $scope.emptyFolder()
                 .then(function(success)
                 {
-                    $scope.Cfg.tfCfg.saAudioPath = getTrainVocabularyVoicesPath();  // get the path of the wav to playback once a sentence is recognized
+                    $scope.Cfg.tfCfg.saAudioPath = VocabularySrv.getTrainVocabularyVoicesPath();  // get the path of the wav to playback once a sentence is recognized
                     SpeechDetectionSrv.startSpeechRecognition($scope.Cfg.captureCfg, $scope.Cfg.vadCfg, $scope.Cfg.mfccCfg, $scope.Cfg.tfCfg, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
                 })
             }
             else
             {
-                $scope.Cfg.tfCfg.saAudioPath = getTrainVocabularyVoicesPath();  // get the path of the wav to playback once a sentence is recognized
+                $scope.Cfg.tfCfg.saAudioPath = VocabularySrv.getTrainVocabularyVoicesPath();  // get the path of the wav to playback once a sentence is recognized
                 SpeechDetectionSrv.startSpeechRecognition($scope.Cfg.captureCfg, $scope.Cfg.vadCfg, $scope.Cfg.mfccCfg, $scope.Cfg.tfCfg, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
             }
         }
@@ -313,12 +314,12 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
         for(s=0; s<$scope.modelsJson.length; s++)
             if(s != index)
                 $scope.modelsJson[s].checked = false;
-        return TfSrv.loadTFModel($scope.rel_modelsrootpath + "/" + $scope.modelsJson[index].jsonname + ".json")
+        return TfSrv.loadTFModel($scope.modelsJson[index].jsonpath)
         .then(function(res)
         {
             console.log("selectModel success:" + res.toString());       
             $scope.loadedModel      = TfSrv.getCfg();
-            $scope.commandsList     = $scope.loadedModel.vocabulary.map(function(item) { return item.id});
+            $scope.commandsList     = $scope.loadedModel.commands.map(function(item) { return item.id});
             $scope.loadedToggleId   = index;
             $scope.$apply();
         })
@@ -338,23 +339,22 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
     $scope.refreshModelsList = function(dir)
     {    
         $scope.loadedModel          = TfSrv.getCfg();
-        $scope.loadedJsonFilePath   = $scope.loadedModel.localModelPath;
-        $scope.loadedJsonFileName   = StringSrv.getFileNameExt($scope.loadedJsonFilePath);
-        return FileSystemSrv.listFilesInDir(dir, ["json"])
+        if($scope.loadedModel)      $scope.loadedJsonFolderName = $scope.loadedModel.sLocalFolder;
+        else                        $scope.loadedJsonFolderName   = "";
+        
+        return FileSystemSrv.listDir(dir)
         .then(function(dirs)
         {
             var len = dirs.length;
             $scope.modelsJson = [];
             for (d=0; d<len; d++)
             {
-                if (!dirs[d].isDirectory)
+                var jsonpath = $scope.rel_modelsrootpath + "/" + dirs[d] + "/" + "training.json";
+                $scope.modelsJson[d] = {"jsonpath":jsonpath};
+                if($scope.loadedJsonFolderName == dirs[d])
                 {
-                    $scope.modelsJson[d] = {"jsonname":StringSrv.removeExtension(dirs[d])};
-                    if($scope.loadedJsonFileName == dirs[d])
-                    {
-                        $scope.modelsJson[d].checked = true;
-                        $scope.loadedToggleId = d;
-                    }
+                    $scope.modelsJson[d].checked = true;
+                    $scope.loadedToggleId = d;
                 }
             }
             $scope.$apply();

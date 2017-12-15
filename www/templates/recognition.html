@@ -1,91 +1,70 @@
 <ion-view view-title="RICONOSCIMENTO">
     
- <ion-nav-bar class="bar-positive">    
-    <ion-nav-back-button class="button-clear" ui-sref="home">
-        <i class="ion-arrow-left-c"></i>Home
-    </ion-nav-back-button> 
-     
-    <ion-nav-buttons side="right">
-        <button class="button" ng-disabled="isvoicemonitoring" ng-click="go2settings()">
-            <i class="icon ion-mic-a"></i>
-        </button>
-    </ion-nav-buttons>      
-     
-  </ion-nav-bar>     
-    
-   
-  <ion-content>
-    <div class="list">
-<!--        <label class="item item-input item-select">
-            <div class="input-label">Source Type</div>
-            <select ng-model="selectedSourceType" ng-change="updateSourceType(selectedSourceType)" ng-options="item.label for item in input_sources track by item.value"></select>            
-        </label>     -->
-        
-<!--        <label class="item item-input item-select">
-            <div class="input-label">S. Frequency</div>
-            <select ng-model="selectedFrequency" ng-change="updateFrequency(selectedFrequency)" ng-options="item.label for item in sampling_frequencies track by item.value"></select>            
-        </label>     
+    <ion-nav-bar class="bar-positive">    
+        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button> 
 
-        <label class="item item-input item-select">
-            <div class="input-label">Capture Buffer</div>
-            <select ng-model="selectedCaptureBuffer" ng-change="updateCaptureBuffer(selectedCaptureBuffer)" ng-options="item.label for item in capture_buffer track by item.value"></select>            
-        </label>     -->
-        
+        <ion-nav-buttons side="right">
+            <button class="button" ng-disabled="isvoicemonitoring" ng-click="go2settings()">
+                <i class="icon ion-mic-a"></i>
+            </button>
+        </ion-nav-buttons>      
+    </ion-nav-bar>     
 
-        <ion-toggle ng-model="HeadsetSelected" ng-disabled="!HeadsetAvailable" ng-click="onHeadsetChange(HeadsetSelected)"> Input Source</ion-toggle>
+    <ion-footer-bar class="bar-positive">
+        <button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}}></button> 
+        <!--<button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}} <span class="badge" ng-class="isSpeaking == 'ON' ? 'color-green' : 'color-red'"></button>--> 
+    </ion-footer-bar>   
 
+    <ion-content>
+        <div class="list">
+            <label class="item">Voice Intensity : <span class="badge" ng-class="isSpeaking == 'ON' ? 'color-green' : 'color-red'">{{voiceDB}}/{{thresholdDB}}</span></label>        
+            
+            <ion-toggle class="item" ng-model="headsetSelected" ng-disabled="isvoicemonitoring || !headsetAvailable" ng-click="useHS(headsetSelected)">Attiva Microfono esterno</ion-toggle>             
+            
+            <ion-list>
+                <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
+                    <div class="buttons">
+                        <button class="button button-clear button-balanced" ng-click="debugActionA(chunk)">
+                            <i class="icon ion-play"></i>
+                        </button>
 
-<!--        <label class="item">Sampling Frequency : <span class="badge">{{selectedSF}}</span></label>        
-        <label class="item">Buffer Size: <span class="badge">{{selectedCBS}}</span></label>    -->
+                        <button class="button button-clear button-balanced" ng-click="debugActionB(chunk)">
+                            <i class="icon ion-stats-bars"></i>
+                        </button>
+                    </div>                
+                </ion-item>
+            </ion-list>
 
-<!--        <label class="item">Data received : <span class="badge">{{totalReceivedData}}</span> </label>   
-        <label class="item">Elapsed Time : <span class="badge">{{elapsedTime*1000 | secondsToDateTime }}</span></label>      -->
-        <!--<label class="item"># chunks : <span class="badge">{{totalNoOfSpeechCaptured}}</span></label>-->        
-        <label class="item">is Speaking : <span class="badge">{{isSpeaking}}</span></label>        
-        <label class="item">Voice Intensity : <span class="badge">{{voiceDB}}</span></label>        
+            <div class="card">
+                <div class="item item-divider">
+                    MODELLI UTILIZZABILI
+                </div>
+                <ion-list>
+                    <ion-toggle
+                            ng-repeat="model in modelsJson"
+                            ng-checked="model.checked"
+                            ng-model="model.checked"
+                            ng-click="selectModel($index)"
+                            ng-disabled="isvoicemonitoring"
+                            class="item item-text-wrap">
+                            {{model.jsonname}}
+                    </ion-toggle>            
+                </ion-list>  
+            </div>
 
-        <button class="button button-block button-positive" ng-click="startVoiceActivityMonitoring()">{{vm_voice_label}}</button> 
-        
-<!--        <ion-list>
-            <ion-toggle
-                    ng-repeat="model in modelsJson track by $index"
-                    ng-checked="model.checked"
-                    ng-model="model.checked"
-                    ng-click="selectModel($index)
-                    class="item item-text-wrap">
-                    {{model.jsonname]}}
-            </ion-toggle>            
-        </ion-list>  -->
-        
-        <ion-list>
-            <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
-                <div class="buttons">
-                    
-                    <button class="button button-clear button-balanced" ng-click="playAudio(chunk)">
-                        <i class="icon ion-play"></i>
-                    </button>
-                    
-                    <button class="button button-clear button-assertive" ng-click="deleteAudio(chunk)">
-                        <i class="icon ion-trash-a"></i>
-                    </button>
-                    
-                </div>                
-            </ion-item>
-        </ion-list>
-        
-
-        <ion-list>
-            <ion-item ng-repeat="model in modelsJson track by $index">
-                <label>{{model.jsonname}}</label>
-            </ion-item>
-        </ion-list>         
-        
-        <ion-list>
-            <ion-item ng-repeat="item in recognizedItems track by $index">
-                <label>{{item.title}}<span class="badge">{{item.confidence}}</span></label>
-            </ion-item>
-        </ion-list>         
-        
-    </div>      
-  </ion-content>
+            <div class="card">
+                <div class="item item-divider">COMANDO RICONOSCIUTO</div>
+                <ion-list>
+                    <ion-item ng-repeat="item in recognizedItems track by $index">
+                        <label>{{item.title}}<span class="badge">{{item.confidence}}</span></label>
+                    </ion-item>
+                </ion-list>         
+            </div>                
+        </div>      
+    </ion-content>
+  
 </ion-view>
+
+

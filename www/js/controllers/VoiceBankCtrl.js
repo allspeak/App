@@ -1,9 +1,9 @@
 /* 
 manage the following object
-sentence = { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename":"", "readablefilename": "ho_sete.wav", "existwav": 0 }
+sentence = { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename":"", "readablefilename": "ho_sete.wav", "nrepetitions": 0 }
 filename is by default empty. is here initialized as "$scope.audiofileprefix_ID.wav"
 */
-function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state, $ionicHistory, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, EnumsSrv, VocabularySrv, SequencesRecordingSrv)  
+function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state, $ionicHistory, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, EnumsSrv, VocabularySrv, VoiceBankSrv, SequencesRecordingSrv)  
 {
     $scope.audiofileprefix      = "vb"; // PREFIX of all saved file  ($scope.audiofileprefix + "_" + sentence.id + ".wav"
     $scope.subject              = null;
@@ -29,20 +29,53 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         $ionicHistory.clearHistory();
         $scope.deregisterFunc       = $ionicPlatform.registerBackButtonAction(function(event)
         {
-            if(!$scope.isInsertingNewSent)  $state.go("home");
-            else                            $scope.closeModal();
+            if(!$scope.isInsertingNewSent)
+            {
+                if($scope.backState == "vocabulary")
+                    $state.go($scope.backState, {"foldername":$scope.foldername});                 
+                else
+                    $state.go($scope.backState);
+            }
+            else    $scope.closeModal();
         }, 100);   
+        
+        //---------------------------------------------------------------------------------------------------------------------
+        // manage input params
+        //---------------------------------------------------------------------------------------------------------------------
+        $scope.backState        = "home";
+        $scope.elems2display    = EnumsSrv.VOICEBANK.SHOW_ALL;
+        $scope.foldername       = "";       // when called with elems2display = SHOW_TRAINED and backState = vocabulary. it contains the vocabulary folder name
+
+        if(data.stateParams != null)
+        {
+            if(data.stateParams.elems2display != null && data.stateParams.elems2display != "")  $scope.elems2display    = parseInt(data.stateParams.elems2display);
+            if(data.stateParams.backState != null && data.stateParams.backState != "")          $scope.backState        = data.stateParams.backState;
+            if($scope.backState == "vocabulary")
+            {
+                if(data.stateParams.foldername != null)  $scope.foldername = data.stateParams.foldername;
+                else
+                {
+                    alert("Error in VoicebankCtrl::$ionicView.enter : backstate = vocabulary but voc folder was not specified");
+                    $scope.backState = "home";
+                }
+            }   
+        }
+        //---------------------------------------------------------------------------------------------------------------------
+        
         
         $scope.showOnlyTrained      = true;        
         $scope.rel_rootpath         = InitAppSrv.getVoiceBankFolder(); 
         $scope.resolved_rootpath    = FileSystemSrv.getResolvedOutDataFolder() + $scope.rel_rootpath;
-        $scope.sentencesCategories  = VocabularySrv.getVocabularyCategories();
+        $scope.sentencesCategories  = VoiceBankSrv.getVocabularyCategories();
         
-        return VocabularySrv.hasVoicesTrainVocabulary()
+        return VocabularySrv.hasVoicesTrainVocabulary() // update voicebank commands
         .then(function(res)
         {
-            if(res) $scope.refreshAudioList();          // all training commands has their voice, display all VB items
-            else    $scope.refreshTrainingAudioList();  // some training commands doesn't have a recorded wav, display only commands belonging to the training list
+            if($scope.elems2display == EnumsSrv.VOICEBANK.SHOW_ALL) $scope.refreshAudioList();
+            else                                                    $scope.refreshTrainingAudioList();
+                
+//            if(res) $scope.refreshAudioList();          // all training commands has their voice, display all VB items
+//            else    $scope.refreshTrainingAudioList();  // some training commands doesn't have a recorded wav, display only commands belonging to the training list
         })
         
    });
@@ -56,10 +89,10 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.refreshAudioList = function()
     {
         $scope.isBusy    = 1;
-        return VocabularySrv.checkVoiceBankAudioPresence()
-        .then(function(voc)
+        return VoiceBankSrv.updateVoiceBankAudioPresence()
+        .then(function(cmds)
         {
-            $scope.voicebankSentences   = voc;
+            $scope.voicebankSentences   = cmds;
             $scope.isBusy               = 0;
             $scope.showOnlyTrained      = false; 
             $scope.subHeaderTitle       = $scope.subheaderAll;
@@ -78,10 +111,10 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.refreshTrainingAudioList = function()
     {
         $scope.isBusy    = 1;
-        return VocabularySrv.checkTrainVocabularyAudioPresence()
+        return VocabularySrv.updateTrainVocabularyAudioPresence()
         .then(function(voc)
         {
-            $scope.voicebankSentences   = voc;
+            $scope.voicebankSentences   = voc.commands;
             $scope.isBusy               = 0;
             $scope.showOnlyTrained      = true; 
             $scope.subHeaderTitle       = $scope.subheaderTrained;
@@ -159,7 +192,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         });        
     };
     
-    $ionicModal.fromTemplateUrl('templates/popNewSentence.html', 
+    $ionicModal.fromTemplateUrl('templates/modal/modalNewSentence.html', 
     {
         scope: $scope,
         animation: 'slide-in-up'            
@@ -184,7 +217,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         {
             var volume       = 1; //$scope.volume/100;
             $scope.isBusy    = 1;
-            IonicNativeMediaSrv.playAudio($scope.resolved_rootpath + "/" + filename + ".wav", volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
+            IonicNativeMediaSrv.playAudio($scope.resolved_rootpath + "/" + filename, volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
         }
     };
     
@@ -212,16 +245,16 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     
     $scope.recordAudio = function(sentence_id)
     {
-        var sentence = VocabularySrv.getVoiceBankSentence(sentence_id);
+        var sentence = VoiceBankSrv.getVoiceBankCommand(sentence_id);
         if(sentence.filename == "")
         {
             sentence.filename = $scope.getFileName(sentence_id);
             return VocabularySrv.setVoiceBankSentenceFilename(sentence_id, sentence.filename)
             .then(function(){
-                $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, sentenceId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
+                $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, commandId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
             })
         }
-        else    $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, sentenceId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
+        else    $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, commandId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
     };
 
     $scope.recordAudioSequence = function()
@@ -238,7 +271,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
             $scope.record_sequence = sequence;
             if($scope.record_sequence)
             {
-                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, sentenceId:0, successState:$scope.successState, cancelState:$scope.cancelState});
+                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, commandId:0, successState:$scope.successState, cancelState:$scope.cancelState});
             }
         });
     };

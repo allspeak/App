@@ -1,28 +1,37 @@
 {
     "defaults":
     {   
-        "assisted": 0,
+        "appModality"               : 110,
+        "isFirstUse"                : true,        
+        "userActiveVocabularyName"  : "",        
         "plugin_interface_name"     : "window.speechrecognition",
         "file_system"               : {
-            "output_data_root"                      : "externalRootDirectory",
+            "data_storage_root"                     : "externalRootDirectory",
+            "data_assets_folder"                    : "www",
             "app_folder"                            : "AllSpeak",
             "training_folder"                       : "AllSpeak/training_sessions",
-            "default_training_folder"               : "AllSpeak/training_sessions/default",
-            "voicebank_folder"                      : "AllSpeak/voicebank",
             "audio_temp_folder"                     : "AllSpeak/training_sessions/temp",
-            "tf_models_folder"                      : "AllSpeak/models",
-            "tf_default_model"                      : "controls_fsc.json",
+            "voicebank_folder"                      : "AllSpeak/voicebank",
+            "vocabularies_folder"                   : "AllSpeak/vocabularies",
             "temp_folder"                           : "AllSpeak/temp",
             "json_folder"                           : "AllSpeak/json",
+            
             "config_filerel_path"                   : "AllSpeak/json/config.json",
-            "voicebank_vocabulary_www_path"         : "./json/voicebank_vocabulary.json",
-            "voicebank_vocabulary_filerel_path"     : "AllSpeak/json/voicebank_vocabulary.json",
-            "voicebank_uservocabulary_www_path"     : "./json/voicebank_uservocabulary.json",
-            "voicebank_uservocabulary_filerel_path" : "AllSpeak/json/voicebank_uservocabulary.json",
-            "train_vocabulary_filerel_path"         : "AllSpeak/training_sessions/default/train_vocabulary.json",
+            
+            "voicebank_commands_www_path"           : "./json/voicebank_commands.json",
+            "voicebank_commands_filerel_path"       : "AllSpeak/json/voicebank_commands.json",
+            "voicebank_usercommands_www_path"       : "./json/voicebank_usercommands.json",
+            "voicebank_usercommands_filerel_path"   : "AllSpeak/json/voicebank_usercommands.json",
+            
+            "default_vocabulary_name"               : "default",
+            "defaultModelName"                      : "controls_fsc.pb",
+            "universalJsonFileName"                 : "vocabulary.json",
+
+            "train_vocabulary_filerel_path"         : "",
+            
             "resolved_odp"                          : ""
         },
-        "capture_configurations"      : {
+        "capture_configurations"    : {
             "recognition"   : {
                 "nSampleRate"                   : 8000,
                 "nBufferSize"                   : 512,
@@ -66,7 +75,7 @@
                 "sOutputPath"                   : ""   
             }
         },   
-        "vad"                               : {
+        "vad"                       : {
             "nSpeechDetectionThreshold"     : 15, 
             "nSpeechDetectionAllowedDelay"  : 400,
             "nSpeechDetectionMaximum"       : 10000,
@@ -77,7 +86,7 @@
             "sDebugString"                  : "",
             "bAutoPause"                    : true
         },
-        "mfcc"                              : {
+        "mfcc"                      : {
             "nNumberOfMFCCParameters"       : 13,
             "dSamplingFrequency"            : 8000.0,
             "nNumberofFilters"              : 24,
@@ -100,30 +109,28 @@
             "nInputParams"          : 792,
             "nContextFrames"        : 5,
             "nItems2Recognize"      : 23,
-            "sModelFileName"        : "controls_fsc",   
+            "sModelFilePath"        : "",   
+            "sModelFileName"        : "controls_fsc.pb",   
             "sInputNodeName"        : "inputs/I",   
             "sOutputNodeName"       : "SMO",
             "fRecognitionThreshold" : 0,
             "nProcessingScheme"     : 252,
             "sCreationTime"         : "13092017",
             "nDataDest"             : 270,              
-            "bLoaded"               : false            
+            "bLoaded"               : false,
+            "sLocalFolder"          : "default"
         },
         "remote"                    : {    
             "patient_id"            : "",
-            "url"                   : "",
-            "login"                 : "",
-            "password"              : "",
+            "url"                   : "http://api.allspeak.eu:8888",
+            "api_key"               : "",
+            "isDeviceRegistered"    : false,
             "api"                   : {
-                                        "login": "login",
-                                        "upload_training_session": "upload-training-session",
-                                        "get_net": "get-net"
+                                        "register_device"               : "devices",
+                                        "upload_training_session"       : "upload_training_session",
+                                        "get_training_session_network"  : "training_sessions",
+                                        "api_key_reset"                 : "api_key_reset"
                                       }
-        },
-        "bluetooth"                 : {
-            "paired_devices"        : [], 
-            "ignored_paired_devices": []
-        },           
-        "device"                    : {}
+        }         
     }
 }

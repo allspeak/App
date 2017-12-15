@@ -75,6 +75,8 @@ function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
    //==================================================================================
 };
 
-controllers_module = angular.module('controllers_module')
-.controller('AmplifierCtrl', AmplifierCtrl);
+controllers_module = angular.module('controllers_module', []).controller('AmplifierCtrl', AmplifierCtrl);
+
+//controllers_module.controller('AmplifierCtrl', AmplifierCtrl);
+ 
  

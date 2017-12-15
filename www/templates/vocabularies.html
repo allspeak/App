@@ -1,0 +1,54 @@
+<ion-view view-title="VOCABOLARI">
+    
+    <ion-nav-bar class="bar-positive">    
+        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button> 
+    </ion-nav-bar>     
+
+
+    <ion-content>
+        <ion-item class="item item-divider">VOCABOLARIO SELEZIONATO</ion-item>
+        
+        <!--<ion-list>-->
+            <!--<ion-item ng-repeat="item in vocabularies track by $index">-->
+                <div class="card" ng-if="activeVocabulary" ng-click="selectVocabulary(activeVocabulary)">
+                    <div class="item item-divider">
+                       {{activeVocabulary.sLabel}}
+                    </div>
+                    <label class="item">Numero comandi : <span class="badge">{{activeVocabulary.nItems2Recognize}}</span></label>        
+                    <label class="item">Status : <span class="badge">{{activeVocabulary.sStatus}}</span></label>        
+                </div>                    
+            <!--</ion-item>-->
+        <!--</ion-list>-->
+        
+        <ion-item class="item item-divider">ALTRI VOCABOLARI</ion-item>
+        
+        <ion-list>
+            <ion-item ng-repeat="item in vocabularies track by $index">
+                <div class="card" ng-if="item.sLocalFolder != activeVocabularyFolder" ng-click="selectVocabulary(item)">
+                    <div class="item item-divider">
+                       {{item.sLabel}}
+                    </div>
+                    <label class="item">Numero comandi : <span class="badge">{{item.nItems2Recognize}}</span></label>        
+                    <label class="item">Status : <span class="badge">{{item.sStatus}}</span></label>        
+                </div>                    
+            </ion-item>
+        </ion-list>
+
+    </ion-content>
+</ion-view>
+
+
+                        <!--<label class="item">Numero comandi : <span class="badge" ng-class="isSpeaking == 'ON' ? 'color-green' : 'color-red'">{{voiceDB}}/{{thresholdDB}}</span></label>-->        
+                        
+<!--                        <ion-toggle
+                                    ng-checked="item.checked"
+                                    ng-model="item.checked"
+                                    ng-click="selectVocabulary($index)"
+                                    ng-disabled="!item.isCompleted"
+                                    class="item item-text-wrap">
+                            Numero comandi : {{item.nItems2Recognize}}
+                            
+                        </ion-toggle>-->
+

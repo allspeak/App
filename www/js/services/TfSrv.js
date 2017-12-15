@@ -1,5 +1,5 @@
 /*
- * once activated, detect voice onset & offset 
+ * 
  */
 
 
@@ -9,52 +9,57 @@ function TfSrv(FileSystemSrv, $q)
     // each time I call : init (captureCfg, captureProfile, output_chunks, vadCfg, mfccCfg)
     // 1) take the values defined in window.audioinput (capture) & window.speechcapture (vad) & here
     // 2) overwrite with App defaults (according to init.json)
-    // 3) overwrite with possible controllers defaults                 
-    mCfg            = null;     // hold current configuration (got from json file)
-    standardCfg     = null;     // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
+    // 3) overwrite with possible controllers defaults     
+    
+    mTfCfg            = null;     // hold current configuration (got from json file)
+    
+    standardTfCfg     = null;     // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
     oldCfg          = null;     // copied while loading a new model, restored if something fails
     pluginInterface = null;
     plugin_enum     = null;
 
+    vocabulariesFolder  = "";       // AllSpeak/vocabularies
 
-    modelJson       = ""       // json file containing model info
-    modelLabel      = ""      // corresponds to mCfg.sLabel....must be unique !!
-    modelsFolder    = "";
+    modelLoaded         = false;
+    modelExist          = false;
+    modelFolder         = ""        // default - standard - gigi etc...
+    modelJsonFile       = ""        // json file containing model info
     
+    //modelLabel          = ""        // corresponds to mTfCfg.sLabel....must be unique !!
+
     //==========================================================================
     // DEFAULT CONFIG VALUES MANAGEMENT
     //==========================================================================
     //
     // PUBLIC ********************************************************************************************************
-    init = function(jsonCfg, modelsfolder, modeljson, plugin)
+    init = function(jsonCfg, vocabulariesfolder, plugin)
     {  
-        mCfg            = jsonCfg;
-        standardCfg     = jsonCfg;
-        oldCfg          = jsonCfg;
-        pluginInterface = plugin;
+        mTfCfg              = jsonCfg;
+        standardTfCfg       = jsonCfg;
+        oldCfg              = jsonCfg;
+        pluginInterface     = plugin;
         
-        plugin_enum     = pluginInterface.ENUM.tf;
+        plugin_enum         = pluginInterface.ENUM.tf;
         
-        modelsFolder    = modelsfolder;
-        modelJson       = modeljson;
+        vocabulariesFolder  = vocabulariesfolder;
     };
     
     changeCfg = function(cfg)
     {  
-        mCfg = getUpdateCfg(cfg);
-        return mCfg;
+        mTfCfg = getUpdateCfg(cfg);
+        return mTfCfg;
     };
      // PUBLIC *************************************************************************************************
     getCfg = function()
     {
-        return mCfg;
+        return mTfCfg;
     };    
 
     // PUBLIC *************************************************************************************************
     // called by any controller pretending to override some default properties 
     getUpdatedCfg = function (ctrlcfg)
     {
-        var cfg = standardCfg;
+        var cfg = standardTfCfg;
         
         if (ctrlcfg != null)
             for (item in ctrlcfg)
@@ -63,51 +68,116 @@ function TfSrv(FileSystemSrv, $q)
     };    
     //--------------------------------------------------------------------------
      // PUBLIC *************************************************************************************************
-   getLoadedJsonFile = function()
+    getLoadedJsonFile = function()
     {
-        return modelJson;
+        return modelJsonFile;
     };    
     //  end DEFAULT VALUES MANAGEMENT
     //--------------------------------------------------------------------------
-     // PUBLIC *************************************************************************************************
-    loadTFModel = function(model_relpath)
+    
+    // returns: true | false or catch("NO_FILE")
+    // load model json and load it if model.sModelFilePath exist
+    loadTFModelPath = function(json_relpath)
     {
-        if(model_relpath == null)   model_relpath = modelsFolder + "/" + modelJson;
-        return _getModel(model_relpath)
-        .then(function(model)
-        {     
-            return pluginInterface.loadTFModel(model);
-        })
-        .catch(function(error)
+        if(json_relpath == modelJsonFile && modelLoaded) return Promise.resolve(true);
+        else                                                
         {
-            return $q.reject(error);
-        })        
+            return FileSystemSrv.existFile(json_relpath)
+            .then(function(existfile)
+            {
+                if(existfile)       return _getModel(json_relpath)
+                else                return $q.reject("NO_FILE");
+            })
+            .then(function(voc)
+            {
+                modelJsonFile = json_relpath;
+                return loadTFModel(voc);
+            })
+            .catch(function(error)
+            {
+                modelLoaded = false;
+                modelFolder = "";
+                modelJsonFile = "";            
+                return $q.reject(error);
+            });          
+        }
+    }
+    
+    // returns: true | false or catch("NO_FILE")
+    // load NET if model.sModelFileName is valid
+    // 
+    loadTFModel = function(voc)
+    {
+        if(voc.sModelFilePath == null || voc.sModelFilePath == "")
+            return Promise.resolve(false);
+        else
+        {
+            return FileSystemSrv.existFileResolved(voc.sModelFilePath)
+            .then(function(exist)
+            {
+                if(exist)   return pluginInterface.loadTFModel(voc)
+                else        return false;
+            })
+            .then(function(loaded)
+            {  
+                modelLoaded = loaded;
+                if(loaded)
+                {
+                    modelFolder     = mTfCfg.sLocalFolder;
+                    modelJsonFile   = json_relpath;
+                }
+                else
+                {
+                    modelFolder = "";
+                    modelJsonFile = "";                
+                }
+                return loaded;
+            })
+            .catch(function(error)
+            {
+                modelLoaded = false;
+                modelFolder = "";
+                modelJsonFile = "";            
+                return $q.reject(error);
+            });     
+        }
     };    
     
-    _getModel = function(model_relpath)
+    isModelLoaded = function(vocfolder)
     {
-        oldCfg = mCfg;        
-        return FileSystemSrv.readJSON(model_relpath)
+        if(modelLoaded && vocfolder == modelFolder) return true;
+        else                                        return false;
+    };
+    
+    _getModel = function(json_relpath)
+    {
+        oldCfg = mTfCfg;        
+        return FileSystemSrv.readJSON(json_relpath)
         .then(function(model)
         {
-            model.sModelFilePath = FileSystemSrv.getResolvedOutDataFolder() + modelsFolder + "/" + model.sModelFilePath;
-            model.localModelPath = model_relpath;
-            mCfg = model;    
-            return mCfg;
+            if(model.sModelFileName != null && model.sModelFileName)
+               model.sModelFilePath    = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + model.sLocalFolder + "/" + model.sModelFileName; // file:////storage/.../AllSpeak/vocabularies/GIGI/optimized_user_XXXXXXX_273.json
+            
+            mTfCfg = model;    
+            return mTfCfg;
         })        
         .catch(function(error)
         {
-            mCfg = oldCfg;
+            mTfCfg            = oldCfg;
             return $q.reject(error);
-        })        
+        });        
     };
     //  end DEFAULT VALUES MANAGEMENT
     
-    // the crucial params are: sLabel, vocabulary, nProcessingScheme (taken from default)
-    createTrainingDataJSON = function(train_obj, filepath)
+    // the crucial params are: sLabel, commands, nProcessingScheme (taken from default)
+    createTrainingDataJSON = function(label, commandsids, procscheme, modeltype, filepath)
     {
-        var tf      = getUpdatedCfg(train_obj);
-        return FileSystemSrv.createFile(filepath, JSON.stringify(tf));
+        var train_obj = {};
+        train_obj.sLabel                = label;
+        train_obj.commands              = commandsids;
+        train_obj.nProcessingScheme     = procscheme;
+        train_obj.nModelType            = modeltype;    
+        return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj));
     };
     //==========================================================================
     // public interface
@@ -118,6 +188,8 @@ function TfSrv(FileSystemSrv, $q)
         getUpdatedCfg           : getUpdatedCfg, 
         getCfg                  : getCfg, 
         getLoadedJsonFile       : getLoadedJsonFile,
+        isModelLoaded           : isModelLoaded,
+        loadTFModelPath         : loadTFModelPath,
         loadTFModel             : loadTFModel,
         createTrainingDataJSON  : createTrainingDataJSON
     };    
