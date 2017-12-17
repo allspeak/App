@@ -179,6 +179,12 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
 
     $scope.saveNewSentence = function(sentencelabel)
     {
+        if(!sentencelabel.length)   // should not be necessary as the modal enables the button only if sentencelabel is not empty
+        {
+            alert("Attenzione. Il domando inserito è vuoto, correggilo!");
+            return;
+        };
+        
         return VocabularySrv.addUserVoiceBankSentence(sentencelabel, $scope.selCategory.data, $scope.audiofileprefix)
         .then(function(res)
         {

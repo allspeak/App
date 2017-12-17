@@ -37,8 +37,8 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
         pluginInterface = plugin;
         initAppSrv      = initappserv;
         
-        ServerCfg.url   = "http://192.168.1.78:8095";     // OVERWRITE FOR DEBUG
-        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
+        ServerCfg.url   = "http://193.168.1.70:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
     };
     
     getApiKey = function()
@@ -52,19 +52,19 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
         device      = initAppSrv.getDevice();
         
         return _postApi("register_device", api_key, device)
-        .then(function(response)
+        .then(function(res)
         {
-            if(response.config.data) return initAppSrv.setStatus({"isDeviceRegistered":true, "api_key":api_key});
+            if(res.config.data)    return initAppSrv.setStatus({"isDeviceRegistered":true, "api_key":api_key});
+            else                   return $q.resolve({"result":true, "message":"Errore inatteso, utente registrato, ma device assente"});
         })
         .then(function(res)
         {
-            return true;
+            return({"result": true});
         })
         .catch(function(error)
         {
-            var str = error.statusText + "\n" + error.data.error;
-            alert(str);
-            return false;
+            if(error.headers != null)   return({"result":false, "status": error.status,"message":_onServerError(error)});  // server error
+            else                        return $q.reject(error);                                               // generic error (coding)
         });
     };
     
@@ -164,6 +164,36 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
         if(param != null && param.length) url = "/" + param.toString();
         return url;    
     };
+    
+    _onServerError = function(error)
+    {
+        var str = "ERRORE: ";
+        if(error.data != null )
+        {
+            switch(error.data.error)
+            {
+                case "Forbidden":
+                    if(error.status == 401)
+                        str += "Il codice che hai inserito è sbagliato.\nVerifica di aver inserito il codice corretto e riprova.\nIn caso l'errore si ripresenti, prego contatta il tuo medico"
+                    else if(error.status == 403)
+                        str += "non specificato. stato: " + error.statusText + ", codice: " + error.status.toString();
+                    break;
+                case "Wrong request":
+                    str += "wrong request. stato: " + error.statusText + ", codice: " + error.status.toString();
+                    break;
+                case "Required URL does not exist":
+                    str += "Required URL does not exist. stato: " + error.statusText + ", codice: " + error.status.toString();
+
+                    break;
+            }
+        }
+        else
+        {
+            if(error.statusText != "") str += error.statusText + "\n";
+            str = "Il server non risponde, controlla la tua connessione o riprova piu tardi.\n";
+        };
+        return str;        
+    }
     
     _onUploadError = function(error)
     {

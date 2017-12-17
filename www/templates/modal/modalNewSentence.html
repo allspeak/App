@@ -10,7 +10,7 @@
         </label>
 
         <div class="button-bar">
-            <button class="button button-full button-positive" ng-click="saveNewSentence(newsentencelabel)">Salva</button>
+            <button class="button button-full button-positive" ng-disabled="!newsentencelabel.length" ng-click="saveNewSentence(newsentencelabel)">Salva</button>
             <button class="button button-full button-positive" ng-click="closeModal()">Cancella</button>
         </div> 
 

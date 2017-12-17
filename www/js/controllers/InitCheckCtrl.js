@@ -17,7 +17,8 @@
  
 function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPopup, $cordovaSplashscreen, InitAppSrv, RuntimeStatusSrv, RemoteAPISrv, EnumsSrv)
 {
-    $scope.want2beAssistedText  = "puoi utilizzare AllSpeak con le seguenti modalità: SOLO - GUEST - ASSISTITA";
+    $scope.want2beAssistedText      = "puoi utilizzare AllSpeak con le seguenti modalità: SOLO - GUEST - ASSISTITA";
+    $scope.want2beRegisteredText    = "Inserisci il codice che ti è stato fornito dal tuo medico";
     $scope.appStatus            = null;
     $scope.api_key              = "";
     $scope.modeljson            = "";
@@ -131,22 +132,37 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         {
             $scope.api_key = apikey.label;    
             return RemoteAPISrv.registerDevice($scope.api_key)       // if successfull it calls: InitAppSrv.setStatus({"isDeviceRegistered":true, "api_key":api_key})
-            .then(function(isregistered)
+            .then(function(response)
             {
-                $scope.appStatus.isDeviceRegistered = isregistered;
-                if(!isregistered)  // CODICE NON VALIDO
+                $scope.appStatus.isDeviceRegistered = response.result;
+                if(!response.result)    // ERRORE
                 {
-                    return $ionicPopup.confirm({ title: 'Attenzione', template: 'Il codice che hai inserito non è corretto.\nPremi OK per riprovare\nPremi cancella per abbandonare\nIn qesto caso contatta il tuo medico che richiedere un nuovo codice.\nNel frattempo puoi utilizzare solo le funzioni base di AllSpeak'})
-                    .then(function(res) 
+                    $cordovaSplashscreen.hide();
+                    switch(response.status)
                     {
-                        if(!res)
-                        {
-                            $scope.modalInsertApiKey.hide();
-                            $scope.endCheck('home');
-                        }
-                    });                    
+                        case 401:
+                            return $ionicPopup.confirm({ title: 'Attenzione', template: response.message})
+                            .then(function(res) 
+                            {
+                                if(!res)
+                                {
+                                    $scope.modalInsertApiKey.hide();
+                                    $scope.endCheck('home');
+                                }
+                            });                    
+                            break;
+                            
+                        default:
+                            return $ionicPopup.alert({ title: 'Attenzione', template: response.message})
+                            .then(function(res) 
+                            {
+                                $scope.modalInsertApiKey.hide();
+                                $scope.endCheck('home');
+                            });                    
+                            break
+                    }
                 }   
-                else            // CODICE VALIDO
+                else                    // CODICE VALIDO
                 {
                     RuntimeStatusSrv.setStatus("isLogged", true);
                     $scope.modalInsertApiKey.hide();
@@ -156,7 +172,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
             .catch(function(error)
             {
                 alert("ERRORE CRITICO in InitCheckCtrl::checkIsAssisted" + error.toString());
-                RuntimeStatusSrv.setStatus("isLogged", true);
+                RuntimeStatusSrv.setStatus("isLogged", false);
                 $scope.endCheck('home');
                 $q.reject(error);
             });
