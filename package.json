@@ -46,9 +46,9 @@
       "android"
     ],
     "plugins": {
-      "cordova-plugin-speechrecognition": {},
       "cordova-plugin-network-information": {},
-      "cordova-plugin-device": {}
+      "cordova-plugin-device": {},
+      "cordova-plugin-speechrecognition": {}
     }
   }
 }

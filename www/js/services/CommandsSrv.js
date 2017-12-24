@@ -62,11 +62,11 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsS
             var rep_num         = arr[2];
             if(command.id == idfile) 
             {
-                var             id  = rep_num;
-                if(id > max)    max = id;
+                var             id  = parseInt(rep_num.toString());
+                if(id > max)    max = parseInt(id);
                 
                 command.files[command.nrepetitions] = {label: files[f]};
-                command.firstAvailableId            = max + 1;
+                command.firstAvailableId            = ++max;
                 command.nrepetitions++;
             }            
         }

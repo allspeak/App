@@ -10,7 +10,7 @@
         ........
     ]
  */
-function ShowRecordingSessionCtrl($scope, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, FileSystemSrv, MfccSrv, SubjectsSrv)
+function ManageRecordingsCtrl($scope, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, FileSystemSrv, MfccSrv, SubjectsSrv)
 {
     $scope.subject              = null;     // stay null in AllSpeak
     $scope.sessionName          = "";
@@ -38,7 +38,7 @@ function ShowRecordingSessionCtrl($scope, $ionicPopup, $state, $ionicPlatform, I
         if(data.stateParams.sessionPath != null) $scope.sessionName = data.stateParams.sessionPath;
         else
         {
-            alert("ShowRecordingSessionCtrl::$ionicView.enter. error : foldername is empty");
+            alert("ManageRecordingsCtrl::$ionicView.enter. error : foldername is empty");
             $state.go("training");
         }
         
@@ -65,7 +65,7 @@ function ShowRecordingSessionCtrl($scope, $ionicPopup, $state, $ionicPlatform, I
             $scope.refreshAudioList();
         })
         .catch(function(error){
-            alert("ShowRecordingSessionCtrl::$ionicView.enter => " + error.message);
+            alert("ManageRecordingsCtrl::$ionicView.enter => " + error.message);
         });
         
     });
@@ -86,7 +86,7 @@ function ShowRecordingSessionCtrl($scope, $ionicPopup, $state, $ionicPlatform, I
                 $scope.$apply();
             })        
             .catch(function(error){
-                $scope.showAlert("Error", "ShowRecordingSessionCtrl::refreshAudioList => " + error.message);
+                $scope.showAlert("Error", "ManageRecordingsCtrl::refreshAudioList => " + error.message);
             });                
         }
         else
@@ -99,7 +99,7 @@ function ShowRecordingSessionCtrl($scope, $ionicPopup, $state, $ionicPlatform, I
                 $scope.$apply();
             })        
             .catch(function(error){
-                $scope.showAlert("Error", "ShowRecordingSessionCtrl::refreshAudioList => " + error.message);
+                $scope.showAlert("Error", "ManageRecordingsCtrl::refreshAudioList => " + error.message);
             });
         }
     };
@@ -172,7 +172,7 @@ function ShowRecordingSessionCtrl($scope, $ionicPopup, $state, $ionicPlatform, I
         if($scope.nCurFile < $scope.nFiles) cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
         else                                $scope.resetExtractFeatures();
         
-        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
     };
     
     $scope.resetExtractFeatures = function()
@@ -184,7 +184,7 @@ function ShowRecordingSessionCtrl($scope, $ionicPopup, $state, $ionicPlatform, I
     };
     
     $scope.onMFCCError = function(res){
-        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
     }
     //==============================================================================================================================
     //==============================================================================================================================
@@ -216,4 +216,4 @@ function ShowRecordingSessionCtrl($scope, $ionicPopup, $state, $ionicPlatform, I
     };
 
 };
-controllers_module.controller('ShowRecordingSessionCtrl', ShowRecordingSessionCtrl)
+controllers_module.controller('ManageRecordingsCtrl', ManageRecordingsCtrl)

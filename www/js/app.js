@@ -93,12 +93,12 @@ main_module.config(function($stateProvider, $urlRouterProvider)
     .state('managevoccommands', {
         url: '/managevoccommands/:modeId/:foldername/:backState',
         templateUrl: 'templates/managevoccommands.html',
-        controller: 'ManageVocCommandsCtrl'
+        controller: 'ManageCommandsCtrl'
     })
     .state('show_recording_session', {
         url: '/show_recording_session/:foldername/:backState/:sessionPath/:subjId',
         templateUrl: 'templates/show_recording_session.html',
-        controller: 'ShowRecordingSessionCtrl'
+        controller: 'ManageRecordingsCtrl'
     }) 
     .state('sentence', {
         url: '/sentence/:foldername/:sessionPath/:commandId/:subjId',
@@ -219,7 +219,7 @@ main_module.config(function($stateProvider, $urlRouterProvider)
 //        'show_recording_session-vocabulary' : 
 //            {
 //                templateUrl: 'templates/vocabulary_show_session.html',
-//                controller: 'ShowRecordingSessionCtrl'
+//                controller: 'ManageRecordingsCtrl'
 //            }
 //        }
 //    })

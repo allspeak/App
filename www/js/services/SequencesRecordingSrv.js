@@ -55,6 +55,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, CommandsSrv, EnumsSrv)
                     for(var s = 0; s < nsentences; s++)
                     {
                         var sentence        = sentences[s];
+                        if(sentence == null) continue;
                         var curr_rep        = sentence.nrepetitions + r;
                         if(curr_rep > (sessrep-1))   continue;
                         else

@@ -511,7 +511,7 @@ controllers_module.controller('RecognitionCtrl', RecognitionCtrl)
 //    $scope.onMFCCError = function(error){
 //        alert(error.message);
 //        $scope.resetExtractFeatures();
-//        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+//        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
 //    };
 //    
 //    $scope.onMFCCProgressFile = function(res){
@@ -524,7 +524,7 @@ controllers_module.controller('RecognitionCtrl', RecognitionCtrl)
 //            $scope.$apply();            
 //        }
 //        
-//        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+//        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
 //    };
 //    
 //    $scope.resetExtractFeatures = function()

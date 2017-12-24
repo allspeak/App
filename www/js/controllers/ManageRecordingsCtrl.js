@@ -10,7 +10,7 @@
         ........
     ]
  */
-function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, TfSrv, SubjectsSrv, RemoteAPISrv, EnumsSrv)
+function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, TfSrv, SubjectsSrv, RemoteAPISrv, EnumsSrv)
 {
     $scope.subject              = null;     // stay null in AllSpeak
     $scope.foldername           = "";       // standard
@@ -27,6 +27,8 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
     $scope.maxNumRepetitions    = EnumsSrv.RECORD.SESSION_MAX_REPETITIONS;
     
     $scope.pageTitle            = "Registrazioni Comandi";
+    
+    $scope.modalRecordSequence  = null;
     //==============================================================================================================================
     // ENTER & REFRESH
     //==============================================================================================================================    
@@ -42,7 +44,7 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
         //---------------------------------------------------------------------------------------------------------------------        
         if(data.stateParams.foldername == null) 
         {
-            alert("ShowRecordingSessionCtrl::$ionicView.enter. error : foldername is empty");
+            alert("ManageRecordingsCtrl::$ionicView.enter. error : foldername is empty");
             $state.go("vocabularies");
         }   
         else $scope.foldername = data.stateParams.foldername;
@@ -50,7 +52,7 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
         // training_XXXXYYZZ
         if(data.stateParams.sessionPath == null) 
         {
-            alert("ShowRecordingSessionCtrl::$ionicView.enter. error : sessionPath is empty");
+            alert("ManageRecordingsCtrl::$ionicView.enter. error : sessionPath is empty");
             $state.go("vocabularies");
         }   
         else $scope.sessionPath = data.stateParams.sessionPath;
@@ -73,7 +75,7 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
         
         $scope.initMfccParams       = {"nDataDest": $scope.plugin_enum.MFCC_DATADEST_FILE,
                                        "nDataType": $scope.plugin_enum.MFCC_DATATYPE_MFFILTERS,  //write FILTERS to FILE        
-                                       "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_PP_CTX};  //    
+                                       "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX};  //    
         $scope.nFiles               = 0;
         $scope.mfccCfg              = MfccSrv.getUpdatedCfg($scope.initMfccParams);
         
@@ -90,10 +92,18 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
         {
             $scope.headerTitle      = "VOCABOLARIO :   " + vocabulary.sLabel;
             $scope.commands         = vocabulary.commands;
-            $scope.refreshAudioList();
+            return $scope.refreshAudioList();
         })
+        .then(function()
+        {
+            if($scope.modalRecordSequence == null)
+            {
+                $ionicModal.fromTemplateUrl('templates/modal/modalSelectCmd2Record.html', {
+                    scope: $scope, animation: 'slide-in-up'}).then(function(modal) {$scope.modalRecordSequence = modal;});                
+            }
+        })     
         .catch(function(error){
-            alert("ShowRecordingSessionCtrl::$ionicView.enter => " + error.message);
+            alert("ManageRecordingsCtrl::$ionicView.enter => " + error.message);
         });
     });
 
@@ -111,9 +121,11 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
                 $scope.subject.commands   = session_commands;
                 $scope.nFiles             = $scope._getFilesNum(session_commands);
                 $scope.$apply();
+                return true;
             })        
             .catch(function(error){
-                $scope._showAlert("Error", "ShowRecordingSessionCtrl::refreshAudioList => " + error.message);
+                $scope._showAlert("Error", "ManageRecordingsCtrl::refreshAudioList => " + error.message);
+                return false;
             });                
         }
         else
@@ -125,9 +137,11 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
                 $scope.commands   = session_commands;
                 $scope.nFiles     = $scope._getFilesNum(session_commands);
                 $scope.$apply();
+                return true;
             })        
             .catch(function(error){
-                $scope._showAlert("Error", "ShowRecordingSessionCtrl::refreshAudioList => " + error.message);
+                $scope._showAlert("Error", "ManageRecordingsCtrl::refreshAudioList => " + error.message);
+                return false;
             });
         }
     };
@@ -173,8 +187,11 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
 
     $scope.doCompleteSession = function() 
     {
-        $scope.modalRecordSequence.hide();        
-        var sentences = $scope.commands.map(function(item) { return (item.checked ? item : null)});
+        $scope.modalRecordSequence.hide();    
+        var sentences = [];
+        for(var cmd=0; cmd<$scope.commands.length; cmd++)
+            if($scope.commands[cmd].checked)
+                sentences.push($scope.commands[cmd]);
         
         if(sentences.length)
         {
@@ -232,7 +249,7 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
  
     $scope.submitSession = function() 
     {
-//        $scope.upLoadSession();
+//        $scope.upLoadSession(); // for debug
         $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai per inviare le tue registrazioni al server per ottenere la tua nuova rete neurale\nVuoi proseguire?'})
         .then(function(res) 
         {
@@ -295,7 +312,7 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
 
     $scope.onPluginError = function(error)  // {message: error.message, type:error.type}
     {
-        alert("ShowRecordingSessionCtrl :" + error.message);
+        alert("ManageRecordingsCtrl :" + error.message);
     };
     
 
@@ -376,7 +393,7 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
         if($scope.nCurFile < $scope.nFiles) cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
         else                                $scope.onExtractFeaturesEnd();
         
-        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
     };
     
     // if submitting => it calls $scope.zipSession();
@@ -395,7 +412,7 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
     };
     
     $scope.onMFCCError = function(res){
-        console.log("ShowRecordingSessionCtrl::onMFCCProgressFile : " + res);
+        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
     }
 
     //==============================================================================================================================
@@ -423,4 +440,4 @@ function ShowRecordingSessionCtrl($scope, $q, $ionicModal, $ionicPopup, $state, 
     };
     //==============================================================================================================================
 };
-controllers_module.controller('ShowRecordingSessionCtrl', ShowRecordingSessionCtrl)
+controllers_module.controller('ManageRecordingsCtrl', ManageRecordingsCtrl)

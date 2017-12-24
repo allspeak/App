@@ -14,7 +14,7 @@
  *  - backup/restore data
  */
 
-main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
+main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSystemSrv, StringSrv)
 {
     ServerCfg           = null;
     pluginInterface     = null;
@@ -37,8 +37,11 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
         pluginInterface = plugin;
         initAppSrv      = initappserv;
         
-        ServerCfg.url   = "http://193.168.1.70:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.65:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.71:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.75:8095";     // OVERWRITE FOR DEBUG
+        ServerCfg.url   = "http://192.168.0.8:8095";     // OVERWRITE FOR DEBUG
     };
     
     getApiKey = function()
@@ -51,7 +54,8 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
         api_key     = apikey;
         device      = initAppSrv.getDevice();
         
-        return _postApi("register_device", api_key, device)
+        var url     = _getUrl("register_device")
+        return _postApi(url, api_key, device)
         .then(function(res)
         {
             if(res.config.data)    return initAppSrv.setStatus({"isDeviceRegistered":true, "api_key":api_key});
@@ -71,7 +75,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
     uploadTrainingData = function(localfilepath, callback, errorCallback, progressCallback) 
     {
         var api_url = _getUrl("upload_training_session");
-        return _uploadFile(localfilepath, api_url, callback, errorCallback, progressCallback)
+        return _uploadFile(localfilepath, api_url, api_key, callback, errorCallback, progressCallback)
         .then(function(sess_id)
         {
             session_id = sess_id;
@@ -84,24 +88,19 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
 
     isNetAvailable = function(session_id)
     {
-        return _getApi("get_training_session_network", api_key, session_id)
-    }
+        return _getApi("get_training_session_network", api_key, session_id);
+    };1
 
-    getNet = function(session_id, callback, errorCallback, progressCallback) 
+    getNet = function(callback, errorCallback, progressCallback) 
     {
-        var api_url = ServerCfg.url + "api/v1/training_sessions/" + session_id + "/network";
-        _downloadZip(api_url, outFolder, localFilename, callback, errorCallback, progressCallback) 
-//        return $http.get(api_url)
-//        .then(function(res) 
-//        {
-//            return subject_id = res.data.subj_id;
-//        })
-//        .catch(function(err) 
-//        {
-//            alert("ERROR in RemoteAPISrv::getNet : " + err.toString());
-//            return 0;
-//        });         
-        
+        if(session_id == null || !session_id.length)
+        {
+            alert("ERROR: sessionid is empty");
+            return;
+        }
+        var url = _getUrl("get_training_session_network", session_id);
+        _downloadZip(url, outFolder, localFilename, callback, errorCallback, progressCallback) 
+ 
     };
     
     // look for pending activities
@@ -132,9 +131,8 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
     //  PRIVATE
     // =======================================================================================================================
     // do backup
-    _postApi = function(apiurl, key, data)
+    _postApi = function(url, key, data)
     {
-        var url     = _getUrl(apiurl);
         var req     = {
                         method      : 'POST',
                         url         : url,
@@ -160,8 +158,26 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
     // compose api url
     _getUrl = function(api_str, param) 
     {
-        var url = ServerCfg.url + "/api/v1/" + ServerCfg.api[api_str];
-        if(param != null && param.length) url = "/" + param.toString();
+        switch(api_str)
+        {
+            case "upload_training_session":
+                var url = ServerCfg.url + "/api/v1/" + ServerCfg.api[api_str];
+                break;
+            
+            case "is_training_session_available":
+                if(param == null || !param.length) return "";   // param is session_uid
+                var url = ServerCfg.url + "/api/v1/" + ServerCfg.api[api_str] + "/" + param.toString();
+                break;
+            
+            case "get_training_session_network":
+                if(param == null || !param.length) return "";   // param is session_uid
+                var url = ServerCfg.url + "/api/v1/" + ServerCfg.api[api_str] + "/" + param.toString() + "/network";
+                break;
+            
+            default:
+                var url = ServerCfg.url + "/api/v1/" + ServerCfg.api[api_str];
+                break;
+        }
         return url;    
     };
     
@@ -220,7 +236,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
         return "ERROR in RemoteAPISrv::_uploadFile : " + str + " | " + JSON.stringify(error);
     };
     
-    _uploadFile = function(localfilepath, api_name, callback, errorCallback, progressCallback) 
+    _uploadFile = function(localfilepath, api_url, api_key, callback, errorCallback, progressCallback) 
     {
         var fileTransfer = new $cordovaTransfer();
 
@@ -237,7 +253,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
             progressCallback({'status': 'downloading', 'label': label, 'detail': evt});
         };      
         var filename                = StringSrv.getFileNameExt(localfilepath);
-        var api_url                 = encodeURI(remote_url + api_name);
+//        var api_url                 = encodeURI(remote_url + api_name);
         
         var resolved_file_path      = FileSystemSrv.getResolvedOutDataFolder() + localfilepath; // file:///storage/....
         resolved_file_path          = resolved_file_path.split("file://")[1];                   // /storage/....
@@ -247,13 +263,13 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer)
         uploadOptions.fileName      = filename;
         uploadOptions.httpMethod    = "POST";
         uploadOptions.chunkedMode   = false,
-        uploadOptions.headers       = {};
+        uploadOptions.headers       = {"api_key" : api_key};
         
-        fileTransfer.upload(resolved_file_path, api_url, uploadOptions, true)
+        return fileTransfer.upload(resolved_file_path, api_url, uploadOptions, true)
         .then(function(result) 
         {
             var respobj             = JSON.parse(result.response);
-            return respobj.training_session_id;
+            return respobj.session_uid;
         })
         .catch(function(error) 
         {

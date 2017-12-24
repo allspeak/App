@@ -202,7 +202,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         return isConnected;
     };    
     
-    // called by ManageVocCommandsCtrl::saveTrainVocabulary
+    // called by ManageCommandsCtrl::saveTrainVocabulary
     setTrainVocabularyPresence = function(foldername)
     {
         if(foldername == null)  hasTrainVocabulary = false;

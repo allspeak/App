@@ -7,7 +7,7 @@
  * - use this model
  */
 
-function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatform, InitAppSrv, EnumsSrv, VocabularySrv, RuntimeStatusSrv, UITextsSrv)
+function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatform, InitAppSrv, EnumsSrv, VocabularySrv, RuntimeStatusSrv, FileSystemSrv, UITextsSrv)
 {
     $scope.status       = 0;
     $scope.headerTitle  = "Vocabolario: ";
@@ -59,17 +59,26 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         };  
         
         $scope.appStatus    = InitAppSrv.getStatus();
-        return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_jsonfile)
+        return FileSystemSrv.existFile($scope.vocabulary_jsonfile)
+        .then(function(exist)
+        {
+            if(exist)   return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_jsonfile)
+            else        return null;        
+        })
         .then(function(voc)
         {
-            $scope.vocabulary   = voc;
-            $scope.headerTitle  = "VOCABOLARIO:    " + voc.sLabel;
-            return $scope.updateRuntimeStatus($scope.vocabulary_folder_name, true)
+            if(voc == null) $state.go("home");
+            else
+            {
+                $scope.vocabulary   = voc;
+                $scope.headerTitle  = "VOCABOLARIO:    " + voc.sLabel;
+                $scope.updateRuntimeStatus($scope.vocabulary_folder_name, true)
+            }
         })
         .catch(function(error)
         {
             console.log("Error in HomeCtrl::$ionicView.enter ");
-            alert("Error in HomeCtrl::$ionicView.enter "+ error.toString());
+            alert("Error in VocabularyCtrl::$ionicView.enter "+ error.toString());
         });
     });
 

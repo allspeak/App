@@ -19,6 +19,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
 {
     $scope.want2beAssistedText      = "puoi utilizzare AllSpeak con le seguenti modalità: SOLO - GUEST - ASSISTITA";
     $scope.want2beRegisteredText    = "Inserisci il codice che ti è stato fornito dal tuo medico";
+    $scope.createNewVocabularyText    = "Registra questo dispositivo";
     $scope.appStatus            = null;
     $scope.api_key              = "";
     $scope.modeljson            = "";

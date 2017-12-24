@@ -51,7 +51,7 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
         voicebank_commands_www_path           = default_paths.voicebank_commands_www_path;
         voicebank_commands_filerel_path       = default_paths.voicebank_commands_filerel_path;
 
-        voicebank_folder                        = default_paths.voicebank_folder;
+        voicebank_folder                      = default_paths.voicebank_folder;
         
         return FileSystemSrv.existFile(voicebank_usercommands_filerel_path)
         .then(function(exist)

@@ -5,7 +5,7 @@
  *  - start a recording session
  */
 
-function ManageVocCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ionicModal, $ionicPopup, VocabularySrv, VoiceBankSrv, SequencesRecordingSrv, InitAppSrv, FileSystemSrv, StringSrv, EnumsSrv, TfSrv, RuntimeStatusSrv, UITextsSrv)  
+function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ionicModal, $ionicPopup, VocabularySrv, VoiceBankSrv, SequencesRecordingSrv, InitAppSrv, FileSystemSrv, StringSrv, EnumsSrv, TfSrv, RuntimeStatusSrv, UITextsSrv)  
 {
     $scope.labelStartTrainSession                   = "REGISTRA COMANDI";
     $scope.labelEditTrainVocabulary                 = "CAMBIA COMANDI";
@@ -82,11 +82,11 @@ function ManageVocCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $i
         //---------------------------------------------------------------------------------------------------------------------
         $scope.backState                = "home";
         
-        if(data.stateParams == null)    alert("ERROR in ManageVocCommandsCtrl::$ionicView.enter. error : NO PARAMS were sent"); 
+        if(data.stateParams == null)    alert("ERROR in ManageCommandsCtrl::$ionicView.enter. error : NO PARAMS were sent"); 
         else
         {
             if(data.stateParams.modeId != null)         $scope.mode_id         = parseInt(data.stateParams.modeId);
-            else                                        alert("ERROR in ManageVocCommandsCtrl::$ionicView.enter. error : modeId is empty");         
+            else                                        alert("ERROR in ManageCommandsCtrl::$ionicView.enter. error : modeId is empty");         
 
             if(data.stateParams.foldername != null && data.stateParams.foldername != "")
             {
@@ -97,7 +97,7 @@ function ManageVocCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $i
             }
             else if(data.stateParams.foldername == null && $scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
             {
-                alert("ManageVocCommandsCtrl::$ionicView.enter. error : foldername is empty");
+                alert("ManageCommandsCtrl::$ionicView.enter. error : foldername is empty");
                 $state.go("home");
             } 
             
@@ -110,16 +110,7 @@ function ManageVocCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $i
         $scope.default_voc_folder       = InitAppSrv.getDefaultVocabularyName();    // default
         $scope.createNewVocabularyText  = UITextsSrv.TRAINING.MODAL_CREATE_NEWVOCABULARY;
         
-        if($scope.mode_id == EnumsSrv.TRAINING.NEW_TV)
-        {
-            // create new vocabulary
-            $scope.selectList           = true;
-            $scope.editTrainVocabulary  = false;
-            $scope.showTrainVocabulary    = false;  
-            $scope.modalSelectNewVocabulary.show();
-            $scope.$apply();
-        }
-        else
+        if($scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
         {
             return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_jsonfile)
             .then(function(voc)
@@ -142,9 +133,41 @@ function ManageVocCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $i
                     $scope.editTrainVocabulary  = false;
                     $scope.showTrainVocabulary  = true;  
                 }
-                else  alert("ERROR in ManageVocCommandsCtrl::$ionicView.enter. unrecognized modeId: " +  $scope.mode_id.toString());                  
+                else  alert("ERROR in ManageCommandsCtrl::$ionicView.enter. unrecognized modeId: " +  $scope.mode_id.toString());                  
                 $scope.$apply();
             });
+        }
+        else
+        {
+            // create new vocabulary
+            $scope.selectList           = true;
+            $scope.editTrainVocabulary  = false;
+            $scope.showTrainVocabulary    = false;  
+            if($scope.modalSelectNewVocabulary == null)
+            {
+                // SHOULD NEVER HAPPENS, BUT SOMETIMES IT DOES !!
+                $ionicModal.fromTemplateUrl('templates/modal/newVocabulary.html', 
+                {
+                    scope: $scope,
+                    animation: 'slide-in-up',
+                    backdropClickToClose: false      
+                })
+                .then(function(modal) 
+                {
+                    $scope.modalSelectNewVocabulary = modal; 
+                    $scope.modalSelectNewVocabulary.show();
+                    $scope.$apply();                    
+                })
+                .catch(function(error)
+                {
+                    alert(error.message);
+                });                 
+            }   
+            else
+            {
+                $scope.modalSelectNewVocabulary.show();
+                $scope.$apply();
+            }
         }         
     });
 
@@ -336,4 +359,4 @@ function ManageVocCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $i
     };    
     //-------------------------------------------------------------------
 }
-controllers_module.controller('ManageVocCommandsCtrl', ManageVocCommandsCtrl)
+controllers_module.controller('ManageCommandsCtrl', ManageCommandsCtrl)

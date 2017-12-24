@@ -185,16 +185,16 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
             {
                 // file://.../config.json file does not exist, copy defaults subfields to appConfig subfields 
                 service._createFirstAppConfig();
-                return FileSystemSrv.createFileFromObj(localConfigJson, service.config)
+                return FileSystemSrv.createFileFromObj(localConfigJson, service.config.appConfig)
                 .then(function(){
                     return FileSystemSrv.readJSON(localConfigJson);
                 });
             }
         })
-        .then(function(configdata)
+        .then(function(appconfig)
         {
-            service.config.defaults         = configdata.defaults;
-            service.config.appConfig        = configdata.appConfig;
+//            service.config.defaults         = configdata.defaults;
+            service.config.appConfig        = appconfig;
             service.config.appConfig.device = HWSrv.getDevice();
             
             service.plugin                  = eval(service.config.defaults.plugin_interface_name);
@@ -357,7 +357,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
                 service.config.appConfig[elem]          = statusobj[elem];
             }
         };
-        return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
+        return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config.appConfig))
         .catch(function(error)
         { 
             for(elem in old)
@@ -393,7 +393,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
             }
         }
         // writes data to JSON
-        FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
+        FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config.appConfig))
         .then(function(){
             return 1;
         })
@@ -407,7 +407,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
         var old_conf = service.config.appConfig.capture_configurations[field];
         service.config.appConfig.capture_configurations[field] = obj;
         // writes data to JSON
-        return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
+        return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config.appConfig))
         .then(function(){
             return 1;
         })
@@ -422,7 +422,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
         var old_conf = service.config.appConfig[field];
         service.config.appConfig[field] = obj;
         // writes data to JSON
-        FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config))
+        FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify(service.config.appConfig))
         .then(function(){
             return 1;
         })

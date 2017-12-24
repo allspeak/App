@@ -11,7 +11,7 @@ According to the modality, there are 3 possibly END events:
 
     MODE_SINGLE_BANK        : DONE (confirm new, go to calling page)    CANCELLA (delete new file, go back to the calling page)
     MODE_SEQUENCE_BANK      : DONE (confirm new, go to next seq. item)  SKIP (delete new file, go to next seq. item)  CANCELLA (delete new file and go back to the calling page)
-    MODE_SEQUENCE_TRAINING  : DONE (go to next seq. item)   CANCELLA (delete file and go back to the calling page)    ABORT (delete all current session)
+    MODE_SEQUENCE_TRAINING  : DONE (go to next seq. item)   CANCELLA (go back to the calling page)    ABORT (delete present file)
 
 Two operative modalities....compare two wav or overwrite
 
@@ -209,10 +209,9 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         $scope.Cfg                  = SpeechDetectionSrv.getUpdatedCfg($scope.Cfg, $scope.captureProfile);        
 
         $scope.Cfg.mfccCfg          = MfccSrv.getUpdatedCfg($scope.initMfccParams);
-        
-        
-        // MFCC service
+
         //-------------------------------------------------------------------------------
+        // may exists only when substituting a voicebank command, otherwise in training mode is always new
         return FileSystemSrv.existFile($scope.rel_filepath)
         .then(function(exist)
         {
@@ -221,6 +220,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             
             if($scope.preserveOriginal)
             {
+                // MODE_SEQUENCE_BANK & MODE_SINGLE_BANK
                     $scope.rel_originalfilepath = $scope.rel_filepath;
                     $scope.rel_filepath         = StringSrv.removeExtension($scope.rel_filepath) + "_temp" + EnumsSrv.RECORD.FILE_EXT;            
             }
@@ -456,7 +456,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 break;
 
             case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING:
-                var next_id = SequencesRecordingSrv.getNextSentenceId();
+                var next_id = SequencesRecordingSrv.getNextSentenceId();    // returns -1 when sequence is finished
                 if(next_id >= 0)
                     $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState});
                 else
@@ -500,18 +500,19 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 
             case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING:                
                 
-                return FileSystemSrv.deleteFile($scope.rel_filepath)
-                .then(function()
-                {
+//                return FileSystemSrv.deleteFile($scope.rel_filepath)
+//                return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, true)
+//                .then(function()
+//                {
                     if($scope.successState != "")
 //                        $state.go($scope.successState, {foldername: StringSrv.getFileParentFolderName($scope.rel_filepath), sessionPath:StringSrv.getFileFolderName($scope.rel_filepath), subjId:""});
                         $state.go($scope.successState, {foldername: StringSrv.getFileFolderName($scope.rel_filepath), sessionPath:"", subjId:""});
                     else
                         $ionicHistory.goBack();
-                })
-                .catch(function(error){
-                    alert(error.message);
-                });
+//                })
+//                .catch(function(error){
+//                    alert(error.message);
+//                });
                 break;
         }
     };
@@ -543,26 +544,27 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             
             case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING:    // rel_filepath is : original.wav
                 
-                $ionicPopup.confirm({ title: 'Attenzione', template: 'Are you aborting the session, the recorded files will be deleted, are you sure ?'})
+//                $ionicPopup.confirm({ title: 'Attenzione', template: 'Are you aborting the session, the recorded files will be deleted, are you sure ?'})
+                return FileSystemSrv.deleteFile($scope.rel_filepath)
                 .then(function(res) 
                 {
-                    if (res)
-                    {
-                        var session_folder = StringSrv.getFileParentFolder($scope.rel_filepath);
-                        FileSystemSrv.deleteDir(session_folder)
-                        .then(function()
-                        {
+//                    if (res)
+//                    {
+//                        var session_folder = StringSrv.getFileParentFolder($scope.rel_filepath);
+//                        FileSystemSrv.deleteDir(session_folder)
+//                        .then(function()
+//                        {
                             // I'm not able to delete only the record views history, so I send the app to the starting view (where it deletes all the history)
                             if($scope.cancelState != "")
-                                $state.go($scope.cancelState);
+                                $state.go($scope.successState, {foldername: StringSrv.getFileFolderName($scope.rel_filepath), sessionPath:"", subjId:""});
                             else
                                 $ionicHistory.goBack();
-                        })
-                        .catch(function(error)
-                        {
-                            alert(error.message);
-                        });                
-                    }
+//                        })
+//                        .catch(function(error)
+//                        {
+//                            alert(error.message);
+//                        });                
+//                    }
                 });                
                 break;
         }
