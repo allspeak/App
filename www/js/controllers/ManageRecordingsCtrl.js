@@ -10,7 +10,7 @@
         ........
     ]
  */
-function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, TfSrv, SubjectsSrv, RemoteAPISrv, EnumsSrv)
+function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, TfSrv, SubjectsSrv, RemoteAPISrv, ClockSrv, EnumsSrv)
 {
     $scope.subject              = null;     // stay null in AllSpeak
     $scope.foldername           = "";       // standard
@@ -19,7 +19,12 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
     $scope.labelResumeTrainSession  = "REGISTRA RIPETIZIONI"
     $scope.labelSubmit              = "ADDESTRA"
 
-    $scope.isSubmitting         = false;
+    $scope.timerID              = -1;
+    $scope.isNetAvailableRemote = false;        // net calculated. available online
+    $scope.isNetAvailableLocale = false;        // net calculated. available online
+    $scope.isSubmitting         = false;        // net calculation process initiated
+    $scope.isChecking           = false;        // true when checking net availability
+    
     $scope.nFiles               = 0;    // count number of audio within the session
     $scope.nCurFile             = 0;    // indicates the number of the currently processed file
     
@@ -73,10 +78,11 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         $scope.pluginInterface      = InitAppSrv.getPlugin();        
         $scope.plugin_enum          = $scope.pluginInterface.ENUM.PLUGIN;
         
+        $scope.nFiles               = 0;
+        
         $scope.initMfccParams       = {"nDataDest": $scope.plugin_enum.MFCC_DATADEST_FILE,
                                        "nDataType": $scope.plugin_enum.MFCC_DATATYPE_MFFILTERS,  //write FILTERS to FILE        
                                        "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX};  //    
-        $scope.nFiles               = 0;
         $scope.mfccCfg              = MfccSrv.getUpdatedCfg($scope.initMfccParams);
         
         $scope.tfCfg                = TfSrv.getCfg();
@@ -84,10 +90,11 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         $scope.relpath              = InitAppSrv.getAudioFolder() + "/" + $scope.foldername
         $scope.relpath              = ($scope.sessionPath.length    ?  $scope.relpath + "/" + $scope.sessionPath    :  $scope.relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
         
-        $scope.successState         = "show_recording_session";
-        $scope.cancelState          = "show_recording_session";
+        $scope.vocabulary_json_path = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername + "/vocabulary.json";
+        $scope.successState         = "manage_recordings";
+        $scope.cancelState          = "manage_recordings";
         
-        VocabularySrv.getTrainVocabulary()
+        VocabularySrv.getTrainVocabulary($scope.vocabulary_json_path)
         .then(function(vocabulary)
         {
             $scope.headerTitle      = "VOCABOLARIO :   " + vocabulary.sLabel;
@@ -136,6 +143,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
                 // session_commands = [{nrepetitions:int, files:["filename.wav", ""], firstAvailableId:int, id:int, title:String}]                
                 $scope.commands   = session_commands;
                 $scope.nFiles     = $scope._getFilesNum(session_commands);
+                $scope.canSubmit  = $scope._canSubmit(session_commands);
                 $scope.$apply();
                 return true;
             })        
@@ -292,22 +300,28 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
     
     $scope.upLoadSession = function() 
     {
-        RemoteAPISrv.uploadTrainingData($scope.relpath + "/" + "data.zip", $scope.onSubmitSuccess, $scope.onSubmitError, $scope.onSubmitProgress);
+        RemoteAPISrv.uploadTrainingData($scope.relpath + "/" + "data.zip", $scope.onSubmitSuccess, $scope.onSubmitError, $scope.onSubmitProgress)
     };
     
-    $scope.onSubmitSuccess = function() 
+    $scope.onSubmitSuccess = function(sess_id) 
     {
+        $scope.session_id = sess_id;
         alert("data uploaded");
+        $scope.$apply();
+        $scope.timerID = ClockSrv.addClock();
     };
     
     $scope.onSubmitError = function(error) 
     {
-        alert("ERROR while uploading data : " + error);
+        $scope.session_id = 0;
+        alert("ERROR while uploading data : " + error.message);
+        $scope.$apply();
     };
     
     $scope.onSubmitProgress = function(progress) 
     {
         console.log(progress.toString());
+        $scope.$apply();
     };
 
     $scope.onPluginError = function(error)  // {message: error.message, type:error.type}
@@ -315,7 +329,62 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         alert("ManageRecordingsCtrl :" + error.message);
     };
     
-
+    //==============================================================================================================================
+    // DOWNLOAD SESSION
+    //==============================================================================================================================    
+    // called by the timer
+    $scope.checkSession = function() 
+    {
+        $scope.isChecking           = true;
+        $scope.$apply();
+        return RemoteAPISrv.isNetAvailable()
+        .then(function(res)
+        {
+            $scope.isChecking       = false;
+            if(res)
+            {
+                $scope.isNetAvailableRemote = true;
+                ClockSrv.removeClock();
+                // ready 2 download
+                return $ionicPopup.confirm({ title: 'Attenzione', template: 'Il vocabolario è stato addestrato. Vuoi scaricarlo ora?\nIn caso contrario, potrai farlo in seguito'})
+                .then(function(res) 
+                {
+                    $scope.$apply();                     
+                    if(res)
+                    {
+                        RemoteAPISrv.getNet($scope.onDownloadSuccess, $scope.onDownloadError, $scope.onDownloadProgress)
+                    }
+                });                 
+            }
+            else $scope.$apply(); 
+        })
+        .catch(function(error)
+        {       
+            
+        })
+    }
+    
+    $scope.onDownloadSuccess = function(sess_id) 
+    {
+        isNetAvailableLocale    = true;
+        $scope.isSubmitting     = false;
+        alert("data uploaded");
+        $scope.$apply();
+    };
+    
+    $scope.onDownloadError = function(error) 
+    {
+        isNetAvailableLocale    = false;
+        alert("ERROR while doloading data : " + error.message);
+        $scope.$apply();
+    };
+    
+    $scope.onDownloadProgress = function(progress) 
+    {
+        console.log(progress.toString());
+        $scope.$apply();
+   };
+    
     //==============================================================================================================================
     // EXTRACT FEATURES
     //==============================================================================================================================
@@ -368,6 +437,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         if(MfccSrv.getMFCCFromFolder(   $scope.relpath, 
                                         $scope.mfccCfg.nDataType,
                                         $scope.plugin_enum.MFCC_DATADEST_FILE,
+                                        $scope.mfccCfg.nProcessingScheme,
                                         overwrite))          // does not overwrite existing (and valid) mfcc files
         {
             cordova.plugin.pDialog.init({
@@ -425,6 +495,14 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
             if(commands[f].nrepetitions)
                 cnt = cnt + commands[f].files.length;
         return cnt;
+    };
+    
+    $scope._canSubmit = function(commands)
+    {
+        for(var f=0; f<commands.length; f++)
+            if(commands[f].nrepetitions < $scope.minNumRepetitions)
+                return false;
+        return true;
     };
     
     $scope._calcPerc = function(cur, total)

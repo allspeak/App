@@ -108,7 +108,7 @@ function MfccSrv(ErrorSrv)
     };
     // PUBLIC *****************************************************************************************************
     // caller (usually a controller) make 3 addEventListener (mfccprogressfile, mfccprogressfolder, pluginerror)
-    getMFCCFromFolder = function(relpath_noext, data_type, data_dest, overwrite)
+    getMFCCFromFolder = function(relpath_noext, data_type, data_dest, proc_scheme, overwrite)
     {
         if(relpath_noext == null || !relpath_noext.length)
         {
@@ -116,12 +116,13 @@ function MfccSrv(ErrorSrv)
             return null;
         }
         
-        if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
+        if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN)*_checkParams(proc_scheme, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = mMfccCfg;
-            currCfg.nDataType   = data_type;
-            currCfg.nDataDest   = data_dest;
-            currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FOLDER;            
+            var currCfg                 = mMfccCfg;
+            currCfg.nDataType           = data_type;
+            currCfg.nDataDest           = data_dest;
+            currCfg.nProcessingScheme   = proc_scheme;
+            currCfg.nDataOrig           = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FOLDER;            
             
             return pluginInterface.getMFCC(currCfg, relpath_noext, overwrite);
         } 

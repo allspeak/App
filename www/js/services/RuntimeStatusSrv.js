@@ -95,7 +95,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     // - check folder existence
     // - check json existence
     // - load json
-    // - check commands>0 (user can not create a voc with no commands, but user can later delete all the commands.
+    // - check commands>0 (user can not create a voc with no commands, but user can later delete all the commands...thus check it).
     // - check & suggest next step status (select commands, create/complete rec session/train net/load net/manage voices)
     // - load net if available
     //
@@ -150,7 +150,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         existCompletedTrainingSession   = false;
         modelExist                      = false;
         modelLoaded                     = false;        
-        hasTrainVocabulary              = (voc.commands.length);
+        hasTrainVocabulary              = (voc ? voc.commands.length : false);
         
         if(!hasTrainVocabulary) return Promise.resolve(getStatus());
         else 
@@ -182,23 +182,24 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         }
     }
     // calculate the status of a vocabulary, given a voc folder.
-    // it can be empty...thus go on processing
+    // it can not be empty...thus go on processing
     getUpdatedStatusName = function(userVocabularyName)
     {
-        if(userVocabularyName == null || userVocabularyName == "") return Promise.resolve(getStatus());
+        if(userVocabularyName == null || userVocabularyName == "") return getUpdatedStatus(null);
+//            return Promise.resolve(getStatus());
         
         vocabularyjsonpath              = vocabularies_folder + "/" + userVocabularyName + "/vocabulary.json";
 
         return VocabularySrv.getTempTrainVocabulary(vocabularyjsonpath)
         .then(function(voc)
         {    
-            return getUpdatedStatus(voc)
-        })
+            return getUpdatedStatus(voc);
+        });
     };
 
     hasInternet = function()
     {
-        isConnected = (navigator.connection.type != "none" ? true : false);;
+        isConnected = (navigator.connection.type != "none" ? true : false);
         return isConnected;
     };    
     

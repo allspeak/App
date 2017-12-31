@@ -95,12 +95,12 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
         switch($scope.runtimeStatus.AppStatus)
         {
             case EnumsSrv.STATUS.NEW_TV:
-                $state.go('managevoccommands', {modeId:EnumsSrv.TRAINING.NEW_TV});
+                $state.go('manage_commands', {modeId:EnumsSrv.TRAINING.NEW_TV});
                 break;
 
             case EnumsSrv.STATUS.RECORD_TV:
             case EnumsSrv.STATUS.TRAIN_TV:
-                $state.go('show_recording_session', {modeId:EnumsSrv.TRAINING.RECORD_TV, foldername:$scope.appStatus.userActiveVocabularyName, backState:"vocabulary"});
+                $state.go('manage_recordings', {modeId:EnumsSrv.TRAINING.RECORD_TV, foldername:$scope.appStatus.userActiveVocabularyName, backState:"vocabulary"});
                 break;
 
             case EnumsSrv.STATUS.RECORD_TVA:

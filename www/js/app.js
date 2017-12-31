@@ -90,14 +90,14 @@ main_module.config(function($stateProvider, $urlRouterProvider)
         templateUrl: 'templates/vocabulary.html',
         controller: 'VocabularyCtrl'
     })
-    .state('managevoccommands', {
-        url: '/managevoccommands/:modeId/:foldername/:backState',
-        templateUrl: 'templates/managevoccommands.html',
+    .state('manage_commands', {
+        url: '/manage_commands/:modeId/:foldername/:backState',
+        templateUrl: 'templates/manage_commands.html',
         controller: 'ManageCommandsCtrl'
     })
-    .state('show_recording_session', {
-        url: '/show_recording_session/:foldername/:backState/:sessionPath/:subjId',
-        templateUrl: 'templates/show_recording_session.html',
+    .state('manage_recordings', {
+        url: '/manage_recordings/:foldername/:backState/:sessionPath/:subjId',
+        templateUrl: 'templates/manage_recordings.html',
         controller: 'ManageRecordingsCtrl'
     }) 
     .state('sentence', {
@@ -212,11 +212,11 @@ main_module.config(function($stateProvider, $urlRouterProvider)
 //            }
 //        }
 //    })
-//    .state('vocabulary.show_recording_session', {
-//        url: '/show_recording_session',
+//    .state('vocabulary.manage_recordings', {
+//        url: '/manage_recordings',
 //        views: 
 //        {
-//        'show_recording_session-vocabulary' : 
+//        'manage_recordings-vocabulary' : 
 //            {
 //                templateUrl: 'templates/vocabulary_show_session.html',
 //                controller: 'ManageRecordingsCtrl'

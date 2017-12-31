@@ -62,7 +62,7 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsS
             var rep_num         = arr[2];
             if(command.id == idfile) 
             {
-                var             id  = parseInt(rep_num.toString());
+                var             id  = parseInt(rep_num);
                 if(id > max)    max = parseInt(id);
                 
                 command.files[command.nrepetitions] = {label: files[f]};

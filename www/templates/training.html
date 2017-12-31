@@ -26,7 +26,7 @@
         <ion-item class="item item-dark">Sessioni presenti</ion-item>          
         
         <ion-list>
-            <ion-item ng-repeat="session in subject.sessions track by $index" href="#/show_recording_session/{{session.parentdirname}}/{{session.name}}/">
+            <ion-item ng-repeat="session in subject.sessions track by $index" href="#/manage_recordings/{{session.parentdirname}}/{{session.name}}/">
                 {{session.name}}
             </ion-item>
         </ion-list>   

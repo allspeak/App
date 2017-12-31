@@ -36,7 +36,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     $scope.editTrainVocabulary      = false;
     $scope.showTrainVocabulary        = false;
     
-    $scope.successState             = "show_recording_session";
+    $scope.successState             = "manage_recordings";
     $scope.cancelState              = "vocabularies";
     
     // =======================================================================================================
@@ -218,7 +218,8 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         return FileSystemSrv.existDir(local_voc_folder)
         .then(function(existdir)
         {
-            if(existdir)   
+//            if(existdir)      // #DEBUG
+            if(false)   
             {
                 var alertPopup = $ionicPopup.alert({
                     title: 'Attenzione',
@@ -350,8 +351,6 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         };
     };
     //-------------------------------------------------------------------  
-
-
     // button 2
     $scope.cancel = function()
     {

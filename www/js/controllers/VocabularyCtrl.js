@@ -37,7 +37,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         $scope.labelManageRecordingSession  = UITextsSrv.TRAINING.labelManageRecordingSession;
         
         $scope.enum_recordsession           = EnumsSrv.TRAINING.RECORD_TV;
-        $scope.enum_managevoccommands       = EnumsSrv.TRAINING.EDIT_TV;
+        $scope.enum_manage_commands       = EnumsSrv.TRAINING.EDIT_TV;
         $scope.enum_showvoccommands         = EnumsSrv.TRAINING.SHOW_TV;
         $scope.enum_show_vb_voc             = EnumsSrv.VOICEBANK.SHOW_TRAINED;
         
