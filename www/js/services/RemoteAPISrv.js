@@ -29,8 +29,11 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     user_id             = 0;
     
     // training process
-    is_training         = false;    // indicate whether a training process have been started
+    is_training         = false;    // indicate whether a training process have been started on the server
     session_id          = 0;        // got from server (after uploadTrainingData) 
+    
+    sModelFileName      = "";       // set by the server (without extension) and returned from : /api/v1/training-sessions/<session_uid>
+                                    // I add the extension the first time I receive it.
     // ==========================================================================================================================
     // PUBLIC
     // ==========================================================================================================================
@@ -46,6 +49,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
 //        ServerCfg.url   = "http://192.168.1.75:8095";     // OVERWRITE FOR DEBUG
         ServerCfg.url   = "http://192.168.0.8:8095";     // OVERWRITE FOR DEBUG
         ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.145:8095";     // OVERWRITE FOR DEBUG
     };
     
     getApiKey = function()
@@ -76,7 +80,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         });
     };
     
-    uploadTrainingData = function(localfilepath, callback, errorCallback, progressCallback) 
+    uploadTrainingData = function(foldername, localfilepath, callback, errorCallback, progressCallback) 
     {
         var api_url = _getUrl("upload_training_session");
         is_training = true;
@@ -107,7 +111,12 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
                 var respobj = JSON.parse(result.response);                
                 var status  = respobj.status;
                 if(status == "pending") return 0;
-                else                    return 1;
+                else
+                {
+                    sModelFileName = respobj.sModelFileName + ".pb";
+                    is_training = false;
+                    return 1;
+                }
             })
             .catch(function(error) 
             {
@@ -116,7 +125,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         }
     };
 
-    getNet = function(callback, errorCallback, progressCallback) 
+    getNet = function(destlocalfolder, callback, errorCallback, progressCallback) 
     {
         if(session_id == null || !session_id.length)
         {
@@ -124,7 +133,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
             return;
         }
         var url = _getUrl("get_training_session_network", session_id);
-        return _downloadZip(url, outFolder, localFilename, callback, errorCallback, progressCallback)
+        return _downloadZip(url, destlocalfolder, sModelFileName, callback, errorCallback, progressCallback)
         .then(function(fileentry)
         {
             progressCallback({
@@ -144,8 +153,6 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         .catch(function(error) 
         {
             alert(error);
-            is_training = false;
-            session_id  = 0;
             errorCallback(error);
         });
     };

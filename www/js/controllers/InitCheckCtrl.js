@@ -13,6 +13,8 @@
  * TS recorded      => send to training
  * TF model loaded  => record voices or use first version of TS
  * TVA              => CAN RECOGNIZE
+ * 
+ * finally, before sending to home, load the active vocabulary (if exists)
  */
  
 function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPopup, $cordovaSplashscreen, InitAppSrv, RuntimeStatusSrv, RemoteAPISrv, EnumsSrv)
@@ -154,11 +156,17 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                             break;
                             
                         default:
+                            // here goes the timeout error. in this case go home but load the active vocabulary, if exists
                             return $ionicPopup.alert({ title: 'Attenzione', template: response.message})
                             .then(function(res) 
                             {
+                                if($scope.appStatus.userActiveVocabularyName != "") return RuntimeStatusSrv.loadVocabulary($scope.appStatus.userActiveVocabularyName);                            
+                                else                                                return true;
+                            })
+                            .then(function()
+                            {
                                 $scope.modalInsertApiKey.hide();
-                                $scope.endCheck('home');
+                                $scope.endCheck('home');   
                             });                    
                             break
                     }

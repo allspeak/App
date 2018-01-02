@@ -146,13 +146,13 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
                 return $scope.emptyFolder()
                 .then(function(success)
                 {
-                    $scope.Cfg.tfCfg.saAudioPath = VocabularySrv.getTrainVocabularyVoicesPath();  // get the path of the wav to playback once a sentence is recognized
+                    $scope.Cfg.tfCfg.saAudioPath = VocabularySrv.getTrainVocabularyVoicesPaths();  // get the path of the wav to playback once a sentence is recognized
                     SpeechDetectionSrv.startSpeechRecognition($scope.Cfg.captureCfg, $scope.Cfg.vadCfg, $scope.Cfg.mfccCfg, $scope.Cfg.tfCfg, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
                 })
             }
             else
             {
-                $scope.Cfg.tfCfg.saAudioPath = VocabularySrv.getTrainVocabularyVoicesPath();  // get the path of the wav to playback once a sentence is recognized
+                $scope.Cfg.tfCfg.saAudioPath = VocabularySrv.getTrainVocabularyVoicesPaths();  // get the path of the wav to playback once a sentence is recognized
                 SpeechDetectionSrv.startSpeechRecognition($scope.Cfg.captureCfg, $scope.Cfg.vadCfg, $scope.Cfg.mfccCfg, $scope.Cfg.tfCfg, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
             }
         }

@@ -442,7 +442,7 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
             
             if(saveFullSpeech)
             {
-                var wavblob     = _dataArray2BlobWav(Cfg.captureCfg, audioRawDataQueue);
+                var wavblob     = _dataArray2BlobWav(mCfg.captureCfg, audioRawDataQueue);
                 var filename    = speechChunksFolderRoot + "/full_speech.wav";
                 return saveBlobWav(wavblob, filename, 1)     
                 .then(function(){
@@ -474,7 +474,7 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
         {
 //            var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + "_" + totalNoOfSpeechCaptured.toString() + ".wav";
             var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + ".wav";
-            wavblob         = _dataArray2BlobWav(Cfg.captureCfg, sentenceData);
+            wavblob         = _dataArray2BlobWav(mCfg.captureCfg, sentenceData);
 
             return FileSystemSrv.createFile(filename, wavblob, true)
             .then(function(){
@@ -520,7 +520,7 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
     {
         if (data == null)  data = audioRawDataQueue;
 
-        var blob = _dataArray2BlobWav(Cfg.captureCfg, data);
+        var blob = _dataArray2BlobWav(mCfg.captureCfg, data);
         return FileSystemSrv.createFile(filename, blob, overwrite)
         .then(function(){
             return true;
@@ -602,8 +602,8 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
     calcRecConstants = function()
     {
         min_acl_ms              = pluginInterface.ENUM.vad.MIN_ACL_MS;
-        sr                      = Cfg.captureCfg.nSampleRate;
-        bs                      = Cfg.captureCfg.nBufferSize;
+        sr                      = mCfg.captureCfg.nSampleRate;
+        bs                      = mCfg.captureCfg.nBufferSize;
         
         fInputBufferSizeInMs    = 1000 * bs / sr;            // 64 msec
         

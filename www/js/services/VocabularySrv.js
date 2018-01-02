@@ -23,7 +23,7 @@
 // 
 // NEW USER SENTENCE ?  : both uVB & VB files/structures are updated
 
-main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, FileSystemSrv, EnumsSrv) 
+main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, FileSystemSrv, StringSrv, EnumsSrv) 
 {
     vocabulary                            = {"commands":null};// store the currently loaded vocabulary 
     train_vocabulary_filerel_path           = "";               // AllSpeak/vocabularies/GIGI/vocabulary.json
@@ -331,11 +331,17 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         return VoiceBankSrv.updateVoiceBankAudioPresence()    // update voicebank cmds
         .then(function(vbcmds)
         {
-            var len = vbcmds.length;
-            for(s=0; s<len; s++)
+            var lvb = vbcmds.length;
+            var lcmds = voc.commands.length;
+            for(c=0; c<lcmds; c++)
             {
-                var id = vbcmds[s].id;
-                if(!CommandsSrv.getCommandProperty(vbcmds, id, "nrepetitions")) return false;
+                var id = voc.commands[c].id;
+                for(v=0; v<lvb; v++)
+                {
+                    var idvb = vbcmds[v].id;
+                    if(id == idvb)
+                        if(!CommandsSrv.getCommandProperty(vbcmds, idvb, "nrepetitions")) return false;
+                }
             }  
             return true;
         });
@@ -363,6 +369,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });       
     };
     
+    // return: boolean
     // check if the given train session has at least EnumsSrv.RECORD.SESSION_MIN_REPETITIONS repetitions of each command
     existCompleteRecordedTrainSession = function(audio_relpath, voc) 
     {
@@ -384,15 +391,51 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             return true;
         });
     };    
+    
+    // return: boolean
+    // check if the given train session has at least EnumsSrv.RECORD.SESSION_MIN_REPETITIONS repetitions of each command
+    existFeaturesTrainSession = function(audio_relpath) 
+    {
+        var featuresfiles   = [];
+        var audiofiles      = [];
+        
+        var missingfeatures = [];
+        
+        return FileSystemSrv.listFilesInDir(audio_relpath, ["dat"])
+        .then(function(features)
+        {
+            featuresfiles = features;
+            return FileSystemSrv.listFilesInDir(audio_relpath, ["wav"])
+        })
+        .then(function(audios)
+        {
+            audiofiles = audios;
+            var exist = false;
+            var laudio = audiofiles.length;
+            var lfeat = featuresfiles.length;
+            for(var a=0; a<laudio; a++)
+            {
+                var audioname = StringSrv.removeExtension(audiofiles[a])
+                exist = false;
+                for(var f=0; f<lfeat; f++)
+                {
+                    var featurename = StringSrv.removeExtension(featuresfiles[f]);
+                    if(audioname == featurename)    exist = true;
+                }
+                if(!exist)  missingfeatures.push(audioname)
+            }
+            return missingfeatures;
+        });
+    };    
 
-    getTrainVocabularyVoicesPath = function(voc) 
+    getTrainVocabularyVoicesPaths = function(voc) 
     {
         if(voc == null)
         {
             if(vocabulary == null)
             {
-                alert("ERROR in VocabularySrv::getTrainVocabularyVoicesPath....called with null input and vocabulary null");
-                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyVoicesPath....called with null input and vocabulary null");
+                alert("ERROR in VocabularySrv::getTrainVocabularyVoicesPaths....called with null input and vocabulary null");
+                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyVoicesPaths....called with null input and vocabulary null");
             }
             else                    voc = vocabulary;
         }
@@ -441,6 +484,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         hasVoicesTrainVocabulary            : hasVoicesTrainVocabulary,             // [true | false]:  check if all the to-be-recognized commands have their corresponding playback wav
         updateTrainVocabularyAudioPresence  : updateTrainVocabularyAudioPresence,   // list wav files in vb folder and updates train_vocabulary[:].nrepetitions
         existCompleteRecordedTrainSession   : existCompleteRecordedTrainSession,    // check if the given train session has at least 5 repetitions of each command
-        getTrainVocabularyVoicesPath        : getTrainVocabularyVoicesPath          // get the rel paths of the to-be-recognized wav files 
+        existFeaturesTrainSession           : existFeaturesTrainSession,            // check if in the given folder, exist one dat file for each wav one
+        getTrainVocabularyVoicesPaths       : getTrainVocabularyVoicesPaths        // get the rel paths of the to-be-recognized wav files 
     };
 });

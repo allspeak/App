@@ -100,6 +100,11 @@ main_module.config(function($stateProvider, $urlRouterProvider)
         templateUrl: 'templates/manage_recordings.html',
         controller: 'ManageRecordingsCtrl'
     }) 
+    .state('manage_training', {
+        url: '/manage_training/:foldername/:backState/:sessionPath',
+        templateUrl: 'templates/manage_training.html',
+        controller: 'ManageTrainingCtrl'
+    }) 
     .state('sentence', {
         url: '/sentence/:foldername/:sessionPath/:commandId/:subjId',
         templateUrl: 'templates/sentence.html',

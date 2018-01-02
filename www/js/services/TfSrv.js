@@ -16,7 +16,7 @@ function TfSrv(FileSystemSrv, $q)
     standardTfCfg     = null;     // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
     oldCfg          = null;     // copied while loading a new model, restored if something fails
     pluginInterface = null;
-    plugin_enum     = null;
+    plugin_tf     = null;
 
     vocabulariesFolder  = "";       // AllSpeak/vocabularies
 
@@ -39,7 +39,8 @@ function TfSrv(FileSystemSrv, $q)
         oldCfg              = jsonCfg;
         pluginInterface     = plugin;
         
-        plugin_enum         = pluginInterface.ENUM.tf;
+        plugin_tf           = pluginInterface.ENUM.tf;
+        plugin_enum         = pluginInterface.ENUM.PLUGIN;
         
         vocabulariesFolder  = vocabulariesfolder;
     };
@@ -179,6 +180,18 @@ function TfSrv(FileSystemSrv, $q)
         train_obj.nModelType            = modeltype;    
         return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj));
     };
+    
+    getNetTypes = function()
+    {
+        return [{"label": "SOLO UTENTE", "value": plugin_enum.TF_MODELTYPE_USER}, {"label": "MISTA", "value": plugin_enum.TF_MODELTYPE_USER_FT}];
+    };
+ 
+    getPreProcTypes = function()
+    {
+        return [{"label": "Filtri spettrali", "value": plugin_enum.MFCC_PROCSCHEME_F_S_CTX}, {"label": "Filtri temporali", "value": plugin_enum.MFCC_PROCSCHEME_F_T_CTX}];
+    };
+    
+    
     //==========================================================================
     // public interface
     //==========================================================================
@@ -188,6 +201,8 @@ function TfSrv(FileSystemSrv, $q)
         getUpdatedCfg           : getUpdatedCfg, 
         getCfg                  : getCfg, 
         getLoadedJsonFile       : getLoadedJsonFile,
+        getNetTypes             : getNetTypes,
+        getPreProcTypes         : getPreProcTypes,
         isModelLoaded           : isModelLoaded,
         loadTFModelPath         : loadTFModelPath,
         loadTFModel             : loadTFModel,

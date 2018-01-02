@@ -33,7 +33,7 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
         pluginInterface             = InitAppSrv.getPlugin();            
         
         // get standard capture params + overwrite some selected
-        $scope.Cfg                  = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
+        $scope.Cfg                  = SpeechDetectionSrv.getUpdatedCfg($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams);
         $scope.captureCfg           = $scope.Cfg.captureCfg;
         $scope.vadCfg               = $scope.Cfg.vadCfg;
 

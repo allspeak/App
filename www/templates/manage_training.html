@@ -1,0 +1,109 @@
+<!--<ion-view view-title="Recording Session">-->
+<ion-view>
+    <ion-nav-title> {{ pageTitle }} </ion-nav-title>
+    
+    <ion-nav-bar class="bar-positive">    
+        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button>    
+    </ion-nav-bar>     
+
+<!--    <ion-header-bar class='bar-assertive bar-subheader bar-dark item-button-right'>
+        {{headerTitle}}
+        <div class="button buttons-right button-positive" ng-click="deleteSession()">        
+            <i class="icon ion-trash-a"></i>
+        </div>          
+    </ion-header-bar>  -->
+    
+    <ion-footer-bar class="bar-positive">
+        <div class="button-bar">        
+            <button class="button button-full button-positive" ng-click="completeSession()">{{labelResumeTrainSession}}</button>    
+            <button class="button button-full button-positive" ng-click="submitSession()">{{labelSubmit}}</button>        
+        </div>          
+    </ion-footer-bar>     
+    
+<!--    <ion-nav-buttons side="right">
+        <button class="button" ng-click="deleteSession()">
+            <i class="icon ion-trash-a"></i>
+        </button>
+    </ion-nav-buttons>     -->
+    
+    <ion-content>
+        
+        <label class="item item-input item-select">
+            <div class="input-label">Tipo analisi</div>
+            <select ng-model="selectedProcScheme" ng-change="updateProcScheme(selectedProcScheme)" ng-options="item.label for item in aProcScheme track by item.value"></select>            
+        </label>     
+
+        <label class="item item-input item-select">
+            <div class="input-label">Tipo di RETE</div>
+            <select ng-model="selectedNetType" ng-change="updateModelType(selectedNetType)" ng-options="item.label for item in aNetType track by item.value"></select>            
+        </label>          
+        
+        <div class="item item-divider">STATUS</div>
+        
+        <!--RECORDINGS-->
+        <ion-item class="item-button-right" ng-if="!vocabulary_status.haveEnoughRecording">Registrazioni
+            <div class="buttons">
+                <button class="button button-balanced" ng-click="addSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+        <ion-item ng-if="vocabulary_status.haveEnoughRecording">Registrazioni<span class="badge"><i class="icon ion-star"></i></span></ion-item>    
+       
+        <!--FEATURES-->
+        <ion-item class="item-button-right" ng-disabled="!vocabulary_status.haveEnoughRecording" ng-if="vocabulary_status.haveFeatures.length">Features
+            <div class="buttons">
+                <button class="button button-balanced" ng-click="askExtractFeatures();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+        <ion-item ng-if="!vocabulary_status.haveFeatures.length">Features<span class="badge"><i class="icon ion-star"></i></span></ion-item>    
+       
+        <!--ZIP-->
+        <ion-item class="item-button-right" ng-if="!vocabulary_status.haveZip">ZIP features
+            <div class="buttons">
+                <button class="button button-balanced" ng-disabled="!vocabulary_status.haveFeatures" ng-click="zipSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+        <ion-item ng-if="vocabulary_status.haveZip">ZIP features<span class="badge"><i class="icon ion-star"></i></span></ion-item>    
+       
+        <!--ADDESTRA RETE-->
+        <ion-item class="item-button-right" ng-if="!vocabulary_status.isNetAvailableRemote">Addestra Rete
+            <div class="buttons">
+                <button class="button button-balanced" ng-disabled="!vocabulary_status.haveZip" ng-click="submitSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+        <ion-item ng-if="vocabulary_status.isNetAvailableRemote">Addestra Rete<span class="badge"><i class="icon ion-star"></i></span></ion-item>    
+       
+        <!--CHIEDI RETE-->
+        <ion-item class="item-button-right" ng-if="isTraining">Controlla rete
+            <div class="buttons">
+                <button class="button button-balanced" ng-click="checkSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+       
+        <!--SCARICA RETE-->
+        <ion-item class="item-button-right" ng-if="!vocabulary_status.isNetAvailableLocale">Scarica rete
+            <div class="buttons">
+                <button class="button button-balanced" ng-disabled="!vocabulary_status.isNetAvailableRemote" ng-click="addSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+        <ion-item ng-if="vocabulary_status.isNetAvailableLocale">Scarica rete<span class="badge"><i class="icon ion-star"></i></span></ion-item>    
+       
+        
+        <!--CARICA RETE-->
+        <ion-toggle class="item" ng-disabled="!vocabulary_status.isNetAvailableLocale" ng-model="toogleSelectAll" ng-click="selectAll(toogleSelectAll)">USE RETE</ion-toggle>
+
+    </ion-content>    
+</ion-view>

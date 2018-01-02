@@ -232,9 +232,6 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         $scope.repetitionsCount++;
     };    
 
-    //==============================================================================================================================
-    // SUBMIT SESSION
-    //==============================================================================================================================
     // delete all wavs recorded in the vocabulary
     $scope.deleteSession = function() 
     {
@@ -254,237 +251,12 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
             }
         });        
     };
- 
+    
+    
     $scope.submitSession = function() 
     {
-//        $scope.upLoadSession(); // for debug
-        $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai per inviare le tue registrazioni al server per ottenere la tua nuova rete neurale\nVuoi proseguire?'})
-        .then(function(res) 
-        {
-            if (res)
-            {
-                $scope.isSubmitting = true;
-                return $scope.createSessionJson($scope.relpath + "/" + "training.json")
-                .then(function(){
-                    $scope.extractFeatures(false);  
-                })
-                .catch(function(error)
-                {
-                    alert("ShowRecSess::submitSession : " + error.message);
-                    $scope.isSubmitting = false;
-                });
-            }
-        });        
-    };
-   
-    $scope.createSessionJson = function(jsonpath) 
-    {
-        var ids = VocabularySrv.getTrainVocabularyIDLabels();
-        return TfSrv.createTrainingDataJSON($scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelType, jsonpath);
-    };
-    
-    // called by $scope.onExtractFeaturesEnd whether isSubmitting
-    $scope.zipSession = function() 
-    {
-        window.addEventListener('traindataready', $scope.onZipFolder);
-        window.addEventListener('pluginError'   , $scope.onPluginError);        
-        $scope.pluginInterface.zipFolder($scope.relpath, $scope.relpath + "/" + "data.zip", ["dat", "json"]);
-    };
-
-    $scope.onZipFolder = function()
-    {
-        window.removeEventListener('traindataready', $scope.onZipFolder);
-        window.removeEventListener('pluginerror'   , $scope.onPluginError);       
-        if($scope.isSubmitting) $scope.upLoadSession();
-    };
-    
-    $scope.upLoadSession = function() 
-    {
-        RemoteAPISrv.uploadTrainingData($scope.relpath + "/" + "data.zip", $scope.onSubmitSuccess, $scope.onSubmitError, $scope.onSubmitProgress)
-    };
-    
-    $scope.onSubmitSuccess = function(sess_id) 
-    {
-        $scope.session_id = sess_id;
-        alert("data uploaded");
-        $scope.$apply();
-        $scope.timerID = ClockSrv.addClock();
-    };
-    
-    $scope.onSubmitError = function(error) 
-    {
-        $scope.session_id = 0;
-        alert("ERROR while uploading data : " + error.message);
-        $scope.$apply();
-    };
-    
-    $scope.onSubmitProgress = function(progress) 
-    {
-        console.log(progress.toString());
-        $scope.$apply();
-    };
-
-    $scope.onPluginError = function(error)  // {message: error.message, type:error.type}
-    {
-        alert("ManageRecordingsCtrl :" + error.message);
-    };
-    
-    //==============================================================================================================================
-    // DOWNLOAD SESSION
-    //==============================================================================================================================    
-    // called by the timer
-    $scope.checkSession = function() 
-    {
-        $scope.isChecking           = true;
-        $scope.$apply();
-        return RemoteAPISrv.isNetAvailable()
-        .then(function(res)
-        {
-            $scope.isChecking       = false;
-            if(res)
-            {
-                $scope.isNetAvailableRemote = true;
-                ClockSrv.removeClock();
-                // ready 2 download
-                return $ionicPopup.confirm({ title: 'Attenzione', template: 'Il vocabolario è stato addestrato. Vuoi scaricarlo ora?\nIn caso contrario, potrai farlo in seguito'})
-                .then(function(res) 
-                {
-                    $scope.$apply();                     
-                    if(res)
-                    {
-                        RemoteAPISrv.getNet($scope.onDownloadSuccess, $scope.onDownloadError, $scope.onDownloadProgress)
-                    }
-                });                 
-            }
-            else $scope.$apply(); 
-        })
-        .catch(function(error)
-        {       
-            
-        })
-    }
-    
-    $scope.onDownloadSuccess = function(sess_id) 
-    {
-        isNetAvailableLocale    = true;
-        $scope.isSubmitting     = false;
-        alert("data uploaded");
-        $scope.$apply();
-    };
-    
-    $scope.onDownloadError = function(error) 
-    {
-        isNetAvailableLocale    = false;
-        alert("ERROR while doloading data : " + error.message);
-        $scope.$apply();
-    };
-    
-    $scope.onDownloadProgress = function(progress) 
-    {
-        console.log(progress.toString());
-        $scope.$apply();
-   };
-    
-    //==============================================================================================================================
-    // EXTRACT FEATURES
-    //==============================================================================================================================
-    $scope.askExtractFeatures = function() 
-    {  
-        var myPopup = $ionicPopup.show(
-        {
-//            template: '<center><img src="https://officeimg.vo.msecnd.net/en-us/images/MR900185586.gif"/></center> <br> <input type="password" ng-model="data.wifi">',
-            title: 'Attenzione',
-            subTitle: 'Stai per rianalizzare i dati.\nVuoi sovrascrivere i dati esistenti?',
-            scope: $scope,
-            buttons: [
-             {
-                    text: '<b>CANCELLA</b>',
-                    type: 'button-positive',
-                    onTap: function() { return -1; }
-                },
-                {
-                    text: '<b>SI</b>',
-                    type: 'button-positive',
-                    onTap: function() { return 1; }
-                },
-                {
-                    text: '<b>NO</b>',
-                    type: 'button-positive',
-                    onTap: function() { return 0; }
-                }]
-        });
-        myPopup.then(function(res) 
-        {
-            if(res > -1)  $scope.extractFeatures((res>0 ? true : false));
-        });        
-    };        
-
-    $scope.extractFeatures = function(overwrite) 
-    {  
-        window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
-        window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
-        window.addEventListener('pluginError'       , $scope.onMFCCError);
-//
-//        $scope.relpath  = "AllSpeakVoiceRecorder/audiofiles/allcontrols/allcontrols";  // debug code to calc cepstra in a huge folder
-//        $scope.nFiles   = 2385;
-//
-//        $scope.relpath  = "AllSpeakVoiceRecorder/audiofiles/allpatients/allpatients";  // debug code to calc cepstra in a huge folder
-//        $scope.nFiles   = 1857;
-//
-//        $scope.relpath  = "AllSpeakVoiceRecorder/audiofiles/newpatients/newpatients";  // debug code to calc cepstra in a huge folder
-//        $scope.nFiles   = 907;
-
-        if(MfccSrv.getMFCCFromFolder(   $scope.relpath, 
-                                        $scope.mfccCfg.nDataType,
-                                        $scope.plugin_enum.MFCC_DATADEST_FILE,
-                                        $scope.mfccCfg.nProcessingScheme,
-                                        overwrite))          // does not overwrite existing (and valid) mfcc files
-        {
-            cordova.plugin.pDialog.init({
-                theme : 'HOLO_DARK',
-                progressStyle : 'HORIZONTAL',
-                cancelable : true,
-                title : 'Please Wait...',
-                message : 'Extracting CEPSTRA filters from folder \'s files...',
-                max : $scope.nFiles
-            });
-            cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
-        }
-    };
-    
-    // manage pluginevents
-    $scope.onMFCCProgressFolder = function(res){
-        $scope.resetExtractFeatures();
-        console.log(res);        
-    }
-    
-    $scope.onMFCCProgressFile = function(res){
-        $scope.nCurFile++;
-        if($scope.nCurFile < $scope.nFiles) cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
-        else                                $scope.onExtractFeaturesEnd();
-        
-        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
-    };
-    
-    // if submitting => it calls $scope.zipSession();
-    $scope.onExtractFeaturesEnd = function()
-    {
-        $scope.resetExtractFeatures();
-        if($scope.isSubmitting) $scope.zipSession();
-    };
-    
-    $scope.resetExtractFeatures = function()
-    {
-        cordova.plugin.pDialog.dismiss();
-        window.removeEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
-        window.removeEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
-        window.removeEventListener('pluginerror'       , $scope.onMFCCError);  
-    };
-    
-    $scope.onMFCCError = function(res){
-        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
-    }
-
+        $state.go("manage_training", {foldername:$scope.foldername});
+    };    
     //==============================================================================================================================
     // PRIVATE
     //==============================================================================================================================
@@ -503,11 +275,6 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
             if(commands[f].nrepetitions < $scope.minNumRepetitions)
                 return false;
         return true;
-    };
-    
-    $scope._calcPerc = function(cur, total)
-    {
-        return Math.round((cur/total)*100);
     };
     
     $scope._showAlert = function(title, message) {
