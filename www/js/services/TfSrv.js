@@ -171,10 +171,11 @@ function TfSrv(FileSystemSrv, $q)
     //  end DEFAULT VALUES MANAGEMENT
     
     // the crucial params are: sLabel, commands, nProcessingScheme (taken from default)
-    createTrainingDataJSON = function(label, commandsids, procscheme, modeltype, filepath)
+    createTrainingDataJSON = function(label, localfolder, commandsids, procscheme, modeltype, filepath)
     {
         var train_obj = {};
         train_obj.sLabel                = label;
+        train_obj.sLocalFolder          = localfolder;    
         train_obj.commands              = commandsids;
         train_obj.nProcessingScheme     = procscheme;
         train_obj.nModelType            = modeltype;    

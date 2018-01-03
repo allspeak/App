@@ -3,7 +3,7 @@ main_module.factory('ClockSrv', function($interval)
     'use strict';
     var service = {
         addClock: addClock,
-        cancelClock: removeClock
+        removeClock: removeClock
     };
   
     var clockElts       = [];

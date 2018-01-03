@@ -98,6 +98,12 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });
     }; 
     
+    // read the content of a volatile vocabulary.json (given a localfoldername), do not update VocabularySrv
+    getTempTrainVocabularyName = function(localfoldername) 
+    {
+        return getTempTrainVocabulary(getTrainVocabularyJsonPath(localfoldername));
+    };
+    
     // read the content of a volatile vocabulary.json, do not update VocabularySrv
     getTempTrainVocabulary = function(path) 
     {
@@ -116,7 +122,6 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             alert("Error in VocabularySrv::getTempTrainVocabulary : " + err.message);
             return null;
         });
-
     }; 
         
     // train_obj already contains : sLabel, commands[{title,id}], rel_local_path  ...may also contain : nProcessingScheme, nModelType
@@ -281,15 +286,17 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
 //        return ids;
     };    
 
-    getTrainVocabularyJsonPath = function(localfolder)
+    // returns: String, vocabulary.json full path given a voc folder name
+    getTrainVocabularyJsonPath = function(localfoldername)
     {
-        if(localfolder == null || localfolder == "")    return "";
-        return vocabularies_folder + "/" + localfolder + "/vocabulary.json"; 
+        if(localfoldername == null || localfoldername == "")    return "";
+        return vocabularies_folder + "/" + localfoldername + "/vocabulary.json"; 
     };
 
-    getExistingTrainVocabularyJsonPath = function(localfolder)
+    // returns: String.  determine vocabulary.json full path given a voc folder name, check if exist before returning it
+    getExistingTrainVocabularyJsonPath = function(localfoldername)
     {
-        var jsonfilepath = getTrainVocabularyJsonPath(localfolder);
+        var jsonfilepath = getTrainVocabularyJsonPath(localfoldername);
         if(jsonfilepath == "")  return "";
         return FileSystemSrv.existFile(jsonfilepath)
         .then(function(exist)
@@ -301,21 +308,15 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             return $q.reject(error);
         });        
     };
-    //-----------------------------------------------------------
-    // audio files
-    getTrainVocabularyFiles = function(relpath, cmds)
+    
+    // returns: boolean
+    // calculate if each training command has its own voicebank audio
+    hasVoicesTrainVocabularyName = function(vocfolder) 
     {
-        return FileSystemSrv.listFilesInDir(relpath, ["wav"])
-        .then(function(files)
-        {
-            // I get only wav file names with extension
-            return CommandsSrv.updateCommandsFiles(cmds, files);// writes subject.commands[:].files[]
-        })        
-        .catch(function(error){
-            return $q.reject(error);
-        });          
-    };    
-
+        
+    }
+    // returns: boolean
+    // calculate if each training command has its own voicebank audio
     hasVoicesTrainVocabulary = function(voc) 
     {
         if(voc == null)
@@ -347,16 +348,14 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });
     };
     
+    // updates commands[:].files[] & firstAvailableId & nrepetitions of the voicebank folder, not the training one.
+    // thus MUST receive a voc, cannot act on the loaded vocabulary, which must point to the training_sessios content (not voicebank one)
     updateTrainVocabularyAudioPresence = function(audio_relpath, voc) 
     {
         if(voc == null)
         {
-            if(vocabulary == null)
-            {
-                alert("ERROR in VocabularySrv::updateTrainVocabularyAudioPresence....called with null input and vocabulary null");
-                return Promise.reject("ERROR in VocabularySrv::updateTrainVocabularyAudioPresence....called with null input and vocabulary null");
-            }
-            else voc = vocabulary;
+            alert("ERROR in VocabularySrv::updateTrainVocabularyAudioPresence....input voc cannot be null");
+            return Promise.reject("ERROR in VocabularySrv::updateTrainVocabularyAudioPresence....input voc cannot be null");
         }        
         
         if(audio_relpath == null) audio_relpath = voicebank_folder;
@@ -383,7 +382,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             else voc = vocabulary;
         }
         
-        return getTrainVocabularyFiles(audio_relpath, voc.commands)
+        return CommandsSrv.getCommandsFilesByPath(voc.commands, audio_relpath)
         .then(function(cmds)
         {
             var len = cmds.length;
@@ -468,7 +467,8 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         init                                : init,                                 // 
         
         getTrainVocabulary                  : getTrainVocabulary,                   // returns promise of train_vocabulary, updates vocabulary
-        getTempTrainVocabulary              : getTempTrainVocabulary,               // returns promise of a volatile train_vocabulary
+        getTempTrainVocabulary              : getTempTrainVocabulary,               // returns promise of a volatile train_vocabulary, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
+        getTempTrainVocabularyName          : getTempTrainVocabularyName,           // returns promise of a volatile train_vocabulary, given a foldername
         setTrainVocabulary                  : setTrainVocabulary,                   // write train_vocabulary to file
         setTempTrainVocabulary              : setTempTrainVocabulary,               // write train_vocabulary to file
 
@@ -480,7 +480,6 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         getTrainVocabularyJsonPath          : getTrainVocabularyJsonPath,           // get the voc.json path given a sLocalFolder or "" if input param is empty
         getExistingTrainVocabularyJsonPath  : getExistingTrainVocabularyJsonPath,   // get the voc.json path given a sLocalFolder or "" if not existent
         
-        getTrainVocabularyFiles             : getTrainVocabularyFiles,              // [{files:[], nrepetitions:int, firstAvailableId:int}]
         hasVoicesTrainVocabulary            : hasVoicesTrainVocabulary,             // [true | false]:  check if all the to-be-recognized commands have their corresponding playback wav
         updateTrainVocabularyAudioPresence  : updateTrainVocabularyAudioPresence,   // list wav files in vb folder and updates train_vocabulary[:].nrepetitions
         existCompleteRecordedTrainSession   : existCompleteRecordedTrainSession,    // check if the given train session has at least 5 repetitions of each command

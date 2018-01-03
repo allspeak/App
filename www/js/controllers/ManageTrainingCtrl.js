@@ -10,7 +10,7 @@
         ........
     ]
  */
-function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, InitAppSrv, RuntimeStatusSrv, VocabularySrv, MfccSrv, TfSrv, RemoteAPISrv, ClockSrv, EnumsSrv)
+function ManageTrainingCtrl($scope, $q, $ionicPopup, $ionicLoading, $state, $ionicPlatform, InitAppSrv, RuntimeStatusSrv, VocabularySrv, MfccSrv, TfSrv, RemoteAPISrv, ClockSrv, FileSystemSrv, EnumsSrv)
 {
     $scope.foldername           = "";       // standard
     $scope.sessionPath          = "";       // training_XXXXYYZZ
@@ -28,6 +28,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, Ini
     $scope.isSubmitting         = false;        // net calculation process initiated
     $scope.isChecking           = false;        // true when checking net availability
     
+    $scope.session_id           = 0;            // filled by onSubmitSuccess. id to be used to retrieve the net
     $scope.vocabulary_status    = null;
     
 //    $scope.haveValidTrainingSession  = false;        // according to the selected modelType, indicates if we have enough recordings
@@ -47,11 +48,14 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, Ini
     $scope.maxNumRepetitions    = EnumsSrv.RECORD.SESSION_MAX_REPETITIONS;
 
 
+    $scope.vocabulary_folder    = "";
+    
     $scope.training_json        = "training.json";
     $scope.labelResumeTrainSession  = "REGISTRA RIPETIZIONI"
     $scope.labelSubmit              = "ADDESTRA"    
     $scope.pageTitle            = "Addestramento Vocabolario Comandi";
     
+    $scope.trasferPercentage    = 0;
     //==============================================================================================================================
     // ENTER & REFRESH
     //==============================================================================================================================    
@@ -80,6 +84,9 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, Ini
         }   
         else $scope.sessionPath = data.stateParams.sessionPath;  
 
+        $scope.backState = "";
+        if(data.stateParams.backState != null) $scope.backState = data.stateParams.backState;
+
         $scope.pluginInterface          = InitAppSrv.getPlugin();        
         $scope.plugin_enum              = $scope.pluginInterface.ENUM.PLUGIN;
         
@@ -101,20 +108,18 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, Ini
         $scope.selectedProcScheme       = $scope.selectObjByValue($scope.tfCfg.nProcessingScheme, $scope.aProcScheme);
         $scope.selectedNetType          = $scope.selectObjByValue($scope.tfCfg.nModelType, $scope.aNetType);
 
-        $scope.relpath              = InitAppSrv.getAudioFolder() + "/" + $scope.foldername
-        $scope.relpath              = ($scope.sessionPath.length    ?  $scope.relpath + "/" + $scope.sessionPath    :  $scope.relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
+        $scope.relpath                  = InitAppSrv.getAudioFolder() + "/" + $scope.foldername
+        $scope.relpath                  = ($scope.sessionPath.length    ?  $scope.relpath + "/" + $scope.sessionPath    :  $scope.relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
         
-        $scope.vocabulary_json_path = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername + "/vocabulary.json";
-        $scope.successState         = "manage_training";
-        $scope.cancelState          = "manage_training";
+        $scope.vocabulary_folder        = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername;
+        
+        $scope.vocabulary_json_path     = $scope.vocabulary_folder + "/vocabulary.json";
         
         RuntimeStatusSrv.loadVocabulary($scope.foldername)
         .then(function(status)
         {
             $scope.vocabulary_status    = status;
             $scope.vocabulary           = status.vocabulary;
-//            $scope.isNetAvailableLocale     = status.modelExist;
-//            $scope.haveValidTrainingSession = true;//status.haveValidTrainingSession;
             $scope.$apply();
         })
         .catch(function(error)
@@ -152,7 +157,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, Ini
     };
     
     //==============================================================================================================================
-    // SUBMIT SESSION
+    // PREPARE SESSION UPLOAD
     //==============================================================================================================================
     $scope.submitSession = function() 
     {
@@ -179,7 +184,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, Ini
     $scope.createSubmitSessionJson = function(jsonpath) 
     {
         var ids = VocabularySrv.getTrainVocabularyIDLabels();
-        return TfSrv.createTrainingDataJSON($scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelType, jsonpath);
+        return TfSrv.createTrainingDataJSON($scope.foldername, $scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelType, jsonpath);
     };
     
     // called by $scope.onExtractFeaturesEnd whether isSubmitting
@@ -188,39 +193,55 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, Ini
         window.addEventListener('traindataready', $scope.onZipFolder);
         window.addEventListener('pluginError'   , $scope.onPluginError);        
         $scope.pluginInterface.zipFolder($scope.relpath, $scope.relpath + "/" + "data.zip", ["dat", "json"]);
+        console.log("start zipping");        
     };
 
+    // called by plugin whether isSubmitting
     $scope.onZipFolder = function()
     {
+        console.log("zip created");
+        $scope.vocabulary_status.haveZip = true;
         window.removeEventListener('traindataready', $scope.onZipFolder);
         window.removeEventListener('pluginerror'   , $scope.onPluginError);       
+        $scope.$apply();
         if($scope.isSubmitting) $scope.upLoadSession();
     };
     
+    //==============================================================================================================================
+    // UPLOAD SESSION
+    //==============================================================================================================================      
     $scope.upLoadSession = function() 
     {
         RemoteAPISrv.uploadTrainingData($scope.foldername, $scope.relpath + "/" + "data.zip", $scope.onSubmitSuccess, $scope.onSubmitError, $scope.onSubmitProgress);
+        $ionicLoading.show(
+        {
+            template: 'Uploading data <br/><progress id="progressbar" max="100" value="{{ trasferPercentage }}" class="progress"></progress>'
+        });
+
     };
     
     $scope.onSubmitSuccess = function(sess_id) 
     {
         $scope.session_id = sess_id;
-        alert("data uploaded");
-        $scope.$apply();
-        $scope.timerID = ClockSrv.addClock();
+        //alert("data uploaded");
+//        $scope.$apply();
+        $scope.timerID = ClockSrv.addClock($scope.checkSession, 10000);
+        $ionicLoading.hide();
     };
     
     $scope.onSubmitError = function(error) 
     {
         $scope.session_id = 0;
         alert("ERROR while uploading data : " + error.message);
-        $scope.$apply();
+//        $scope.$apply();
     };
     
-    $scope.onSubmitProgress = function(progress) 
+    $scope.onSubmitProgress = function(progress)
     {
-        console.log(progress.toString());
-        $scope.$apply();
+        console.log(progress.label + " " + progress.perc + " %");
+        $scope.trasferPercentage = progress.perc;
+//        document.getElementById("progress_bar_con").value = progress.perc;
+//        $scope.$apply();
     };
 
     $scope.onPluginError = function(error)  // {message: error.message, type:error.type}
@@ -229,59 +250,67 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, Ini
     };
     
     //==============================================================================================================================
-    // DOWNLOAD SESSION
+    // ASK FOR & DOWNLOAD SESSION
     //==============================================================================================================================    
     // called by the timer
     $scope.checkSession = function() 
     {
         $scope.isChecking           = true;
-        $scope.$apply();
-        return RemoteAPISrv.isNetAvailable()
-        .then(function(res)
+        return RemoteAPISrv.isNetAvailable($scope.session_id)
+        .then(function(train_obj)
         {
             $scope.isChecking       = false;
-            if(res)
+            if(train_obj)
             {
+                delete train_obj.status;
                 $scope.vocabulary_status.isNetAvailableRemote = true;
-                ClockSrv.removeClock();
+                ClockSrv.removeClock($scope.timerID);
+                return FileSystemSrv.createFile($scope.vocabulary_json_path, JSON.stringify(train_obj), 2); // 2 = overwrite silently
+            }
+            else return false;
+        })
+        .then(function(isavailable)
+        {
+            if(isavailable)
+            {
                 // ready 2 download
                 return $ionicPopup.confirm({ title: 'Attenzione', template: 'Il vocabolario è stato addestrato. Vuoi scaricarlo ora?\nIn caso contrario, potrai farlo in seguito'})
                 .then(function(res) 
                 {
-                    $scope.$apply();                     
-                    if(res)
-                    {
-                        RemoteAPISrv.getNet($scope.onDownloadSuccess, $scope.onDownloadError, $scope.onDownloadProgress)
-                    }
+                    if(res) $scope.getNet();
                 });                 
             }
-            else $scope.$apply(); 
         })
         .catch(function(error)
         {       
-            
-        })
-    }
+            console.log(error.message);
+        });
+    };
+    
+    $scope.getNet = function()
+    {
+        RemoteAPISrv.getNet($scope.vocabulary_folder, $scope.onDownloadSuccess, $scope.onDownloadError, $scope.onDownloadProgress);
+    };
     
     $scope.onDownloadSuccess = function(sess_id) 
     {
         $scope.vocabulary_status.isNetAvailableLocale    = true;
         $scope.isSubmitting     = false;
-        alert("data uploaded");
-        $scope.$apply();
+        console.log("network downloaded");
+//        $scope.$apply();
     };
     
     $scope.onDownloadError = function(error) 
     {
         $scope.vocabulary_status.isNetAvailableLocale    = false;
-        alert("ERROR while doloading data : " + error.message);
-        $scope.$apply();
+        alert("ERROR while downloading data : " + error.message);
+//        $scope.$apply();
     };
     
     $scope.onDownloadProgress = function(progress) 
     {
-        console.log(progress.toString());
-        $scope.$apply();
+        console.log(progress.label);
+//        $scope.$apply();
    };
     
     //==============================================================================================================================
@@ -323,32 +352,38 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, Ini
         window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
         window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
         window.addEventListener('pluginError'       , $scope.onMFCCError);
-//
-//        $scope.relpath  = "AllSpeakVoiceRecorder/audiofiles/allcontrols/allcontrols";  // debug code to calc cepstra in a huge folder
-//        $scope.nFiles   = 2385;
-//
-//        $scope.relpath  = "AllSpeakVoiceRecorder/audiofiles/allpatients/allpatients";  // debug code to calc cepstra in a huge folder
-//        $scope.nFiles   = 1857;
-//
-//        $scope.relpath  = "AllSpeakVoiceRecorder/audiofiles/newpatients/newpatients";  // debug code to calc cepstra in a huge folder
-//        $scope.nFiles   = 907;
-
-        if(MfccSrv.getMFCCFromFolder(   $scope.relpath, 
-                                        $scope.mfccCfg.nDataType,
-                                        $scope.plugin_enum.MFCC_DATADEST_FILE,
-                                        $scope.mfccCfg.nProcessingScheme,
-                                        overwrite))          // does not overwrite existing (and valid) mfcc files
+        
+        return FileSystemSrv.countFilesInDir($scope.relpath, ["wav"])
+        .then(function(cnt)
         {
-            cordova.plugin.pDialog.init({
-                theme : 'HOLO_DARK',
-                progressStyle : 'HORIZONTAL',
-                cancelable : true,
-                title : 'Please Wait...',
-                message : 'Extracting CEPSTRA filters from folder \'s files...',
-                max : $scope.nFiles
-            });
-            cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
-        }
+            $scope.nFiles   = cnt;
+            $scope.nCurFile = 0;
+    //        $scope.relpath  = "AllSpeakVoiceRecorder/audiofiles/allcontrols/allcontrols";  // debug code to calc cepstra in a huge folder
+    //        $scope.nFiles   = 2385;
+    //
+    //        $scope.relpath  = "AllSpeakVoiceRecorder/audiofiles/allpatients/allpatients";  // debug code to calc cepstra in a huge folder
+    //        $scope.nFiles   = 1857;
+    //
+    //        $scope.relpath  = "AllSpeakVoiceRecorder/audiofiles/newpatients/newpatients";  // debug code to calc cepstra in a huge folder
+    //        $scope.nFiles   = 907;
+
+            if(MfccSrv.getMFCCFromFolder(   $scope.relpath, 
+                                            $scope.mfccCfg.nDataType,
+                                            $scope.plugin_enum.MFCC_DATADEST_FILE,
+                                            $scope.mfccCfg.nProcessingScheme,
+                                            overwrite))          // does not overwrite existing (and valid) mfcc files
+            {
+                cordova.plugin.pDialog.init({
+                    theme : 'HOLO_DARK',
+                    progressStyle : 'HORIZONTAL',
+                    cancelable : true,
+                    title : 'Please Wait...',
+                    message : 'Extracting CEPSTRA filters from folder \'s files...',
+                    max : $scope.nFiles
+                });
+                cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
+            }                    
+        });
     };
     
     // manage pluginevents

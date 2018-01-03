@@ -128,8 +128,8 @@
             "api"                   : {
                                         "register_device"               : "devices",
                                         "upload_training_session"       : "training-sessions",
-                                        "is_training_session_available" : "training_sessions",
-                                        "get_training_session_network"  : "training_sessions",
+                                        "is_training_session_available" : "training-sessions",
+                                        "get_training_session_network"  : "training-sessions",
                                         "api_key_reset"                 : "api_key_reset"
                                       }
         }         

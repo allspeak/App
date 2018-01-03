@@ -335,6 +335,15 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     };
     
     //--------------------------------------------------------------------------
+    //return the number of files contained in a folder, belonging to the [valid_extensions] formats.
+    service.countFilesInDir = function(relative_path, valid_extensions)
+    {
+        return service.listFilesInDir(relative_path, valid_extensions)
+        .then(function(files){
+            return files.length;
+        })
+    }
+    //--------------------------------------------------------------------------
     //return all the files contained in a folder, belonging to the [valid_extensions] formats.
     service.listFilesInDir = function(relative_path, valid_extensions)
     {

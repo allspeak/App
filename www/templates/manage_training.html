@@ -75,13 +75,15 @@
         <!--ADDESTRA RETE-->
         <ion-item class="item-button-right" ng-if="!vocabulary_status.isNetAvailableRemote">Addestra Rete
             <div class="buttons">
-                <button class="button button-balanced" ng-disabled="!vocabulary_status.haveZip" ng-click="submitSession();">
+                <button class="button button-balanced" ng-disabled="!vocabulary_status.haveZip" ng-click="upLoadSession();">
                     <i class="icon ion-plus-round"></i>
                 </button>
             </div>                
         </ion-item>         
         <ion-item ng-if="vocabulary_status.isNetAvailableRemote">Addestra Rete<span class="badge"><i class="icon ion-star"></i></span></ion-item>    
        
+        
+        
         <!--CHIEDI RETE-->
         <ion-item class="item-button-right" ng-if="isTraining">Controlla rete
             <div class="buttons">

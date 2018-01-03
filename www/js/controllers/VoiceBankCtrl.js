@@ -22,6 +22,8 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.cancelState          = "voicebank";    
     
     $scope.selCategory          = {};
+    
+    $scope.vocabulary           = null;
     //==================================================================================================================
     //==================================================================================================================
     $scope.$on("$ionicView.enter", function(event, data)
@@ -44,8 +46,12 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         //---------------------------------------------------------------------------------------------------------------------
         $scope.backState        = "home";
         $scope.elems2display    = EnumsSrv.VOICEBANK.SHOW_ALL;
-        $scope.foldername       = "";       // when called with elems2display = SHOW_TRAINED and backState = vocabulary. it contains the vocabulary folder name
+        $scope.appStatus        = InitAppSrv.getStatus();
 
+        // when called with elems2display = SHOW_TRAINED and backState = vocabulary. it contains the vocabulary folder name
+        // otherwise consider userActiveVocabularyName
+        $scope.foldername       = $scope.appStatus.userActiveVocabularyName;       
+        
         if(data.stateParams != null)
         {
             if(data.stateParams.elems2display != null && data.stateParams.elems2display != "")  $scope.elems2display    = parseInt(data.stateParams.elems2display);
@@ -61,29 +67,30 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
             }   
         }
         //---------------------------------------------------------------------------------------------------------------------
-        
-        
-        $scope.showOnlyTrained      = true;        
         $scope.rel_rootpath         = InitAppSrv.getVoiceBankFolder(); 
+//        $scope.rel_vocpath          = InitAppSrv.getVoiceBankFolder(); 
         $scope.resolved_rootpath    = FileSystemSrv.getResolvedOutDataFolder() + $scope.rel_rootpath;
         $scope.sentencesCategories  = VoiceBankSrv.getVocabularyCategories();
         
-        return VocabularySrv.hasVoicesTrainVocabulary() // update voicebank commands
-        .then(function(res)
+        return $scope.loadVoc($scope.foldername)
+        .then(function(voc)
         {
+            $scope.vocabulary   = voc;   
             if($scope.elems2display == EnumsSrv.VOICEBANK.SHOW_ALL) $scope.refreshAudioList();
             else                                                    $scope.refreshTrainingAudioList();
-                
-//            if(res) $scope.refreshAudioList();          // all training commands has their voice, display all VB items
-//            else    $scope.refreshTrainingAudioList();  // some training commands doesn't have a recorded wav, display only commands belonging to the training list
         })
-        
    });
 
     // ask user's confirm after pressing back (thus trying to exit from the App)
     $scope.$on('$ionicView.leave', function(){if($scope.deregisterFunc) $scope.deregisterFunc();});    
  
     //==================================================================================================================
+    //==================================================================================================================    
+    $scope.loadVoc = function(foldername)
+    {
+        if(foldername != "")    return VocabularySrv.getTempTrainVocabularyName($scope.foldername);
+        else                    return Promise.resolve([]);
+    };
     //==================================================================================================================    
     // get ALL VB voc elements from service, thus updates UI, return 1 or 0 if failure
     $scope.refreshAudioList = function()
@@ -111,7 +118,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.refreshTrainingAudioList = function()
     {
         $scope.isBusy    = 1;
-        return VocabularySrv.updateTrainVocabularyAudioPresence()
+        return VocabularySrv.updateTrainVocabularyAudioPresence($scope.rel_rootpath, $scope.vocabulary)
         .then(function(voc)
         {
             $scope.voicebankSentences   = voc.commands;

@@ -6,6 +6,7 @@
 main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsSrv) 
 {
     // for the given command, scan the relpath folder and updates its info
+    // updates commands[:].files[] & firstAvailableId & nrepetitions
     // returns:     [{title: String, nrepetitions:int, firstAvailableId:int, files:["vb_123_0.wav", "vb_123_2.wav"]}, ...]
     getCommandFilesByPath = function(command, relpath)
     {    
