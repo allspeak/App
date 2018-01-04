@@ -46,10 +46,10 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         {
             if(data.stateParams.foldername != null)
             {
-                $scope.vocabulary_folder_name   = data.stateParams.foldername;
-                $scope.vocabulary_folder        = $scope.models_relpath     + "/" + data.stateParams.foldername;
-                $scope.vocabularyaudio_folder   = $scope.audio_relpath      + "/" + data.stateParams.foldername;
-                $scope.vocabulary_jsonfile      = $scope.vocabulary_folder  + "/" + $scope.default_tv_filename;
+                $scope.foldername               = data.stateParams.foldername;
+                $scope.vocabulary_relpath       = $scope.models_relpath     + "/" + data.stateParams.foldername;
+                $scope.training_relpath         = $scope.audio_relpath      + "/" + data.stateParams.foldername;
+                $scope.vocabulary_jsonfile      = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
             }
             else if(data.stateParams.foldername == null)
             {
@@ -72,7 +72,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             {
                 $scope.vocabulary   = voc;
                 $scope.headerTitle  = "VOCABOLARIO:    " + voc.sLabel;
-                $scope.updateRuntimeStatus($scope.vocabulary_folder_name, true)
+                $scope.updateRuntimeStatus($scope.foldername, true)
             }
         })
         .catch(function(error)
@@ -116,27 +116,27 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         });        
     };    
    
-    $scope.deleteVocabulary = function()    
-    {
-        $ionicPopup.confirm({ title: 'Warning', template: 'You are deleting the current subject recording SESSION, are you sure ?'}).then(function(res) 
-        {
-            if (res){
-                FileSystemSrv.deleteDir($scope.relpath)
-                .then(function()
-                {
-                    if($scope.subject)  $state.go("subject", {subjId:$scope.subject.id});       
-                    else                $state.go("vocabularies");    
-                })
-                .catch(function(error){
-                    alert(error.message);
-                });
-            }
-        });          
-    };
+//    $scope.deleteVocabulary = function()    
+//    {
+//        $ionicPopup.confirm({ title: 'Warning', template: 'You are deleting the current subject recording SESSION, are you sure ?'}).then(function(res) 
+//        {
+//            if (res){
+//                FileSystemSrv.deleteDir($scope.relpath)
+//                .then(function()
+//                {
+//                    if($scope.subject)  $state.go("subject", {subjId:$scope.subject.id});       
+//                    else                $state.go("vocabularies");    
+//                })
+//                .catch(function(error){
+//                    alert(error.message);
+//                });
+//            }
+//        });          
+//    };
     
     $scope.loadModel = function()    
     {
-        RuntimeStatusSrv.loadVocabulary($scope.vocabulary_folder_name)
+        RuntimeStatusSrv.loadVocabulary($scope.foldername)
     };
     
     

@@ -21,13 +21,13 @@
     <ion-content class="padding">
 <!--        <h1 style="text-align: center;"></h1><br/>-->
         
-        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_commands({modeId:enum_showvoccommands, foldername:vocabulary_folder_name, backState:'vocabulary'})" >{{labelEditTrainVocabulary}}</button>
+        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_commands({modeId:enum_showvoccommands, foldername:foldername, backState:'vocabulary'})" >{{labelEditTrainVocabulary}}</button>
         
-        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_recordings({modeId:enum_recordsession, foldername:vocabulary_folder_name, backState:'vocabulary'})" >{{labelManageSession}}</button>
+        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
         
-        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="voicebank({elems2display:enum_show_vb_voc, foldername:vocabulary_folder_name, backState:'vocabulary'})" >{{labelRecordVoice}}</button>
+        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="voicebank({elems2display:enum_show_vb_voc, foldername:foldername, backState:'vocabulary'})" >{{labelRecordVoice}}</button>
         
-        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_training({foldername:vocabulary_folder_name, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
+        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
         
         <!--<button class="button button-tall button-block button-large button-positive" ng-click="loadModel()">{{labelLoadVocabulary}}</button>-->
         <ion-toggle

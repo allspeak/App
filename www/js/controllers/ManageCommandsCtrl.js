@@ -27,14 +27,14 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     $scope.default_tv_filename      = "";               // "vocabulary.json"              <= UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME
     $scope.default_voc_folder       = "";               // "default"                    <= UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME
 
-    $scope.vocabulary_folder_name   = "";               // GIGI                                 <= data.stateParams.foldername
-    $scope.vocabulary_folder        = "";               // AllSpeak/vocabularies/GIGI           <= getVocabulariesFolder + "/" + data.stateParams.foldername
-    $scope.vocabularyaudio_folder   = "";               // AllSpeak/training_sessions/GIGI      <= getAudioFolder + "/" + data.stateParams.foldername
+    $scope.foldername               = "";               // GIGI                                 <= data.stateParams.foldername
+    $scope.vocabulary_relpath       = "";               // AllSpeak/vocabularies/GIGI           <= getVocabulariesFolder + "/" + data.stateParams.foldername
+    $scope.training_relpath         = "";               // AllSpeak/training_sessions/GIGI      <= getAudioFolder + "/" + data.stateParams.foldername
     $scope.vocabulary_jsonfile      = "";               // AllSpeak/vocabularies/GIGI/vocabulary.json
     
     $scope.selectList               = true;
     $scope.editTrainVocabulary      = false;
-    $scope.showTrainVocabulary        = false;
+    $scope.showTrainVocabulary      = false;
     
     $scope.successState             = "manage_recordings";
     $scope.cancelState              = "vocabularies";
@@ -67,7 +67,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         $scope.deregisterFunc           = $ionicPlatform.registerBackButtonAction(function()
         {
             if($scope.backState == "vocabulary")
-                $state.go($scope.backState, {"foldername":$scope.vocabulary_folder_name}); 
+                $state.go($scope.backState, {"foldername":$scope.foldername}); 
             else
                 $state.go($scope.backState); 
             
@@ -90,17 +90,20 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
 
             if(data.stateParams.foldername != null && data.stateParams.foldername != "")
             {
-                $scope.vocabulary_folder_name   = data.stateParams.foldername;
-                $scope.vocabulary_folder        = $scope.models_relpath     + "/" + data.stateParams.foldername;
-                $scope.vocabularyaudio_folder   = $scope.audio_relpath      + "/" + data.stateParams.foldername;
-                $scope.vocabulary_jsonfile      = $scope.vocabulary_folder  + "/" + $scope.default_tv_filename;
+                $scope.foldername           = data.stateParams.foldername;
+                $scope.vocabulary_relpath   = $scope.models_relpath     + "/" + data.stateParams.foldername;
+                $scope.training_relpath     = $scope.audio_relpath      + "/" + data.stateParams.foldername;
+                $scope.vocabulary_jsonfile  = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
             }
-            else if(data.stateParams.foldername == null && $scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
+            else
             {
-                alert("ManageCommandsCtrl::$ionicView.enter. error : foldername is empty");
-                $state.go("home");
-            } 
-            
+                // if foldername is null/empty => IT must be TRAINING.NEW_TV, otherwise go home 
+                if($scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
+                {
+                    alert("ManageCommandsCtrl::$ionicView.enter. error : foldername is empty");
+                    $state.go("home");
+                } 
+            }
             if(data.stateParams.backState != null) $scope.backState = data.stateParams.backState;
         };
         //---------------------------------------------------------------------------------------------------------------------
@@ -112,6 +115,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         
         if($scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
         {
+            // TRAINING.EDIT_TV || TRAINING.SHOW_TV
             return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_jsonfile)
             .then(function(voc)
             {
@@ -139,10 +143,11 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         }
         else
         {
+            // TRAINING.NEW_TV
             // create new vocabulary
-            $scope.selectList           = true;
-            $scope.editTrainVocabulary  = false;
-            $scope.showTrainVocabulary    = false;  
+            $scope.selectList               = true;
+            $scope.editTrainVocabulary      = false;
+            $scope.showTrainVocabulary      = false;  
             if($scope.modalSelectNewVocabulary == null)
             {
                 // SHOULD NEVER HAPPENS, BUT SOMETIMES IT DOES !!
@@ -175,6 +180,12 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         if($scope.deregisterFunc)   $scope.deregisterFunc();
     }); 
     
+    //-------------------------------------------------------------------  
+    // button back to vocabulary
+    $scope.cancel = function()
+    {
+        $state.go('vocabulary', {"foldername":$scope.foldername});
+    };     
     //-------------------------------------------------------------------
     // NO VOCABULARY EXIST ($scope.selectList = true)
     //------------------------------------------------------------------- 
@@ -235,10 +246,10 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
                 $scope.vocabulary.sLocalFolder      = validpath; // substitute  " ", "'", "-" with "_"
                 $scope.vocabulary.sLabel            = obj.label;
 
-                $scope.vocabulary_folder_name       = $scope.vocabulary.sLocalFolder;
-                $scope.vocabulary_folder            = local_voc_folder;
-                $scope.vocabularyaudio_folder       = $scope.audio_relpath      + "/" + $scope.vocabulary.sLocalFolder;
-                $scope.vocabulary_jsonfile          = $scope.vocabulary_folder  + "/" + $scope.default_tv_filename;
+                $scope.foldername       = $scope.vocabulary.sLocalFolder;
+                $scope.vocabulary_relpath            = local_voc_folder;
+                $scope.training_relpath       = $scope.audio_relpath      + "/" + $scope.vocabulary.sLocalFolder;
+                $scope.vocabulary_jsonfile          = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
 
                 $scope.selectSentences();            
             }
@@ -305,9 +316,15 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     };
     
     // button 1
-    $scope.saveTrainVocabulary = function(bool)
+    $scope.saveTrainVocabulary = function()
     {
         var selected_commands = [];
+        
+        if($scope.commands[0].checked == null)
+        {
+            console.log("ERROR IN ManageCommandsCtrl::saveTrainVocabulary....$scope.commands[0].checked are null")
+            return;
+        }
         
         for(s=0; s<$scope.commands.length; s++)
             if($scope.commands[s].checked)
@@ -324,17 +341,17 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         {
             $scope.commands = selected_commands;
 
-            return FileSystemSrv.createDir($scope.vocabulary_folder, false)
+            return FileSystemSrv.createDir($scope.vocabulary_relpath, false)
             .then(function()
             {
-                return FileSystemSrv.createDir($scope.vocabularyaudio_folder, false)
+                return FileSystemSrv.createDir($scope.training_relpath, false)
             })
             .then(function()
             {
-                $scope.vocabulary.sLocalFolder       = $scope.vocabulary_folder_name;
+                $scope.vocabulary.sLocalFolder       = $scope.foldername;
                 $scope.vocabulary.commands           = $scope.commands.map(function(item) { return {"title":item.title, "id":item.id} });
                 $scope.vocabulary.nItems2Recognize   = $scope.commands.length;
-                return VocabularySrv.setTrainVocabulary($scope.vocabulary, $scope.vocabulary_folder + "/" + $scope.default_tv_filename);
+                return VocabularySrv.setTrainVocabulary($scope.vocabulary, $scope.vocabulary_relpath + "/" + $scope.default_tv_filename);
             })
             .then(function()
             {
@@ -343,19 +360,16 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             })
             .then(function()
             {
-                $state.go('vocabulary', {foldername:$scope.vocabulary_folder_name});
+                $scope.selectList           = false;
+                $scope.editTrainVocabulary  = false;
+                $scope.showTrainVocabulary  = true;    
+                $scope.$apply();
             })
             .catch(function(error){
                 alert(error.message);
             });          
         };
     };
-    //-------------------------------------------------------------------  
-    // button 2
-    $scope.cancel = function()
-    {
-        $state.go('vocabulary', {"foldername":$scope.vocabulary_folder_name});
-    };    
     //-------------------------------------------------------------------
 }
-controllers_module.controller('ManageCommandsCtrl', ManageCommandsCtrl)
+controllers_module.controller('ManageCommandsCtrl', ManageCommandsCtrl);

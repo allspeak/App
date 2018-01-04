@@ -20,6 +20,7 @@ function UITextsSrv()
     service.RECORD.BTN_RECORD_STOP    = "STOP";
     
     service.TRAINING.labelRecognize                             = "RICONOSCI";
+    service.TRAINING.labelOpenVocabulary                        = "APRI";
     service.TRAINING.labelStartTrainSession                     = "REGISTRA SESSIONE TRAINING";
     service.TRAINING.labelResumeTrainSession                    = "COMPLETA SESSIONE TRAINING";
     service.TRAINING.labelManageSession                         = "REGISTRAZIONI TRAINING";

@@ -17,6 +17,7 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsS
             return updateCommandFiles(command, files);// update sentence.files[]
         })         
         .catch(function(error){
+            error.message = "ERRORE CRITICO in CommandSrv::getCommandFilesByPath " + error.message;
             return $q.reject(error);
         });         
     };     
@@ -32,6 +33,7 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsS
             return updateCommandsFiles(cmds, files);// update sentence.files[]
         })         
         .catch(function(error){
+            error.message = "ERRORE CRITICO in CommandSrv::getCommandsFilesByPath " + error.message;
             return $q.reject(error);
         });         
     };     

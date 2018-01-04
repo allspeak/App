@@ -5,12 +5,13 @@
  */
 //function TrainingCtrl($scope, vocabulary)//....use resolve 
 //function TrainingCtrl($scope)  
-function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionicPlatform, VocabularySrv, InitAppSrv, FileSystemSrv, StringSrv, EnumsSrv)  
+function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionicPlatform, $ionicModal, VocabularySrv, InitAppSrv, FileSystemSrv, StringSrv, EnumsSrv)  
 {
     $scope.vocabularies             = [];
     $scope.activeVocabulary         = null;
     $scope.activeVocabularyFolder   = "";
     
+    $scope.modalSelectNewVocabulary = null;
     // =======================================================================================================
     $scope.$on("$ionicView.enter", function(event, data)
     {
@@ -80,6 +81,7 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
             .catch(function(error)
             {
                 alert("ERROR in VocabulariesCtrl::refreshSessionsList. " + error);
+                error.message = "ERROR in VocabulariesCtrl::refreshSessionsList. " + error.message;
                 $q.reject(error);
             }); 
         })
@@ -91,6 +93,11 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
             $scope._showAlert("Error", "SubjectSessionsCtrl::refreshSessionsList : " + error.message);
         });
     }; 
+
+    $scope.newVocabulary = function()
+    {
+        $state.go('manage_commands', {modeId:EnumsSrv.TRAINING.NEW_TV, backState:"vocabularies"});         
+    };
     
     $scope._showAlert = function(title, message) {
         var alertPopup = $ionicPopup.alert({

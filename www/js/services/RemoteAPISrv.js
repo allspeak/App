@@ -34,6 +34,8 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     
     sModelFileName      = "";       // set by the server (without extension) and returned from : /api/v1/training-sessions/<session_uid>
                                     // I add the extension the first time I receive it.
+                                    
+    fileTransfer        = null;     // instance of new $cordovaTransfer(); used also to abort the transfer
     // ==========================================================================================================================
     // PUBLIC
     // ==========================================================================================================================
@@ -47,9 +49,10 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
 //        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.71:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.75:8095";     // OVERWRITE FOR DEBUG
-        ServerCfg.url   = "http://192.168.0.8:8095";     // OVERWRITE FOR DEBUG
-        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.145:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.0.8:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
+        ServerCfg.url   = "http://192.168.1.77:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.183:8095";     // OVERWRITE FOR DEBUG
     };
     
     getApiKey = function()
@@ -83,11 +86,11 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     uploadTrainingData = function(foldername, localfilepath, callback, errorCallback, progressCallback) 
     {
         var api_url = _getUrl("upload_training_session");
-        is_training = true;
         return _uploadFile(localfilepath, api_url, api_key, progressCallback)
         .then(function(sess_id)
         {
-            session_id = sess_id;
+            is_training = true;            
+            session_id  = sess_id;
             callback(sess_id);
         })
         .catch(function(error) 
@@ -114,8 +117,8 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
             if(status == "pending") return null;
             else
             {
-                sModelFileName = respobj.sModelFileName;
-                is_training = false;
+                sModelFileName  = respobj.sModelFileName;
+                is_training     = false;
                 return respobj;
             }
         })
@@ -136,7 +139,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         return _downloadZip(url, destlocalfolder, sModelFileName, progressCallback)
         .then(function(fileentry)
         {
-            callback();
+            callback(fileentry);
         })
         .catch(function(error) 
         {
@@ -280,7 +283,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     
     _uploadFile = function(localfilepath, api_url, api_key, progressCallback) 
     {
-        var fileTransfer = new $cordovaTransfer();
+        fileTransfer = new $cordovaTransfer();
 
         progressCallback({
             'status': 'uploading',
@@ -321,10 +324,12 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         .then(function(result) 
         {
             var respobj             = JSON.parse(result.response);
+            fileTransfer            = null;
             return respobj.session_uid;
         })
         .catch(function(error) 
         {
+            fileTransfer = null;
             return $q.reject({"code":error.code, "message":_onTransferError(error)});
         });        
     };
@@ -332,7 +337,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
 //    _downloadZip = function(fileUrl, outFolder, localFilename, callback, errorCallback, progressCallback) 
     _downloadZip = function(fileUrl, outFolder, localFilename, progressCallback) 
     {
-        var fileTransfer    = new $cordovaTransfer();
+        fileTransfer    = new $cordovaTransfer();
 
         progressCallback({
             'status': 'downloading',
@@ -358,14 +363,25 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         return fileTransfer.download(fileUrl, resolved_dest_file, true, {headers:{"api_key":api_key}})
         .then(function(entry) 
         {
-            console.log('download complete: ' + entry.toURL());            
+            console.log('download complete: ' + entry.toURL());         
+            fileTransfer = null;
             return entry;
         })
         .catch(function(error)
         {
+            fileTransfer = null;
             return $q.reject({"code":error.code, "message":_onTransferError(error)});
         });
-    }       
+    };      
+    
+    cancelTransfer = function()
+    {
+        if(fileTransfer != null)
+        {
+            fileTransfer.abort();
+            fileTransfer = null;
+        }
+    };
     //==========================================================================
     // public interface
     //==========================================================================
@@ -376,6 +392,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         uploadTrainingData          : uploadTrainingData,
         isNetAvailable              : isNetAvailable,
         getNet                      : getNet,
+        cancelTransfer              : cancelTransfer,
         getActivities               : getActivities,
         backupData                  : backupData,
         restoreData                 : restoreData

@@ -64,7 +64,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         return service.existFile(relative_path)
         .then(function(exist)
         {
-            if(!exist)  return $q.reject("ERROR : Attempt to read an existing file (" + relative_path + ")");
+            if(!exist)  return $q.reject({message:"ERROR : Attempt to read an existing file (" + relative_path + ")"});
             else        return $cordovaFile.readAsText(service.resolved_data_storage_root, relative_path);
         })        
         .then(function(content) 
@@ -73,6 +73,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         })
         .catch(function(error)   
         {
+            error.message = "ERRORE CRITICO in FileSystemSrv " + error.message;
             return $q.reject(error);
         });        
     };

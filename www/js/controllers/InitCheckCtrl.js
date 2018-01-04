@@ -180,9 +180,10 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
             })
             .catch(function(error)
             {
-                alert("ERRORE CRITICO in InitCheckCtrl::checkIsAssisted" + error.toString());
+                alert("ERRORE CRITICO in InitCheckCtrl::checkIsAssisted " + error.toString());
                 RuntimeStatusSrv.setStatus("isLogged", false);
                 $scope.endCheck('home');
+                error.message = "ERRORE CRITICO in InitCheckCtrl::checkIsAssisted " + error.message;
                 $q.reject(error);
             });
         }
@@ -203,7 +204,8 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
             return $scope.endCheck('home');   
         })
         .catch(function(error){
-            alert("ERRORE CRITICO in InitCheckCtrl::doLogin" + error.toString());
+            alert("ERRORE CRITICO in InitCheckCtrl::doLogin " + error.toString());
+            error.message = "ERRORE CRITICO in InitCheckCtrl::doLogin " + error.message;
             $q.reject(error);
         });     
     };    

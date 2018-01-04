@@ -302,7 +302,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         .then(function(exist)
         {
             if(exist)   return jsonfilepath;
-            else        return $q.reject("Error in VocabularySrv. the given localfolder does not have a json");
+            else        return $q.reject({message:"Error in VocabularySrv. the given localfolder does not have a json"});
         })
         .catch(function(error){
             return $q.reject(error);
@@ -368,7 +368,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });       
     };
     
-    // return: boolean
+    // return: boolean ALLOWED NET TYPE 
     // check if the given train session has at least EnumsSrv.RECORD.SESSION_MIN_REPETITIONS repetitions of each command
     existCompleteRecordedTrainSession = function(audio_relpath, voc) 
     {

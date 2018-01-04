@@ -9,11 +9,11 @@ function MfccSrv(ErrorSrv)
     // each time I call : init (mfccCfg)
     // 1) take the values defined in InitAppSrv (according to config.json)
     // 2) overwrite with possible controllers defaults (which are usually tests)              
-    mMfccCfg        = null;
+    mMfccCfg            = null;
     standardMfccCfg     = null;   // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
-    oldCfg          = null;   // copied while loading a new model, restored if something fails
-    pluginInterface = null;
-    plugin_enum     = null;
+    oldCfg              = null;   // copied while loading a new model, restored if something fails
+    pluginInterface     = null;
+    plugin_enum_mfcc    = null;
     
      // PUBLIC ********************************************************************************************************
     init = function(jsonCfg, plugin)
@@ -23,7 +23,7 @@ function MfccSrv(ErrorSrv)
         oldCfg          = jsonCfg;
         pluginInterface = plugin;
         
-        plugin_enum     = pluginInterface.ENUM.mfcc;
+        plugin_enum_mfcc     = pluginInterface.ENUM.mfcc;
     };//
     // PUBLIC ********************************************************************************************************
     changeCfg = function(cfg)

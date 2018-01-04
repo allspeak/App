@@ -11,12 +11,12 @@ function TfSrv(FileSystemSrv, $q)
     // 2) overwrite with App defaults (according to init.json)
     // 3) overwrite with possible controllers defaults     
     
-    mTfCfg            = null;     // hold current configuration (got from json file)
+    mTfCfg              = null;     // hold current configuration (got from json file)
     
-    standardTfCfg     = null;     // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
-    oldCfg          = null;     // copied while loading a new model, restored if something fails
-    pluginInterface = null;
-    plugin_tf     = null;
+    standardTfCfg       = null;     // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
+    oldCfg              = null;     // copied while loading a new model, restored if something fails
+    pluginInterface     = null;
+    plugin_tf           = null;
 
     vocabulariesFolder  = "";       // AllSpeak/vocabularies
 
@@ -40,14 +40,14 @@ function TfSrv(FileSystemSrv, $q)
         pluginInterface     = plugin;
         
         plugin_tf           = pluginInterface.ENUM.tf;
-        plugin_enum         = pluginInterface.ENUM.PLUGIN;
+        plugin_enum_tf      = pluginInterface.ENUM.PLUGIN;
         
         vocabulariesFolder  = vocabulariesfolder;
     };
     
     changeCfg = function(cfg)
     {  
-        mTfCfg = getUpdateCfg(cfg);
+        mTfCfg = getUpdatedCfg(cfg);
         return mTfCfg;
     };
      // PUBLIC *************************************************************************************************
@@ -57,7 +57,7 @@ function TfSrv(FileSystemSrv, $q)
     };    
 
     // PUBLIC *************************************************************************************************
-    // called by any controller pretending to override some default properties 
+    // called by any controller pretending to override some default properties with respect to standard ones
     getUpdatedCfg = function (ctrlcfg)
     {
         var cfg = standardTfCfg;
@@ -76,7 +76,7 @@ function TfSrv(FileSystemSrv, $q)
     //  end DEFAULT VALUES MANAGEMENT
     //--------------------------------------------------------------------------
     
-    // returns: true | false or catch("NO_FILE")
+    // returns:  (true | false) or catch("NO_FILE")
     // load model json and load it if model.sModelFilePath exist
     loadTFModelPath = function(json_relpath)
     {
@@ -86,8 +86,8 @@ function TfSrv(FileSystemSrv, $q)
             return FileSystemSrv.existFile(json_relpath)
             .then(function(existfile)
             {
-                if(existfile)       return _getModel(json_relpath)
-                else                return $q.reject("NO_FILE");
+                if(existfile)       return readModel(json_relpath)
+                else                return $q.reject({message:"NO_FILE"});
             })
             .then(function(voc)
             {
@@ -129,16 +129,16 @@ function TfSrv(FileSystemSrv, $q)
                 }
                 else
                 {
-                    modelFolder = "";
-                    modelJsonFile = "";                
+                    modelFolder     = "";
+                    modelJsonFile   = "";                
                 }
                 return loaded;
             })
             .catch(function(error)
             {
-                modelLoaded = false;
-                modelFolder = "";
-                modelJsonFile = "";            
+                modelLoaded     = false;
+                modelFolder     = "";
+                modelJsonFile   = "";            
                 return $q.reject(error);
             });     
         }
@@ -150,7 +150,7 @@ function TfSrv(FileSystemSrv, $q)
         else                                        return false;
     };
     
-    _getModel = function(json_relpath)
+    readModel = function(json_relpath)
     {
         oldCfg = mTfCfg;        
         return FileSystemSrv.readJSON(json_relpath)
@@ -178,18 +178,18 @@ function TfSrv(FileSystemSrv, $q)
         train_obj.sLocalFolder          = localfolder;    
         train_obj.commands              = commandsids;
         train_obj.nProcessingScheme     = procscheme;
-        train_obj.nModelType            = modeltype;    
+        train_obj.nModelType            = (modeltype == plugin_enum_tf.TF_MODELTYPE_USER_FT_APPEND  ?  plugin_enum_tf.TF_MODELTYPE_USER_FT :  modeltype);    
         return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj));
     };
     
     getNetTypes = function()
     {
-        return [{"label": "SOLO UTENTE", "value": plugin_enum.TF_MODELTYPE_USER}, {"label": "MISTA", "value": plugin_enum.TF_MODELTYPE_USER_FT}];
+        return [{"label": "NUOVA UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER}, {"label": "NUOVA MISTA", "value": plugin_enum_tf.TF_MODELTYPE_USER_FT}, {"label": "AGGIUNGI MISTA", "value": plugin_enum_tf.TF_MODELTYPE_USER_FT_APPEND}];
     };
  
     getPreProcTypes = function()
     {
-        return [{"label": "Filtri spettrali", "value": plugin_enum.MFCC_PROCSCHEME_F_S_CTX}, {"label": "Filtri temporali", "value": plugin_enum.MFCC_PROCSCHEME_F_T_CTX}];
+        return [{"label": "Filtri spettrali", "value": plugin_enum_tf.MFCC_PROCSCHEME_F_S_CTX}, {"label": "Filtri temporali", "value": plugin_enum_tf.MFCC_PROCSCHEME_F_T_CTX}];
     };
     
     
@@ -201,6 +201,7 @@ function TfSrv(FileSystemSrv, $q)
         changeCfg               : changeCfg, 
         getUpdatedCfg           : getUpdatedCfg, 
         getCfg                  : getCfg, 
+        readModel               : readModel,
         getLoadedJsonFile       : getLoadedJsonFile,
         getNetTypes             : getNetTypes,
         getPreProcTypes         : getPreProcTypes,

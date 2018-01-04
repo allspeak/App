@@ -87,8 +87,8 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         
         $scope.tfCfg                = TfSrv.getCfg();
 
-        $scope.relpath              = InitAppSrv.getAudioFolder() + "/" + $scope.foldername
-        $scope.relpath              = ($scope.sessionPath.length    ?  $scope.relpath + "/" + $scope.sessionPath    :  $scope.relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
+        $scope.training_relpath     = InitAppSrv.getAudioFolder() + "/" + $scope.foldername
+        $scope.training_relpath     = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
         
         $scope.vocabulary_json_path = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername + "/vocabulary.json";
         $scope.successState         = "manage_recordings";
@@ -118,11 +118,18 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         if($scope.deregisterFunc)   $scope.deregisterFunc();
     });     
     
+    //-------------------------------------------------------------------  
+    // button back to vocabulary
+    $scope.cancel = function()
+    {
+        $state.go('vocabulary', {"foldername":$scope.foldername});
+    }; 
+    
     $scope.refreshAudioList = function()
     {
         if($scope.subject)
         {
-            return SubjectsSrv.getSubjectVocabularyFiles($scope.commands, $scope.relpath)
+            return SubjectsSrv.getSubjectVocabularyFiles($scope.commands, $scope.training_relpath)
             .then(function(session_commands)
             {
                 $scope.subject.commands   = session_commands;
@@ -137,7 +144,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         }
         else
         {
-            return CommandsSrv.getCommandsFilesByPath($scope.commands, $scope.relpath)
+            return CommandsSrv.getCommandsFilesByPath($scope.commands, $scope.training_relpath)
             .then(function(session_commands)
             {
                 // session_commands = [{nrepetitions:int, files:["filename.wav", ""], firstAvailableId:int, id:int, title:String}]                
@@ -203,7 +210,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         
         if(sentences.length)
         {
-            var record_relpath = $scope.relpath;//            var record_relpath = $scope.vocabularyaudio_folder + "/training_" + StringSrv.formatDate();
+            var record_relpath = $scope.training_relpath;//            var record_relpath = $scope.training_relpath + "/training_" + StringSrv.formatDate();
             return SequencesRecordingSrv.calculateSequence( sentences, 
                                                             $scope.selectedTrainingModality.value, 
                                                             $scope.repetitionsCount, 
@@ -239,7 +246,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         .then(function(res) 
         {
             if (res){
-                return FileSystemSrv.deleteFilesInFolder($scope.relpath, ["wav"])
+                return FileSystemSrv.deleteFilesInFolder($scope.training_relpath, ["wav"])
                 .then(function()
                 {
                     if($scope.subject)  $state.go("subject", {subjId:$scope.subject.id});       

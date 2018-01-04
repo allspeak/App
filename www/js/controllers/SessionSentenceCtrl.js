@@ -43,8 +43,8 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
             $scope.subject      = SubjectsSrv.getSubject(subjectId);
             if ($scope.subject)
             {        
-                $scope.relpath                      = InitAppSrv.getAudioFolder() + "/" + $scope.subject.folder + "/" + $scope.sessionPath; 
-                $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.relpath;
+                $scope.training_relpath                      = InitAppSrv.getAudioFolder() + "/" + $scope.subject.folder + "/" + $scope.sessionPath; 
+                $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.training_relpath;
                 $scope.sentence                     = SubjectsSrv.getSubjectSentence(subjectId, $scope.commandId);
                 $scope.titleLabel                   = $scope.subject.folder + "/" + $scope.sessionPath;
                 $scope.refreshAudioList();
@@ -54,8 +54,8 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         else
         {
             $scope.subject                      = null
-            $scope.relpath                      = InitAppSrv.getAudioFolder() + "/" + $scope.foldername + "/" + $scope.sessionPath; 
-            $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.relpath;        
+            $scope.training_relpath                      = InitAppSrv.getAudioFolder() + "/" + $scope.foldername + "/" + $scope.sessionPath; 
+            $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.training_relpath;        
             $scope.sentence                     = VocabularySrv.getTrainCommand($scope.commandId);
             $scope.titleLabel                   = $scope.foldername + "/" + $scope.sessionPath;
             $scope.refreshAudioList();
@@ -66,7 +66,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
     {
         if ($scope.subject)
         {        
-            return SubjectsSrv.getSubjectSentenceAudioFiles($scope.sentence, $scope.relpath)
+            return SubjectsSrv.getSubjectSentenceAudioFiles($scope.sentence, $scope.training_relpath)
             .then(function(sentence){
                 $scope.sentence = sentence;
                 $scope.$apply();
@@ -74,7 +74,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         }
         else
         {
-            return CommandsSrv.getCommandFilesByPath($scope.sentence, $scope.relpath)
+            return CommandsSrv.getCommandFilesByPath($scope.sentence, $scope.training_relpath)
             .then(function(sentence){
                 $scope.sentence = sentence;
                 $scope.$apply();
@@ -126,7 +126,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         filename_noext = StringSrv.removeExtension(filename_noext);
         if (!$scope.isPlaying)
         {        
-            FileSystemSrv.deleteFile($scope.relpath + "/" + filename_noext + ".wav")
+            FileSystemSrv.deleteFile($scope.training_relpath + "/" + filename_noext + ".wav")
             .then(function(success){
                $scope.refreshAudioList();
             })

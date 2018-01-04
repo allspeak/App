@@ -38,7 +38,6 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     haveValidTrainingSession        = false;    // VocabularySrv
     haveFeatures                    = false;        // indicates if the present recordings have their cepstra
     haveZip                         = false;        // indicates if the zip file is ready to be sent
-    isTraining                      = false;        // indicates if the server is training the net
     isNetAvailableRemote            = false;        // net calculated. available online
     isNetAvailableLocale            = false;        // net calculated. download, available locally
     isNetLoaded                     = false;        // TfSrv  :  net loaded    
@@ -51,8 +50,8 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     training_folder                 = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
     vocabularyjsonpath              = "";
     
-    voc_folderpath                  = "";       // defined in loadVocabulary    AllSpeak/vocabularies/gigi
-    train_folderpath                = "";       // defined in loadVocabulary    AllSpeak/training_sessions/gigi
+    vocabulary_relpath                  = "";       // defined in loadVocabulary    AllSpeak/vocabularies/gigi
+    train_relpath                = "";       // defined in loadVocabulary    AllSpeak/training_sessions/gigi
     // -----------------------------------------------------------------------------------------------------------------
     init = function(voc_folder, tr_folder)
     {    
@@ -88,7 +87,6 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
                 "haveValidTrainingSession"      :haveValidTrainingSession,
                 "haveFeatures"                  :haveFeatures,        // indicates if the present recordings have their cepstra
                 "haveZip"                       :haveZip,        // indicates if the zip file is ready to be sent
-                "isTraining"                    :isTraining,        // indicates if the server is training the net
                 "isNetAvailableRemote"          :isNetAvailableRemote,        // net calculated. available online                
                 "isNetAvailableLocale"          :isNetAvailableLocale,
                 "isNetLoaded"                   :isNetLoaded,
@@ -116,23 +114,23 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     loadVocabulary = function(userVocabularyName)
     {
         if(userVocabularyName == "" || userVocabularyName == null)  
-            return $q.reject("Error in RuntimeStatusSrv::loadVocabulary : input voc folder (" + userVocabularyName + ") is not valid");
+            return $q.reject({message:"Error in RuntimeStatusSrv::loadVocabulary : input voc folder (" + userVocabularyName + ") is not valid"});
         
         
-        voc_folderpath       = vocabularies_folder + "/" + userVocabularyName;
-        train_folderpath     = training_folder + "/" + userVocabularyName;
-        var vocjsonpath      = voc_folderpath + "/vocabulary.json";
+        vocabulary_relpath  = vocabularies_folder + "/" + userVocabularyName;
+        train_relpath       = training_folder + "/" + userVocabularyName;
+        var vocjsonpath     = vocabulary_relpath + "/vocabulary.json";
         
-        return FileSystemSrv.existDir(voc_folderpath)
+        return FileSystemSrv.existDir(vocabulary_relpath)
         .then(function(existfolder)
         {
             if(existfolder)     return FileSystemSrv.existFile(vocjsonpath);
-            else                return $q.reject("NO_FOLDER");
+            else                return $q.reject({message:"NO_FOLDER"});
         })
         .then(function(existfile)
         {
             if(existfile)       return VocabularySrv.getTrainVocabulary(vocjsonpath);
-            else                return $q.reject("NO_FILE");
+            else                return $q.reject({message:"NO_FILE"});
         })
         .then(function(voc)
         {
@@ -236,13 +234,13 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     };    
     
     // called by ManageCommandsCtrl::saveTrainVocabulary
-    setTrainVocabularyPresence = function(foldername)
+    setTrainVocabularyPresence = function(folder_name)
     {
-        if(foldername == null)  hasTrainVocabulary = false;
+        if(folder_name == null)  hasTrainVocabulary = false;
         else
         {
-            hasTrainVocabulary  = (foldername.length);
-            vocabulary_folder   = foldername;
+            hasTrainVocabulary  = (folder_name.length);
+            foldername          = folder_name;
         }
     };     
     //======================================================================================================================================
@@ -256,16 +254,21 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     // 5)   record TVA
     _calculateAppStatus = function()
     {
+        canRecognize    = false;
         if(!hasTrainVocabulary)                         AppStatus = EnumsSrv.STATUS.NEW_TV;
         else
         {
-            if(isNetLoaded && vocabularyHasVoices)      AppStatus = EnumsSrv.STATUS.CAN_RECOGNIZE;
+            if(isNetLoaded && vocabularyHasVoices)
+            {
+                AppStatus       = EnumsSrv.STATUS.CAN_RECOGNIZE;
+                canRecognize    = true;
+            }
             else
             {
                 if(!isNetLoaded) // give precedence to complete recordings/training rather than record voices
                 {
                     //model doesn't exist, check whether (record a new / resume an existing) TS or send it to remote training
-                    if(haveValidTrainingSession)   AppStatus = EnumsSrv.STATUS.TRAIN_TV;
+                    if(haveValidTrainingSession)        AppStatus = EnumsSrv.STATUS.TRAIN_TV;
                     else                                AppStatus = EnumsSrv.STATUS.RECORD_TV;
                 }
                 else

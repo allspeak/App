@@ -90,7 +90,6 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, IonicNativeMediaSrv
                return objarray[i];
     }
 
-
     $scope.subsampling_factors  = [{label: "%4", value:4},{label: "%8", value:8},{label: "%16", value:16},{label: "%32", value:32}];
 
     $scope.speech_status_codes = {
@@ -407,12 +406,12 @@ controllers_module.controller('RecognitionCtrl', RecognitionCtrl)
     //=====================================================================================
 //    $scope.deleteAudio = function(filename)
 //    {
-//        var relpath = $scope.relpath_root;        
+//        var training_relpath = $scope.relpath_root;        
 //        if (!$scope.isPlaying)
 //        {        
 //            FileSystemSrv.deleteFile($scope.relpath_root + "/" + filename)
 //            .then(function(success){
-//               $scope.refreshAudioList(relpath);
+//               $scope.refreshAudioList(training_relpath);
 //            })
 //            .catch(function(error){
 //                alert(error.message);

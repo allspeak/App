@@ -6,7 +6,7 @@
     
  */
 
-function SettingsServerCtrl($scope, $state, $ionicPlatform, InitAppSrv, RemoteAPISrv, EnumsSrv, UITextsSrv)
+function SettingsServerCtrl($scope, $state, $ionicPlatform, $ionicModal, InitAppSrv, RemoteAPISrv, EnumsSrv, UITextsSrv)
 {
     $scope.isAssisted           = false;
     $scope.isRegistered         = false;

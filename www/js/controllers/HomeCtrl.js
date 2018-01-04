@@ -45,12 +45,13 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
                     break;
 
                 case EnumsSrv.STATUS.RECORD_TV:
-                    $scope.labelActionButton = UITextsSrv.TRAINING.labelStartTrainSession;
+                case EnumsSrv.STATUS.TRAIN_TV:
+                    $scope.labelActionButton = UITextsSrv.TRAINING.labelOpenVocabulary;
                     break;
 
-                case EnumsSrv.STATUS.TRAIN_TV:
-                    $scope.labelActionButton = UITextsSrv.TRAINING.labelTrainVocabulary;
-                    break;
+//
+//                    $scope.labelActionButton = UITextsSrv.TRAINING.labelTrainVocabulary;
+//                    break;
 
                 case EnumsSrv.STATUS.RECORD_TVA:
                     $scope.labelActionButton = UITextsSrv.TRAINING.labelRecordVoice;
@@ -100,8 +101,13 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
 
             case EnumsSrv.STATUS.RECORD_TV:
             case EnumsSrv.STATUS.TRAIN_TV:
-                $state.go('manage_recordings', {modeId:EnumsSrv.TRAINING.RECORD_TV, foldername:$scope.appStatus.userActiveVocabularyName, backState:"vocabulary"});
+                $state.go('vocabulary', {foldername:$scope.appStatus.userActiveVocabularyName, backState:"home"});
                 break;
+                
+//                $state.go('manage_recordings', {foldername:$scope.appStatus.userActiveVocabularyName, backState:"vocabulary"});
+//                break;
+//                $state.go('manage_training', {foldername:$scope.appStatus.userActiveVocabularyName, backState:"vocabulary"});
+//                break;
 
             case EnumsSrv.STATUS.RECORD_TVA:
                 $state.go('voicebank', {elems2display:EnumsSrv.VOICEBANK.SHOW_ALL, backState:"home"});
