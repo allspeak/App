@@ -5,7 +5,7 @@
  *  - start a recording session
  */
 
-function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ionicModal, $ionicPopup, VocabularySrv, VoiceBankSrv, SequencesRecordingSrv, InitAppSrv, FileSystemSrv, StringSrv, EnumsSrv, TfSrv, RuntimeStatusSrv, UITextsSrv)  
+function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ionicModal, $ionicPopup, VocabularySrv, VoiceBankSrv, InitAppSrv, FileSystemSrv, StringSrv, EnumsSrv, RuntimeStatusSrv, UITextsSrv)  
 {
     $scope.labelStartTrainSession                   = "REGISTRA COMANDI";
     $scope.labelEditTrainVocabulary                 = "CAMBIA COMANDI";
@@ -13,16 +13,14 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     $scope.labelToggleSentencesEditTrainSequence    = "ADDESTRA I SEGUENTI COMANDI";
     $scope.labelToggleSentencesEditTrainVocabulary  = "MODIFICA LA LISTA DEI COMANDI";
     
-    $scope.tfCfg                    = null;
-    
     $scope.labelToggleSentences     = $scope.labelToggleSentencesshowTrainVocabulary;
     
     $scope.commands                 = [];
     $scope.vocabulary               = [];
     $scope.training_sequence        = []; 
 
-    $scope.models_relpath           = "";
-    $scope.audio_relpath            = "";
+    $scope.vocabularies_relpath     = "";
+    $scope.trainingsessions_relpath = "";
         
     $scope.default_tv_filename      = "";               // "vocabulary.json"              <= UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME
     $scope.default_voc_folder       = "";               // "default"                    <= UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME
@@ -30,7 +28,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     $scope.foldername               = "";               // GIGI                                 <= data.stateParams.foldername
     $scope.vocabulary_relpath       = "";               // AllSpeak/vocabularies/GIGI           <= getVocabulariesFolder + "/" + data.stateParams.foldername
     $scope.training_relpath         = "";               // AllSpeak/training_sessions/GIGI      <= getAudioFolder + "/" + data.stateParams.foldername
-    $scope.vocabulary_jsonfile      = "";               // AllSpeak/vocabularies/GIGI/vocabulary.json
+    $scope.vocabulary_json_path      = "";               // AllSpeak/vocabularies/GIGI/vocabulary.json
     
     $scope.selectList               = true;
     $scope.editTrainVocabulary      = false;
@@ -73,8 +71,8 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             
         }, 100);   
         
-        $scope.models_relpath           = InitAppSrv.getVocabulariesFolder();       // AllSpeak/vocabularies
-        $scope.audio_relpath            = InitAppSrv.getAudioFolder();              // AllSpeak/training_sessions        
+        $scope.vocabularies_relpath     = InitAppSrv.getVocabulariesFolder();       // AllSpeak/vocabularies
+        $scope.trainingsessions_relpath = InitAppSrv.getAudioFolder();              // AllSpeak/training_sessions        
         $scope.default_tv_filename      = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         
         //---------------------------------------------------------------------------------------------------------------------
@@ -91,9 +89,9 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             if(data.stateParams.foldername != null && data.stateParams.foldername != "")
             {
                 $scope.foldername           = data.stateParams.foldername;
-                $scope.vocabulary_relpath   = $scope.models_relpath     + "/" + data.stateParams.foldername;
-                $scope.training_relpath     = $scope.audio_relpath      + "/" + data.stateParams.foldername;
-                $scope.vocabulary_jsonfile  = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
+                $scope.vocabulary_relpath   = $scope.vocabularies_relpath     + "/" + data.stateParams.foldername;
+                $scope.training_relpath     = $scope.trainingsessions_relpath + "/" + data.stateParams.foldername;
+                $scope.vocabulary_json_path = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
             }
             else
             {
@@ -107,16 +105,13 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             if(data.stateParams.backState != null) $scope.backState = data.stateParams.backState;
         };
         //---------------------------------------------------------------------------------------------------------------------
-       
-        $scope.tfCfg                    = TfSrv.getCfg();
-        
         $scope.default_voc_folder       = InitAppSrv.getDefaultVocabularyName();    // default
         $scope.createNewVocabularyText  = UITextsSrv.TRAINING.MODAL_CREATE_NEWVOCABULARY;
         
         if($scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
         {
             // TRAINING.EDIT_TV || TRAINING.SHOW_TV
-            return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_jsonfile)
+            return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_json_path)
             .then(function(voc)
             {
                 $scope.vocabulary             = voc;
@@ -225,7 +220,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         }
         
         // check if the selected folder already exist
-        var local_voc_folder                 = $scope.models_relpath     + "/" + validpath;
+        var local_voc_folder                 = $scope.vocabularies_relpath     + "/" + validpath;
         return FileSystemSrv.existDir(local_voc_folder)
         .then(function(existdir)
         {
@@ -246,10 +241,10 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
                 $scope.vocabulary.sLocalFolder      = validpath; // substitute  " ", "'", "-" with "_"
                 $scope.vocabulary.sLabel            = obj.label;
 
-                $scope.foldername       = $scope.vocabulary.sLocalFolder;
-                $scope.vocabulary_relpath            = local_voc_folder;
-                $scope.training_relpath       = $scope.audio_relpath      + "/" + $scope.vocabulary.sLocalFolder;
-                $scope.vocabulary_jsonfile          = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
+                $scope.foldername                   = $scope.vocabulary.sLocalFolder;
+                $scope.vocabulary_relpath           = local_voc_folder;
+                $scope.training_relpath             = $scope.trainingsessions_relpath      + "/" + $scope.vocabulary.sLocalFolder;
+                $scope.vocabulary_json_path         = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
 
                 $scope.selectSentences();            
             }

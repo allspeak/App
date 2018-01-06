@@ -42,7 +42,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     
     service.existFileResolved = function(resolved_path)
     {
-       var unresolved_path = resolved_path.split(FileSystemSrv.getResolvedOutDataFolder())[1];
+       var unresolved_path = resolved_path.split(service.getResolvedOutDataFolder())[1];
        return service.existFile(unresolved_path);
     };
     
@@ -120,7 +120,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     };
 
     //--------------------------------------------------------------------------
-    service.createFileFromObj = function(relative_path, obj, overwrite, textobj)
+    service.createJSONFileFromObj = function(relative_path, obj, overwrite, textobj)
     {
         var str_obj = JSON.stringify(obj);
         return service.createFile(relative_path, str_obj, overwrite, textobj);      

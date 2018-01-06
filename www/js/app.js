@@ -71,7 +71,7 @@ main_module.config(function($stateProvider, $urlRouterProvider)
         controller: 'AmplifierCtrl'
     })    
     .state('recognition', {
-        url: '/recognition',
+        url: '/recognition/:foldername',
         templateUrl: 'templates/recognition.html',
         controller: 'RecognitionCtrl'
     })

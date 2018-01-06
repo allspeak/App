@@ -29,7 +29,6 @@
         
         <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
         
-        <!--<button class="button button-tall button-block button-large button-positive" ng-click="loadModel()">{{labelLoadVocabulary}}</button>-->
         <ion-toggle
             ng-disabled="!status.modelExist"
             ng-checked="status.modelLoaded"

@@ -14,18 +14,31 @@ function IonicNativeMediaSrv($cordovaMediaPlugin)
     // PLAYBACK
     service.playAudio = function (filename, volume, onSuccess, onError)
     {
-        service.playback_file = new $cordovaMediaPlugin(filename);
-        service.playback_file.init
-        .then(function (success){
-            service.playback_file.release();
-            onSuccess(success);
-        })
-        .catch(function (error){
-            onError(error);
-            console.log("ERROR...code: " + error.code + ", message: " + error.message);
+        return FileSystemSrv.existFileResolved(filename)
+        .then(function(exist)
+        {
+            if(exist)
+            {
+                service.playback_file = new $cordovaMediaPlugin(filename);
+                service.playback_file.init
+                .then(function (success){
+                    service.playback_file.release();
+                    onSuccess(success);
+                })
+                .catch(function (error){
+                    onError(error);
+                    console.log("ERROR...code: " + error.code + ", message: " + error.message);
+                });
+                service.playback_file.play();     
+                service.setVolume(volume);                
+            }
+            else
+            {
+                var msg = "Audio file does not exist. IonicNativeMediaSrv::playAudio";
+//                alert(msg);
+                onError({"message":msg});
+            }
         });
-        service.playback_file.play();     
-        service.setVolume(volume);
     };
     
     service.stopAudio = function ()

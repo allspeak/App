@@ -185,7 +185,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
             {
                 // file://.../config.json file does not exist, copy defaults subfields to appConfig subfields 
                 service._createFirstAppConfig();
-                return FileSystemSrv.createFileFromObj(localConfigJson, service.config.appConfig)
+                return FileSystemSrv.createJSONFileFromObj(localConfigJson, service.config.appConfig)
                 .then(function(){
                     return FileSystemSrv.readJSON(localConfigJson);
                 });
@@ -216,7 +216,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
         MfccSrv.init(service.config.defaults.mfcc, service.plugin);
         RemoteAPISrv.init(service.config.appConfig.remote, service.plugin, service);    // I pass the current appConfig values (not the defauls ones)
         RuntimeStatusSrv.init(service.config.defaults.file_system.vocabularies_folder, service.config.defaults.file_system.training_folder);
-        VocabularySrv.init(service.config.defaults.file_system);
+        VocabularySrv.init(service.config.defaults.file_system, service.plugin);
     };
     
     //====================================================================================================================
@@ -229,7 +229,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
     }; 
     
     // copy (if not existent) the default model from assets to AllSpeak/vocabularies/default
-    // overwrite the sModelFilePath params to file:///storage/emulated/0/AllSpeak/vocabularies/default/controls_fsc.p
+    // overwrite the sModelFilePath params to file:///storage/emulated/0/AllSpeak/vocabularies/default/controls_fsc.pb
     service.manageTFModels = function()
     {
         var default_file_system     = service.config.defaults.file_system;
@@ -254,7 +254,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
         .then(function(jsondefvoc)
         {
             jsondefvoc.sModelFilePath =  FileSystemSrv.getResolvedOutDataFolder() + storageDefaultModelPB;
-            return FileSystemSrv.createFileFromObj(storageDefaultModelJson, jsondefvoc, 2);
+            return FileSystemSrv.createJSONFileFromObj(storageDefaultModelJson, jsondefvoc, 2);
         })           
         .catch(function(error)
         { 

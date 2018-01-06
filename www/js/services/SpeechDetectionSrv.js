@@ -105,7 +105,7 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
         return mCfg;
     };    
     // PUBLIC ********************************************************************************************************
-    changeCfg = function(cfg, captureProfile, output_chunks)
+    setCfg = function(cfg, captureProfile, output_chunks)
     {  
         mCfg = getUpdateCfg(cfg, captureProfile, output_chunks);
         return mCfg;
@@ -667,7 +667,7 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
     //==========================================================================
     return {
         init                    : init,
-        changeCfg               : changeCfg, 
+        setCfg               : setCfg, 
         getUpdatedCfg           : getUpdatedCfg, 
         getCfg                  : getCfg, 
         startMicPlayback        : startMicPlayback,

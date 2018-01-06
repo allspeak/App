@@ -25,7 +25,7 @@
  *      isConnected 
  */
 
-main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, EnumsSrv, $cordovaNetwork, FileSystemSrv) 
+main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, EnumsSrv, $cordovaNetwork, FileSystemSrv, UITextsSrv) 
 {
     service                         = this;
     
@@ -51,7 +51,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     vocabularyjsonpath              = "";
     
     vocabulary_relpath                  = "";       // defined in loadVocabulary    AllSpeak/vocabularies/gigi
-    train_relpath                = "";       // defined in loadVocabulary    AllSpeak/training_sessions/gigi
+    train_relpath                   = "";       // defined in loadVocabulary    AllSpeak/training_sessions/gigi
     // -----------------------------------------------------------------------------------------------------------------
     init = function(voc_folder, tr_folder)
     {    
@@ -119,7 +119,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         
         vocabulary_relpath  = vocabularies_folder + "/" + userVocabularyName;
         train_relpath       = training_folder + "/" + userVocabularyName;
-        var vocjsonpath     = vocabulary_relpath + "/vocabulary.json";
+        var vocjsonpath     = vocabulary_relpath + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         
         return FileSystemSrv.existDir(vocabulary_relpath)
         .then(function(existfolder)
@@ -184,12 +184,13 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
             })        
             .then(function(res)
             {
-                haveValidTrainingSession = res;
+                // TODO: should set to res....but it's problematic
+                haveValidTrainingSession = true;
                 return VocabularySrv.existFeaturesTrainSession(train_folder);
             })
             .then(function(res)
             {
-                haveFeatures = res;
+                haveFeatures = res; //(!res.length ?   true    :   false);
                 return FileSystemSrv.existFile(zip_file);
             })
             .then(function(existzip)
@@ -211,14 +212,13 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
             });        
         }
     }
+    
     // calculate the status of a vocabulary, given a voc folder.
     // it can not be empty...thus go on processing
     getUpdatedStatusName = function(userVocabularyName)
     {
         if(userVocabularyName == null || userVocabularyName == "") return getUpdatedStatus(null);
-//            return Promise.resolve(getStatus());
-        
-        vocabularyjsonpath              = vocabularies_folder + "/" + userVocabularyName + "/vocabulary.json";
+        vocabularyjsonpath = vocabularies_folder + "/" + userVocabularyName + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
 
         return VocabularySrv.getTempTrainVocabulary(vocabularyjsonpath)
         .then(function(voc)

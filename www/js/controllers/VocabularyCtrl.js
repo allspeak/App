@@ -24,8 +24,8 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             $state.go("vocabularies");
         }, 100); 
 
-        $scope.audio_relpath                = InitAppSrv.getAudioFolder();
-        $scope.models_relpath               = InitAppSrv.getVocabulariesFolder();
+        $scope.trainingsessions_relpath                = InitAppSrv.getAudioFolder();
+        $scope.vocabularies_relpath               = InitAppSrv.getVocabulariesFolder();
         $scope.default_tv_filename          = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;        
         
         $scope.labelEditTrainVocabulary     = UITextsSrv.TRAINING.labelEditTrainVocabulary;
@@ -47,9 +47,9 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             if(data.stateParams.foldername != null)
             {
                 $scope.foldername               = data.stateParams.foldername;
-                $scope.vocabulary_relpath       = $scope.models_relpath     + "/" + data.stateParams.foldername;
-                $scope.training_relpath         = $scope.audio_relpath      + "/" + data.stateParams.foldername;
-                $scope.vocabulary_jsonfile      = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
+                $scope.vocabulary_relpath       = $scope.vocabularies_relpath     + "/" + data.stateParams.foldername;
+                $scope.training_relpath         = $scope.trainingsessions_relpath      + "/" + data.stateParams.foldername;
+                $scope.vocabulary_json_path      = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
             }
             else if(data.stateParams.foldername == null)
             {
@@ -59,10 +59,10 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         };  
         
         $scope.appStatus    = InitAppSrv.getStatus();
-        return FileSystemSrv.existFile($scope.vocabulary_jsonfile)
+        return FileSystemSrv.existFile($scope.vocabulary_json_path)
         .then(function(exist)
         {
-            if(exist)   return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_jsonfile)
+            if(exist)   return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_json_path)
             else        return null;        
         })
         .then(function(voc)

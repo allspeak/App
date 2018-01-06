@@ -28,7 +28,7 @@ function UITextsSrv()
     service.TRAINING.labelEditTrainVocabulary                   = "GESTISCI COMANDI";
     service.TRAINING.labelManageVocabulary                      = "GESTISCI IL VOCABOLARIO";
     service.TRAINING.labelRecordVoice                           = "REGISTRAZIONI DA RIPRODURRE";
-    service.TRAINING.labelSelectSentences                       = "NUOVO VOCABOLARIO";
+    service.TRAINING.labelSelectSentences                       = "NUOVO";
     service.TRAINING.labelLoadVocabulary                        = "CARICA VOCABOLARIO";
     service.TRAINING.labelToggleSentencesEditTrainSequence      = "ADDESTRA I SEGUENTI COMANDI";
     service.TRAINING.labelToggleSentencesShowTrainVocabulary    = "VISUALIZZA I COMANDI";

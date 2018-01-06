@@ -23,9 +23,10 @@
 // 
 // NEW USER SENTENCE ?  : both uVB & VB files/structures are updated
 
-main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, FileSystemSrv, StringSrv, EnumsSrv) 
+main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, FileSystemSrv, StringSrv, EnumsSrv, UITextsSrv) 
 {
-    vocabulary                            = {"commands":null};// store the currently loaded vocabulary 
+    vocabulary                            = {"commands":null};              // store the currently loaded vocabulary 
+    
     train_vocabulary_filerel_path           = "";               // AllSpeak/vocabularies/GIGI/vocabulary.json
     universalJsonFileName                   = "";               // training.json
     vocabularies_folder                     = "";               // AllSpeak/vocabularies
@@ -33,6 +34,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
     voicebank_folder                        = "";               // AllSpeak/voicebank
 
     exists_train_vocabulary                 = false;
+    
     //========================================================================
     // set inner paths, load:
     // - voicebank user vocabulary
@@ -42,30 +44,23 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
     // if the global json does not exist ( actually only the first time !), read from asset folder and copy to a writable one.
     // load the global voc (voice bank) commands and check how many wav file the user did record
     // look for a train_vocabulary json, if present load it
-    init = function(default_paths)
+    init = function(default_paths, plugin)
     {
         training_folder                         = default_paths.training_folder;        
         voicebank_folder                        = default_paths.voicebank_folder;        
         vocabularies_folder                     = default_paths.vocabularies_folder;
         
         train_vocabulary_filerel_path           = "";
-        universalJsonFileName                   = "";
-        // I DON'T LOAD THE DEFAULT VOC
-         
-//            // load, if necessary, trainvocabulary & set exists_train_vocabulary
-//            return existsTrainVocabulary(train_vocabulary_filerel_path);
-//        .catch(function(error)
-//        {
-//            console.log(error.message)
-//            return 0;
-//        });
+        universalJsonFileName                   = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
+        
+        pluginInterface     = plugin;
+        plugin_tf           = pluginInterface.ENUM.tf;
+        plugin_enum      = pluginInterface.ENUM.PLUGIN;    
     };
 
-     
+
     //====================================================================================================================================================
-    //====================================================================================================================================================
-    //  TRAIN VOCABULARIES 
-    //====================================================================================================================================================
+    //  GET VOCABULARIES 
     //====================================================================================================================================================
     // if path empty => return current vocabulary
     // else read input json file, updates vocabulary
@@ -123,7 +118,171 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             return null;
         });
     }; 
+       
+    
+    //====================================================================================================================================================
+    //  GET SOME COMMANDS
+    //==================================================================================================================================================== 
+    getTrainCommand = function(command_id, voc) 
+    {
+        if(voc == null)
+        {
+            if(vocabulary == null)
+            {
+                alert("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
+                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
+            }
+            else voc = vocabulary;
+        }        
+                  
+        return CommandsSrv.getCommand(voc.commands, command_id);
+    };
+
+    getTrainCommandsByArrIDs = function(arr_ids, voc) 
+    {
+        if(voc == null)
+        {
+            if(vocabulary == null)
+            {
+                alert("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
+                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
+            }
+            else voc = vocabulary;
+        }        
+                
+        var len_voc     = voc.length;
+        var len_ids     = arr_ids.length;
+        var cmds   = [];
         
+        for (n = 0; n < len_ids; n++)
+        {
+            var id = arr_ids[n];
+            for(v = 0; v < len_voc; v++)
+            {
+                if(id == voc[v].id)
+                {
+                    cmds.push(voc.commands[v]);
+                    break;
+                }
+            }
+        }
+        return cmds;
+    };    
+
+    getTrainVocabularyIDLabels = function(voc)
+    {
+        if(voc == null)
+        {
+            if(vocabulary == null)
+            {
+                alert("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
+                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
+            }
+            else voc = vocabulary;
+        }        
+        return voc.commands.map(function(item) { return {"title": item.title, "id": item.id} });
+    };    
+
+    getTrainVocabularyIDs = function(voc)
+    {
+        if(voc == null)
+        {
+            if(vocabulary == null)
+            {
+                alert("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
+                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
+            }
+            else voc = vocabulary;
+        }        
+        return voc.commands.map(function(item) { return item.id });
+    };    
+
+    // get ONLY those VB voc elements that belongs to the training list    // get updated commands[:].files[] & firstAvailableId & nrepetitions looking into the voicebank folder, not the training one.
+    // thus MUST receive a voc, cannot act on the loaded vocabulary, which must point to the training_sessios content (not voicebank one)
+    updateTrainVocabularyAudioPresence = function(audio_relpath, voc) 
+    {
+        if(voc == null)
+        {
+            alert("ERROR in VocabularySrv::updateTrainVocabularyAudioPresence....input voc cannot be null");
+            return Promise.reject("ERROR in VocabularySrv::updateTrainVocabularyAudioPresence....input voc cannot be null");
+        }        
+        
+        if(audio_relpath == null) audio_relpath = voicebank_folder;
+        
+        return CommandsSrv.getCommandsFilesByPath(voc.commands, audio_relpath) //updates vocabulary.commands[:].nrepetitions
+        .then(function(cmds)
+        {
+            voc.commands = cmds;
+            return voc;    
+        });       
+    };
+    
+    // get paths of voicebank user-voices-to-playback files associated to vocabulary's commands ( AllSpeak/voicebank/vb_1314.wav )
+    // called by RecognitionCtrl::startVoiceActivityMonitoring
+    getTrainVocabularyVoicesPaths = function(voc) 
+    {
+        if(voc == null)
+        {
+            if(vocabulary == null)
+            {
+                alert("ERROR in VocabularySrv::getTrainVocabularyVoicesPaths....called with null input and vocabulary null");
+                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyVoicesPaths....called with null input and vocabulary null");
+            }
+            else                    voc = vocabulary;
+        }
+        return VoiceBankSrv.getVoiceBankVocabulary()
+        .then(function(vbcmds)
+        {
+            var cmds = [];
+            var lent = voc.commands.length;
+            var lenv = vbcmds.length;
+            for(t=0; t<lent; t++) 
+            {
+                var id = vocabulary.commands[t].id;
+                for(v=0; v<lenv; v++) 
+                {
+                    if(id == vbcmds[v].id)
+                    {
+                        cmds[t] = voicebank_folder + "/" + vbcmds[v].filename;
+                        break;
+                    }
+                }
+            }
+            return cmds;
+        });
+    };   
+
+    
+    //====================================================================================================================================================
+    //  GET JSON PATH FROM FOLDER
+    //====================================================================================================================================================     
+    // returns: String, vocabulary.json full path given a voc folder name
+    getTrainVocabularyJsonPath = function(localfoldername)
+    {
+        if(localfoldername == null || localfoldername == "")    return "";
+        return vocabularies_folder + "/" + localfoldername + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME; 
+    };
+
+    // returns: String.  determine vocabulary.json full path given a voc folder name, check if exist before returning it
+    getExistingTrainVocabularyJsonPath = function(localfoldername)
+    {
+        var jsonfilepath = getTrainVocabularyJsonPath(localfoldername);
+        if(jsonfilepath == "")  return "";
+        return FileSystemSrv.existFile(jsonfilepath)
+        .then(function(exist)
+        {
+            if(exist)   return jsonfilepath;
+            else        return $q.reject({message:"Error in VocabularySrv. the given localfolder does not have a json"});
+        })
+        .catch(function(error){
+            return $q.reject(error);
+        });        
+    };
+    
+    
+    //====================================================================================================================================================
+    //  SET VOCABULARIES 
+    //====================================================================================================================================================        
     // train_obj already contains : sLabel, commands[{title,id}], rel_local_path  ...may also contain : nProcessingScheme, nModelType
     // also SET  vocabulary   &    train_vocabulary_filerel_path
     setTrainVocabulary = function(train_obj, filepath) 
@@ -180,7 +339,10 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj));
     }; 
     
-    //-----------------------------------------------------------
+    
+    //====================================================================================================================================================
+    //  CHECK STATUS
+    //====================================================================================================================================================  
     // return voc.commands.length ? 1 : 0 
     existsTrainVocabulary = function(foldername)
     {
@@ -202,119 +364,12 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });
     };
 
-    getTrainCommand = function(command_id, voc) 
-    {
-        if(voc == null)
-        {
-            if(vocabulary == null)
-            {
-                alert("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
-                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
-            }
-            else voc = vocabulary;
-        }        
-                  
-        return CommandsSrv.getCommand(voc.commands, command_id);
-    };
-
-
-    getTrainCommandsByArrIDs = function(arr_ids, voc) 
-    {
-        if(voc == null)
-        {
-            if(vocabulary == null)
-            {
-                alert("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
-                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
-            }
-            else voc = vocabulary;
-        }        
-                
-        var len_voc     = voc.length;
-        var len_ids     = arr_ids.length;
-        var cmds   = [];
-        
-        for (n = 0; n < len_ids; n++)
-        {
-            var id = arr_ids[n];
-            for(v = 0; v < len_voc; v++)
-            {
-                if(id == voc[v].id)
-                {
-                    cmds.push(voc.commands[v]);
-                    break;
-                }
-            }
-        }
-        return cmds;
-    };    
-
-    getTrainVocabularyIDLabels = function(voc)
-    {
-        if(voc == null)
-        {
-            if(vocabulary == null)
-            {
-                alert("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
-                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
-            }
-            else voc = vocabulary;
-        }        
-        return voc.commands.map(function(item) { return {"title": item.title, "id": item.id} });
-//        var ids = [];
-//        var len = voc.commands.length;
-//        for(s=0; s<len; s++)  ids.push({"title": vocabulary.commands[s].title, "id":voc.commands[s].id});
-//        return ids;
-    };    
-
-    getTrainVocabularyIDs = function(voc)
-    {
-        if(voc == null)
-        {
-            if(vocabulary == null)
-            {
-                alert("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
-                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyIDs....called with null input and vocabulary null");
-            }
-            else voc = vocabulary;
-        }        
-                 
-        return voc.commands.map(function(item) { return item.id });
-//        var ids = [];
-//        var len = vocabulary.commands.length;
-//        for(s=0; s<len; s++)  ids.push(vocabulary.commands[s].id);
-//        return ids;
-    };    
-
-    // returns: String, vocabulary.json full path given a voc folder name
-    getTrainVocabularyJsonPath = function(localfoldername)
-    {
-        if(localfoldername == null || localfoldername == "")    return "";
-        return vocabularies_folder + "/" + localfoldername + "/vocabulary.json"; 
-    };
-
-    // returns: String.  determine vocabulary.json full path given a voc folder name, check if exist before returning it
-    getExistingTrainVocabularyJsonPath = function(localfoldername)
-    {
-        var jsonfilepath = getTrainVocabularyJsonPath(localfoldername);
-        if(jsonfilepath == "")  return "";
-        return FileSystemSrv.existFile(jsonfilepath)
-        .then(function(exist)
-        {
-            if(exist)   return jsonfilepath;
-            else        return $q.reject({message:"Error in VocabularySrv. the given localfolder does not have a json"});
-        })
-        .catch(function(error){
-            return $q.reject(error);
-        });        
-    };
-    
     // returns: boolean
     // calculate if each training command has its own voicebank audio
     hasVoicesTrainVocabularyName = function(vocfolder) 
     {
         
-    }
+    };
     // returns: boolean
     // calculate if each training command has its own voicebank audio
     hasVoicesTrainVocabulary = function(voc) 
@@ -347,27 +402,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             return true;
         });
     };
-    
-    // updates commands[:].files[] & firstAvailableId & nrepetitions of the voicebank folder, not the training one.
-    // thus MUST receive a voc, cannot act on the loaded vocabulary, which must point to the training_sessios content (not voicebank one)
-    updateTrainVocabularyAudioPresence = function(audio_relpath, voc) 
-    {
-        if(voc == null)
-        {
-            alert("ERROR in VocabularySrv::updateTrainVocabularyAudioPresence....input voc cannot be null");
-            return Promise.reject("ERROR in VocabularySrv::updateTrainVocabularyAudioPresence....input voc cannot be null");
-        }        
-        
-        if(audio_relpath == null) audio_relpath = voicebank_folder;
-        
-        return CommandsSrv.getCommandsFilesByPath(voc.commands, audio_relpath) //updates vocabulary.commands[:].nrepetitions
-        .then(function(cmds)
-        {
-            voc.commands = cmds;
-            return voc;    
-        });       
-    };
-    
+
     // return: boolean ALLOWED NET TYPE 
     // check if the given train session has at least EnumsSrv.RECORD.SESSION_MIN_REPETITIONS repetitions of each command
     existCompleteRecordedTrainSession = function(audio_relpath, voc) 
@@ -426,43 +461,11 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             return missingfeatures;
         });
     };    
-
-    getTrainVocabularyVoicesPaths = function(voc) 
-    {
-        if(voc == null)
-        {
-            if(vocabulary == null)
-            {
-                alert("ERROR in VocabularySrv::getTrainVocabularyVoicesPaths....called with null input and vocabulary null");
-                return Promise.reject("ERROR in VocabularySrv::getTrainVocabularyVoicesPaths....called with null input and vocabulary null");
-            }
-            else                    voc = vocabulary;
-        }
-        return VoiceBankSrv.getVoiceBankVocabulary()
-        .then(function(vbcmds)
-        {
-            var cmds = [];
-            var lent = voc.commands.length;
-            var lenv = vbcmds.length;
-            for(t=0; t<lent; t++) 
-            {
-                var id = vocabulary.commands[t].id;
-                for(v=0; v<lenv; v++) 
-                {
-                    if(id == vbcmds[v].id)
-                    {
-                        cmds[t] = voicebank_folder + "/" + vbcmds[v].filename;
-                        break;
-                    }
-                }
-            }
-            return cmds;
-        });
-    };   
-    //======================================================================================================================
-    //======================================================================================================================
-    // public methods      
     
+    
+    //====================================================================================================================================================
+    // public methods      
+    //====================================================================================================================================================  
     return {
         init                                : init,                                 // 
         
@@ -484,6 +487,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         updateTrainVocabularyAudioPresence  : updateTrainVocabularyAudioPresence,   // list wav files in vb folder and updates train_vocabulary[:].nrepetitions
         existCompleteRecordedTrainSession   : existCompleteRecordedTrainSession,    // check if the given train session has at least 5 repetitions of each command
         existFeaturesTrainSession           : existFeaturesTrainSession,            // check if in the given folder, exist one dat file for each wav one
-        getTrainVocabularyVoicesPaths       : getTrainVocabularyVoicesPaths        // get the rel paths of the to-be-recognized wav files 
+        getTrainVocabularyVoicesPaths       : getTrainVocabularyVoicesPaths         // get the rel paths of the to-be-recognized wav files 
+ 
     };
 });

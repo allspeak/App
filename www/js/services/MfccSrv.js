@@ -26,7 +26,7 @@ function MfccSrv(ErrorSrv)
         plugin_enum_mfcc     = pluginInterface.ENUM.mfcc;
     };//
     // PUBLIC ********************************************************************************************************
-    changeCfg = function(cfg)
+    setCfg = function(cfg)
     {  
         mMfccCfg = getUpdateCfg(cfg);
         return mMfccCfg;
@@ -145,7 +145,7 @@ function MfccSrv(ErrorSrv)
     //==========================================================================
     return {
         init                : init,
-        changeCfg           : changeCfg, 
+        setCfg           : setCfg, 
         getUpdatedCfg       : getUpdatedCfg, 
         getCfg              : getCfg, 
         getMFCCFromData     : getMFCCFromData,

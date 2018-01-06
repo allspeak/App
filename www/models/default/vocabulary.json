@@ -12,6 +12,7 @@
     "sCreationTime": "13092017",
     "sLocalFolder":"default",
     "sModelFileName":"controls_fsc.pb",
+    "nDataDest": 270,
     "commands":
     [
         { "title": "Chiama", "id": 1305},

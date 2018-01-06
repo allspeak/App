@@ -10,7 +10,7 @@
         ........
     ]
  */
-function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, CommandsSrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, TfSrv, SubjectsSrv, RemoteAPISrv, ClockSrv, EnumsSrv)
+function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, CommandsSrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, SubjectsSrv, EnumsSrv, UITextsSrv)
 {
     $scope.subject              = null;     // stay null in AllSpeak
     $scope.foldername           = "";       // standard
@@ -85,12 +85,10 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
                                        "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX};  //    
         $scope.mfccCfg              = MfccSrv.getUpdatedCfg($scope.initMfccParams);
         
-        $scope.tfCfg                = TfSrv.getCfg();
-
         $scope.training_relpath     = InitAppSrv.getAudioFolder() + "/" + $scope.foldername
         $scope.training_relpath     = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
         
-        $scope.vocabulary_json_path = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername + "/vocabulary.json";
+        $scope.vocabulary_json_path = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         $scope.successState         = "manage_recordings";
         $scope.cancelState          = "manage_recordings";
         

@@ -8,7 +8,7 @@
  *
  */
  
-function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, VocabularySrv, EnumsSrv, UITextsSrv) //, VocabularySrv, TfSrv)
+function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, VocabularySrv, EnumsSrv, UITextsSrv)
 {
     $scope.modelLoaded = false;
     
@@ -48,10 +48,6 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
                 case EnumsSrv.STATUS.TRAIN_TV:
                     $scope.labelActionButton = UITextsSrv.TRAINING.labelOpenVocabulary;
                     break;
-
-//
-//                    $scope.labelActionButton = UITextsSrv.TRAINING.labelTrainVocabulary;
-//                    break;
 
                 case EnumsSrv.STATUS.RECORD_TVA:
                     $scope.labelActionButton = UITextsSrv.TRAINING.labelRecordVoice;
@@ -114,7 +110,7 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
                 break;
 
             case EnumsSrv.STATUS.CAN_RECOGNIZE:
-                $state.go('recognition');
+                $state.go('recognition', {foldername:$scope.appStatus.userActiveVocabularyName});
                 break;
         };
     }
