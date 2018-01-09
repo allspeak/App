@@ -1,20 +1,17 @@
 /*
  * This service load a TF model into the plugin and store its information
- * 
  * mTfCfg is set only when the TF model loading process was successfull
- 
+ * 
+ * I receive from InitAppSrv the defaults values
+ * controllers can only load a new model. if successfull mTfCfg is updated. 
+ * ctrl cannot modify it otherwise => this Service have the isModelLoaded methods
+ * ctrl can only have a clone copy of mTfCfg
+ * 
  */
 
-function TfSrv(FileSystemSrv, $q)
+function TfSrv(FileSystemSrv, $q, ErrorSrv)
 {
-    // Management of default values:
-    // each time I call : init (captureCfg, captureProfile, output_chunks, vadCfg, mfccCfg)
-    // 1) take the values defined in window.audioinput (capture) & window.speechcapture (vad) & here
-    // 2) overwrite with App defaults (according to init.json)
-    // 3) overwrite with possible controllers defaults     
-    
     mTfCfg              = null;     // hold current configuration (got from json file)
-    
     standardTfCfg       = null;     // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
     oldCfg              = null;     // copied while loading a new model, restored if something fails
     pluginInterface     = null;
@@ -25,11 +22,8 @@ function TfSrv(FileSystemSrv, $q)
 
     modelLoaded         = false;
     modelFolder         = ""        // default - standard - gigi etc...
-    
     modelJsonFile       = ""        // json file containing model info
     
-    //modelLabel          = ""        // corresponds to mTfCfg.sLabel....must be unique !!
-
     //==========================================================================
     // DEFAULT CONFIG VALUES MANAGEMENT
     //==========================================================================
@@ -53,7 +47,7 @@ function TfSrv(FileSystemSrv, $q)
     //=========================================================================
     getCfg = function()
     {
-        return mTfCfg;
+        return cloneObj(mTfCfg);
     };    
 
     // called by any controller pretending to get an overriden copy of the standard model params
@@ -100,7 +94,7 @@ function TfSrv(FileSystemSrv, $q)
             .then(function(existfile)
             {
                 if(existfile)       return FileSystemSrv.readJSON(json_relpath);
-                else                return $q.reject({message:"NO_FILE"});
+                else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"TfSrv::loadTFModelPath : NO_FILE " + json_relpath});
             })
             .then(function(voc)
             {
@@ -117,19 +111,20 @@ function TfSrv(FileSystemSrv, $q)
         }
     }
     
-    // returns: true | false or catch("NO_FILE")
+    // returns: string or throws
     // load NET if model.sModelFileName is valid
+    // ONLY methods allowed to modify mTfCfg
     loadTFModel = function(voc)
     {
         if(voc.sModelFilePath == null || voc.sModelFilePath == "")
-            return Promise.resolve(false);
+            return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY, message:"Model pb path is null"});
         else
         {
             return FileSystemSrv.existFileResolved(voc.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
             .then(function(exist)
             {
                 if(exist)   return pluginInterface.loadTFModel(voc)
-                else        return false;
+                else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST, message:"Model pb is not present"} );
             })
             .then(function(loaded)
             {  
@@ -146,16 +141,72 @@ function TfSrv(FileSystemSrv, $q)
             {
                 modelLoaded     = false;
                 mTfCfg          = null;
-                modelJsonFile   = "";            
+                modelJsonFile   = "";    
+                error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
                 return $q.reject(error);
             });     
         }
     };    
     
+    // test if the TFmodel pointed by the given voc is correct
+    // load it, check if ok, then load back to current one
+    // doesn't change the mTfCfg
+    // returns: string or reject
+    testNewTFModel = function(voc)
+    {
+        if(voc.sModelFilePath == null || voc.sModelFilePath == "")
+            return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY, message:"Model pb path is null"});
+
+        var loadnew         = true;
+        var isnewmodelvalid = false;
+         
+        return FileSystemSrv.existFileResolved(voc.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
+        .then(function(exist)
+        {
+            if(exist)   return pluginInterface.loadTFModel(voc)
+            else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST, message:"Model pb is not present"} );
+        })
+        .then(function()
+        {  
+            loadnew = false;
+            if(mTfCfg)  return loadTFModel(mTfCfg);     // reload current net if exist
+            else        return true;
+        })
+        .then(function()
+        {
+            return true;
+        })            
+        .catch(function(error)
+        {
+            if(loadnew)
+            {
+                 // error while testing the new net...reload current one and reject with the original error
+                return loadTFModel(mTfCfg)
+                .then(function()
+                {
+                    error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
+                    return $q.reject(error);
+                })
+                .catch(function(error2)
+                {                
+                    // should not happen !!!! #FLOWCRASH#
+                    error2.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
+                    return $q.reject(error2);
+                });
+            }
+            else
+            {
+                // should not happen !!!! #FLOWCRASH#
+                error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
+                return $q.reject(error);
+            }
+        })
+    };    
+    
     isModelLoaded = function(vocfolder)
     {
         if(modelLoaded && mTfCfg.sLocalFolder == vocfolder) return true;
-        else                                        return false;
+        else                                                return false;
     };
     
     //=========================================================================
@@ -206,21 +257,22 @@ function TfSrv(FileSystemSrv, $q)
             clone[field] = obj[field];
         return clone;
     };    
+    
     //==========================================================================
     // public interface
     //==========================================================================
     return {
-        init                    : init,
-        getUpdatedCfgCopy       : getUpdatedCfgCopy, 
-        getCfg                  : getCfg, 
-        getNetTypes             : getNetTypes,
-        getPreProcTypes         : getPreProcTypes,
-        isModelLoaded           : isModelLoaded,
-        loadTFModelPath         : loadTFModelPath,
-        fixTfModel              : fixTfModel,
-        loadTFModel             : loadTFModel,
-        createSubmitDataJSON    : createSubmitDataJSON
+        init                        : init,
+        getUpdatedCfgCopy           : getUpdatedCfgCopy, 
+        getUpdatedStandardCfgCopy   : getUpdatedStandardCfgCopy, 
+        getCfg                      : getCfg, 
+        getNetTypes                 : getNetTypes,
+        getPreProcTypes             : getPreProcTypes,
+        isModelLoaded               : isModelLoaded,
+        loadTFModelPath             : loadTFModelPath,
+        fixTfModel                  : fixTfModel,
+        loadTFModel                 : loadTFModel,
+        createSubmitDataJSON        : createSubmitDataJSON
     };    
 }
-
 main_module.service('TfSrv', TfSrv);

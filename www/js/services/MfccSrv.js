@@ -37,18 +37,35 @@ function MfccSrv(ErrorSrv)
     {
         return mMfccCfg;
     };     
-     // PUBLIC *************************************************************************************************
-    // called by any controller pretending to override some default properties 
-    getUpdatedCfg = function (ctrlcfg)
+
+    // called by any controller pretending to get an overriden copy of the standard model params
+    getUpdatedStandardCfgCopy = function (ctrlcfg)
     {
-        var cfg = standardMfccCfg;
+        var cfg = cloneObj(standardMfccCfg);
+        
+        if (ctrlcfg != null)
+            for (item in ctrlcfg)
+                cfg[item] = ctrlcfg[item];
+        return cfg;
+    };    
+  
+    // called by any controller pretending to get an overriden copy of the currently loaded model
+    getUpdatedCfgCopy = function (ctrlcfg)
+    {
+        if(mMfccCfg == null)
+        {
+            console.log("warning in MfccSrv::getUpdatedStandardCfgCopy...mMfccCfg is null")
+            return null;
+        }
+        
+        var cfg = cloneObj(mMfccCfg);
         
         if (ctrlcfg != null)
             for (item in ctrlcfg)
                 cfg[item] = ctrlcfg[item];
         return cfg;
     };
-
+    
     //==========================================================================
     // M F C C
     //==========================================================================
@@ -68,7 +85,7 @@ function MfccSrv(ErrorSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = mMfccCfg;
+            var currCfg         = cloneObj(mMfccCfg);
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_JSONDATA;            
@@ -77,7 +94,7 @@ function MfccSrv(ErrorSrv)
         } 
         else
         {
-            ErrorSrv.raiseError(null, "ERROR in MfccSrv::getMFCCFromData. one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong")
+            ErrorSrv.raiseError(null, "ERROR in MfccSrv::getMFCCFromData. one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong");
             return false;
         }
     };
@@ -93,7 +110,7 @@ function MfccSrv(ErrorSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = mMfccCfg;
+            var currCfg         = cloneObj(mMfccCfg);
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FILE;            
@@ -118,7 +135,7 @@ function MfccSrv(ErrorSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN)*_checkParams(proc_scheme, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg                 = mMfccCfg;
+            var currCfg                 = cloneObj(mMfccCfg);
             currCfg.nDataType           = data_type;
             currCfg.nDataDest           = data_dest;
             currCfg.nProcessingScheme   = proc_scheme;
@@ -128,30 +145,28 @@ function MfccSrv(ErrorSrv)
         } 
         else
         {
-            ErrorSrv.raiseError(null, "ERROR in MfccSrv::getMFCCFromFolder. one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong")
+            ErrorSrv.raiseError(null, "ERROR in MfccSrv::getMFCCFromFolder. one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong");
             return false;
         }
     };
     //==========================================================================
     _checkParams = function(value, container_object)
     {
-        for (i in container_object) {
-            if (container_object[i] == value) return 1;
-        }
+        for (i in container_object) if(container_object[i] == value) return 1;
         return 0;        
     };
     //==========================================================================
     // public interface
     //==========================================================================
     return {
-        init                : init,
-        setCfg           : setCfg, 
-        getUpdatedCfg       : getUpdatedCfg, 
-        getCfg              : getCfg, 
-        getMFCCFromData     : getMFCCFromData,
-        getMFCCFromFile     : getMFCCFromFile,
-        getMFCCFromFolder   : getMFCCFromFolder
+        init                        : init,
+        setCfg                      : setCfg, 
+        getUpdatedCfgCopy           : getUpdatedCfgCopy, 
+        getUpdatedStandardCfgCopy   : getUpdatedStandardCfgCopy, 
+        getCfg                      : getCfg, 
+        getMFCCFromData             : getMFCCFromData,
+        getMFCCFromFile             : getMFCCFromFile,
+        getMFCCFromFolder           : getMFCCFromFolder
     };    
 }
-
 main_module.service('MfccSrv', MfccSrv);

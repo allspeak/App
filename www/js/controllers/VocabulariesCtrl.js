@@ -60,7 +60,7 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
                 (function(j) 
                 {
                     inputjson       = $scope.vocabularies[j].inputjson;
-                    var subPromise  = VocabularySrv.getTempTrainVocabulary(inputjson)
+                    var subPromise  = VocabularySrv.getTrainVocabulary(inputjson)
                     .then(function(voc) 
                     {
                         var tempjson    = $scope.vocabularies[j].inputjson;

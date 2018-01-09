@@ -83,7 +83,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         $scope.initMfccParams       = {"nDataDest": $scope.plugin_enum.MFCC_DATADEST_FILE,
                                        "nDataType": $scope.plugin_enum.MFCC_DATATYPE_MFFILTERS,  //write FILTERS to FILE        
                                        "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX};  //    
-        $scope.mfccCfg              = MfccSrv.getUpdatedCfg($scope.initMfccParams);
+        $scope.mfccCfg              = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
         
         $scope.training_relpath     = InitAppSrv.getAudioFolder() + "/" + $scope.foldername
         $scope.training_relpath     = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD

@@ -8,7 +8,7 @@
  *
  */
  
-function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, VocabularySrv, EnumsSrv, UITextsSrv)
+function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, EnumsSrv, UITextsSrv)
 {
     $scope.modelLoaded = false;
     
@@ -33,7 +33,7 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
         
         $scope.appStatus    = InitAppSrv.getStatus();
 
-        return $scope.updateRuntimeStatus($scope.appStatus.userActiveVocabularyName, do_update)
+        return $scope.updateRuntimeStatus($scope.appStatus.userActiveVocabularyName, do_update)     // loadVocabulary or RuntimeStatusSrv.getStatus
         .then(function(rtstatus)
         {
             $scope.runtimeStatus = rtstatus;
@@ -74,8 +74,8 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
     
     $scope.updateRuntimeStatus = function(localFolder, do_update)
     {
-        if(do_update)  return RuntimeStatusSrv.getUpdatedStatusName(localFolder);
-        else           return Promise.resolve(RuntimeStatusSrv.getStatus());        
+        if(localFolder == "" || !do_update)   return Promise.resolve(RuntimeStatusSrv.getStatus());  
+        if(do_update)  return RuntimeStatusSrv.loadVocabulary(localFolder);
     };
     
     $scope.exit = function()

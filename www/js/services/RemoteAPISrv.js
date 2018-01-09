@@ -51,11 +51,12 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
 //        ServerCfg.url   = "http://192.168.1.65:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.71:8095";     // OVERWRITE FOR DEBUG
-        ServerCfg.url   = "http://192.168.1.90:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.90:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.0.8:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
+        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.77:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.183:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.133:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://api.allspeak.eu";     // OVERWRITE FOR DEBUG
     };
     
     getApiKey = function()

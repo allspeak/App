@@ -17,46 +17,58 @@
                                     TRAIN_TV                 = 102;
                                     RECORD_TVA               = 103;
                                     CAN_RECOGNIZE            = 104;
- *      hasTrainVocabulary        
- *      vocabularyHasVoices
- *      isNetLoaded 
- *      haveValidTrainingSession 
+        
+//        vocabulary.status               =    
+//        {   // FLAGS                        provided by =>
+//            "hasTrainVocabulary"            :false, // VocabularySrv
+//            "vocabularyHasVoices"           :false, // VocabularySrv     according to the selected modelType, indicates if we have enough recordings
+//            "haveValidTrainingSession"      :false, // VocabularySrv
+//            "haveFeatures"                  :false, // indicates if the present recordings have their cepstra
+//            "haveZip"                       :false, // indicates if the zip file is ready to be sent
+//            "isNetAvailableRemote"          :false, // net calculated. available online                
+//            "isNetAvailableLocale"          :false, // net calculated. download, available locally
+//            "isNetLoaded"                   :false, // TfSrv  :  net loaded   
+//            "canRecognize"                  :false
+//        };
  *      isLogged 
  *      isConnected 
  */
 
-main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, EnumsSrv, $cordovaNetwork, FileSystemSrv, UITextsSrv) 
+main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, EnumsSrv, $cordovaNetwork, FileSystemSrv, UITextsSrv, ErrorSrv) 
 {
     service                         = this;
     
-    vocabulary                      = null;
     AppStatus                       = 0;        // calculated here
+    
+    _resetVoc = function()
+    {
+        vocabulary                      = {};
+        vocabulary_old                  = null;
+        userVocabularyName              = "";
 
-    // FLAGS                        provided by =>
-    hasTrainVocabulary              = false;    // VocabularySrv
-    vocabularyHasVoices             = false;    // VocabularySrv     according to the selected modelType, indicates if we have enough recordings
-    haveValidTrainingSession        = false;    // VocabularySrv
-    haveFeatures                    = false;        // indicates if the present recordings have their cepstra
-    haveZip                         = false;        // indicates if the zip file is ready to be sent
-    isNetAvailableRemote            = false;        // net calculated. available online
-    isNetAvailableLocale            = false;        // net calculated. download, available locally
-    isNetLoaded                     = false;        // TfSrv  :  net loaded    
+        vocabulary_relpath              = "";       // defined in loadVocabulary    AllSpeak/vocabularies/gigi
+        train_relpath                   = "";       // defined in loadVocabulary    AllSpeak/training_sessions/gigi        
+        vocabulary_json_path            = "";       //  AllSpeak/vocabularies/gigi/vocabulary.json
+    };
+    
     isLogged                        = false;    // InitCheckCtrl <== RemoteAPISrv     
     isConnected                     = false;    // here accessing ionic native     
-    canRecognize                    = false;  
-    
 
     vocabularies_folder             = "";       // <= init <= InitAppSrv        AllSpeak/vocabularies
     training_folder                 = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
-    vocabularyjsonpath              = "";
     
-    vocabulary_relpath                  = "";       // defined in loadVocabulary    AllSpeak/vocabularies/gigi
-    train_relpath                   = "";       // defined in loadVocabulary    AllSpeak/training_sessions/gigi
-    // -----------------------------------------------------------------------------------------------------------------
-    init = function(voc_folder, tr_folder)
+    initAppSrv                      = null;
+
+    //==============================================================================================================================
+    // INIT SERVICE
+    //==============================================================================================================================      
+    init = function(voc_folder, tr_folder, initappsrv)
     {    
-        vocabularies_folder         = voc_folder
-        training_folder             = tr_folder
+        vocabularies_folder         = voc_folder;
+        training_folder             = tr_folder;
+        initAppSrv                  = initappsrv;
+        
+        _resetVoc();
         
         $cordovaNetwork.onConnect().subscribe(function(event)  
         {
@@ -74,35 +86,87 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
             alert("RuntimeStatusSrv::$cordovaNetwork.onDisconnect " + error.toString());
         });    
     }
-    //---------------------------------------------------------------------------
+    //==============================================================================================================================
+    // LOADED VOCABULARY STATUS
+    //==============================================================================================================================    
     getStatus = function()
     {
-        _calculateAppStatus();
         isConnected = (navigator.connection.type != "none" ? true : false);
-
-        return {"vocabulary"                    :vocabulary,
-                "AppStatus"                     :AppStatus,
-                "hasTrainVocabulary"            :hasTrainVocabulary,
-                "vocabularyHasVoices"           :vocabularyHasVoices,
-                "haveValidTrainingSession"      :haveValidTrainingSession,
-                "haveFeatures"                  :haveFeatures,        // indicates if the present recordings have their cepstra
-                "haveZip"                       :haveZip,        // indicates if the zip file is ready to be sent
-                "isNetAvailableRemote"          :isNetAvailableRemote,        // net calculated. available online                
-                "isNetAvailableLocale"          :isNetAvailableLocale,
-                "isNetLoaded"                   :isNetLoaded,
-                "isLogged"                      :isLogged,  
-                "isConnected"                   :isConnected,  
-                "canRecognize"                  :canRecognize
-            };
+        calculateAppStatus();        
+        return  {"vocabulary"                    :vocabulary,
+                 "AppStatus"                     :AppStatus,
+                 "isLogged"                      :isLogged,  
+                 "isConnected"                   :isConnected,  
+                };
     };
-    
+
     // called by RemoteAPISrv::login => isLogged
     setStatus = function(statusobj)
     {
         for(elem in statusobj) service[elem] = statusobj[elem];
-        _calculateAppStatus();
+        calculateAppStatus();
     };
+      
+    // define what to show in the HOME page
+    // 1)   can recognize active voc
+    // 2)   create new voc : select TV
+    // 3)   open active voc: 
+    //      - record TS
+    //      - remote-train TS
+    // 4)  record TVA
+    calculateAppStatus = function()
+    {
+        if(vocabulary == null)
+        {
+            AppStatus = EnumsSrv.STATUS.NEW_TV;
+            return AppStatus;
+        }
         
+        if(vocabulary.status == null)
+        {
+            AppStatus = EnumsSrv.STATUS.NEW_TV;
+            return AppStatus;
+        }
+            
+        vocabulary.status.canRecognize    = false;
+        if(!vocabulary.status.hasTrainVocabulary)                   
+                                AppStatus = EnumsSrv.STATUS.NEW_TV;
+        else
+        {
+            if(vocabulary.status.isNetLoaded && vocabulary.status.vocabularyHasVoices)
+            {
+                                AppStatus = EnumsSrv.STATUS.CAN_RECOGNIZE;
+                                vocabulary.status.canRecognize  = true;
+            }
+            else
+            {
+                if(!isNetLoaded) // give precedence to complete recordings/training rather than record voices
+                {
+                    //model doesn't exist, check whether (record a new / resume an existing) TS or send it to remote training
+                    if(vocabulary.status.vocabulary.status.haveValidTrainingSession)  
+                                AppStatus = EnumsSrv.STATUS.TRAIN_TV;
+                    else                                            
+                                AppStatus = EnumsSrv.STATUS.RECORD_TV;
+                }
+                else
+                {
+                    // model exists
+                    if(!vocabulary.status.vocabularyHasVoices)      
+                                AppStatus = EnumsSrv.STATUS.RECORD_TVA;
+                    else
+                    {
+                                alert("Error: inconsistent state");
+                                AppStatus = 0; 
+                    }
+                }
+            }
+        }
+        return AppStatus;
+    };         
+    
+    //==============================================================================================================================
+    // MANAGE LOADED VOCABULARY
+    //==============================================================================================================================
     // load a vocabulary given a folder name:
     // - check folder existence
     // - check json existence
@@ -111,192 +175,163 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     // - check & suggest next step status (select commands, create/complete rec session/train net/load net/manage voices)
     // - load net if available
     //
-    loadVocabulary = function(userVocabularyName)
+    loadDefault = function()
     {
-        if(userVocabularyName == "" || userVocabularyName == null)  
-            return $q.reject({message:"Error in RuntimeStatusSrv::loadVocabulary : input voc folder (" + userVocabularyName + ") is not valid"});
         
-        
-        vocabulary_relpath  = vocabularies_folder + "/" + userVocabularyName;
-        train_relpath       = training_folder + "/" + userVocabularyName;
-        var vocjsonpath     = vocabulary_relpath + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
+        vocabulary_relpath  = initAppSrv.getDefaultVocabularyFolder();
+        train_relpath       = "";
+        var vocjsonpath     = vocabulary_relpath    + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         
         return FileSystemSrv.existDir(vocabulary_relpath)
         .then(function(existfolder)
         {
             if(existfolder)     return FileSystemSrv.existFile(vocjsonpath);
-            else                return $q.reject({message:"NO_FOLDER"});
+            else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.VOCFOLDER_NOTEXIST, message:"NO_FOLDER of vocabulary : default"});
         })
         .then(function(existfile)
         {
             if(existfile)       return VocabularySrv.getTrainVocabulary(vocjsonpath);
-            else                return $q.reject({message:"NO_FILE"});
+            else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"NO_FILE of vocabulary : default"});
         })
         .then(function(voc)
         {
             vocabulary        = voc;
-            return TfSrv.loadTFModel(voc);
+            return TfSrv.loadTFModel(vocabulary);
         })
-        .then(function(modelloaded)
+        .then(function()
         {
-            isNetLoaded       = modelloaded;
-            return getUpdatedStatus(vocabulary);
+            return VocabularySrv.getUpdatedStatus(vocabulary);
+         })
+        .catch(function(error)
+        {
+            $q.reject(error);
+        });    
+    };
+    // load a vocabulary given a folder name:
+    // - check folder existence
+    // - check json existence
+    // - load json
+    // - check commands>0 (user can not create a voc with no commands, but user can later delete all the commands...thus check it).
+    // - check & suggest next step status (select commands, create/complete rec session/train net/load net/manage voices)
+    // - load net if available
+    //
+    loadVocabulary = function(uservocabularyname)
+    {
+        vocabulary_old = cloneObj(vocabulary);
+        
+        if(uservocabularyname == "" || uservocabularyname == null)  
+            return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.VOCFOLDERVARIABLE_EMPTY, message:"Error in RuntimeStatusSrv::loadVocabulary : input voc folder (" + userVocabularyName + ") is not valid"});
+        
+        vocabulary_relpath  = vocabularies_folder   + "/" + uservocabularyname;
+        train_relpath       = training_folder       + "/" + uservocabularyname;
+        var vocjsonpath     = vocabulary_relpath    + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
+        
+        return FileSystemSrv.existDir(vocabulary_relpath)
+        .then(function(existfolder)
+        {
+            if(existfolder)     return FileSystemSrv.existFile(vocjsonpath);
+            else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.VOCFOLDER_NOTEXIST, message:"NO_FOLDER"});
+        })
+        .then(function(existfile)
+        {
+            if(existfile)       return VocabularySrv.getTrainVocabulary(vocjsonpath);
+            else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"NO_FILE"});
+        })
+        .then(function(voc)
+        {
+            vocabulary        = voc;
+            return TfSrv.loadTFModel(vocabulary);
         })
         .catch(function(error)
         {
-            isNetLoaded = false;
-            switch(error)
-            {
-                case "NO_FOLDER":
-                case "NO_FILE":
-                    return getStatus();
-                default:
+//            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST || error.mycode == ErrorSrv.ENUMS.VOCABULARY.VOCFOLDER_NOTEXIST)
+            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY || error.mycode == ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST)
+                return $q.resolve(false); 
+            else
+                return $q.reject(error);
+        })        
+        .then(function()
+        {
+            userVocabularyName              = uservocabularyname;
+            return initAppSrv.setStatus({"userActiveVocabularyName":userVocabularyName});
+        })
+        .then(function()
+        {
+            return VocabularySrv.getUpdatedStatus(vocabulary);
+         })
+        .catch(function(error)
+        {
+//            vocabulary = vocabulary_old;
+//            VocabularySrv.getUpdatedStatus(vocabulary);
+//            return $q.reject(error);
+//            
+//            if(error.mycode)    return getStatus();
+//            else                return $q.reject(error);
+//            
+//            isNetLoaded = false;
+//            switch(error)
+//            {
+//                case "NO_FOLDER":
+//                case "NO_FILE":
+//                    return getStatus();
+//                default:
                     $q.reject(error);
-            }
+//            }
         });    
     };
     
-    // calculate the status of a vocabulary, given a voc object
-    getUpdatedStatus = function(voc)
+    // called by ManageCommandsCtrl::saveTrainVocabulary
+    saveTrainVocabulary = function(voc)
     {
-        vocabularyHasVoices             = false;
-        haveValidTrainingSession        = false;
-        haveFeatures                    = false;
-        haveZip                         = false;
-        isNetAvailableLocale            = false;
-        isNetLoaded                     = false;        
-        hasTrainVocabulary              = (voc ? voc.commands.length : false);
-        
-        var voc_folder                  = vocabularies_folder + "/" + voc.sLocalFolder;
-        var train_folder                = training_folder + "/" + voc.sLocalFolder;
-        
-        var zip_file                    = train_folder + "/" + "data.zip";
-        
-        if(!hasTrainVocabulary) return Promise.resolve(getStatus());
-        else 
+        var curr_vocfolder = userVocabularyName;
+        return VocabularySrv.setTrainVocabulary(voc)
+        .then(function()
         {
-            return VocabularySrv.hasVoicesTrainVocabulary(voc)
-            .then(function(res)
-            {
-                vocabularyHasVoices = res;
-                if(hasTrainVocabulary) return VocabularySrv.existCompleteRecordedTrainSession(train_folder, voc);
-                else                   return false;
-            })        
-            .then(function(res)
-            {
-                // TODO: should set to res....but it's problematic
-                haveValidTrainingSession = true;
-                return VocabularySrv.existFeaturesTrainSession(train_folder);
-            })
-            .then(function(res)
-            {
-                haveFeatures = res; //(!res.length ?   true    :   false);
-                return FileSystemSrv.existFile(zip_file);
-            })
-            .then(function(existzip)
-            {
-                haveZip = (existzip ? true : false);
-                var relmodelpath = "";
-                if(voc.sModelFileName != null)
-                    if(voc.sModelFileName.length)
-                        relmodelpath = vocabularies_folder + "/" + voc.sLocalFolder  + "/" + voc.sModelFileName;
-
-                if(relmodelpath != "")  return FileSystemSrv.existFile(relmodelpath)
-                else                    return false;
-            })
-            .then(function(existmodel)
-            {
-                isNetAvailableLocale    = existmodel;
-                isNetLoaded             = TfSrv.isModelLoaded(voc.sLocalFolder);
-                return getStatus();
-            });        
-        }
-    }
+            return initAppSrv.setStatus({"userActiveVocabularyName":voc.sLocalFolder});
+        })        
+        .then(function()
+        {  
+            return loadVocabulary(voc.sLocalFolder);
+        })     
+    };  
     
-    // calculate the status of a vocabulary, given a voc folder.
-    // it can not be empty...thus go on processing
-    getUpdatedStatusName = function(userVocabularyName)
+    unloadVocabulary = function()
     {
-        if(userVocabularyName == null || userVocabularyName == "") return getUpdatedStatus(null);
-        vocabularyjsonpath = vocabularies_folder + "/" + userVocabularyName + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
-
-        return VocabularySrv.getTempTrainVocabulary(vocabularyjsonpath)
-        .then(function(voc)
-        {    
-            return getUpdatedStatus(voc);
-        });
+        _resetVoc();
+        userActiveVocabularyName = "";
+        return initAppSrv.setStatus({"userActiveVocabularyName":""})
+        .then(function()
+        {
+            return loadDefault();
+        });        
     };
-
+    //======================================================================================================================================
     hasInternet = function()
     {
         isConnected = (navigator.connection.type != "none" ? true : false);
         return isConnected;
     };    
-    
-    // called by ManageCommandsCtrl::saveTrainVocabulary
-    setTrainVocabularyPresence = function(folder_name)
-    {
-        if(folder_name == null)  hasTrainVocabulary = false;
-        else
-        {
-            hasTrainVocabulary  = (folder_name.length);
-            foldername          = folder_name;
-        }
-    };     
-    //======================================================================================================================================
+    //==========================================================================
     // PRIVATE
-    //======================================================================================================================================
-    // must define what to show in the HOME page
-    // 1)   can recognize
-    // 2)   select TV
-    // 3)   record TS
-    // 4)   remote-train TS
-    // 5)   record TVA
-    _calculateAppStatus = function()
+    //==========================================================================
+    cloneObj = function(obj)
     {
-        canRecognize    = false;
-        if(!hasTrainVocabulary)                         AppStatus = EnumsSrv.STATUS.NEW_TV;
-        else
-        {
-            if(isNetLoaded && vocabularyHasVoices)
-            {
-                AppStatus       = EnumsSrv.STATUS.CAN_RECOGNIZE;
-                canRecognize    = true;
-            }
-            else
-            {
-                if(!isNetLoaded) // give precedence to complete recordings/training rather than record voices
-                {
-                    //model doesn't exist, check whether (record a new / resume an existing) TS or send it to remote training
-                    if(haveValidTrainingSession)        AppStatus = EnumsSrv.STATUS.TRAIN_TV;
-                    else                                AppStatus = EnumsSrv.STATUS.RECORD_TV;
-                }
-                else
-                {
-                    // model exists
-                    if(!vocabularyHasVoices)            AppStatus = EnumsSrv.STATUS.RECORD_TVA;
-                    else
-                    {
-                                                        alert("Error: inconsistent state");
-                                                        AppStatus = 0; 
-                    }
-                }
-            }
-        }
-        return AppStatus;
-    };    
-
+        var clone = {};
+        for(var field in obj)
+            clone[field] = obj[field];
+        return clone;
+    };  
     //======================================================================================================================================
     //======================================================================================================================================
     //======================================================================================================================================
     return {
         init                        : init,                            //
-        loadVocabulary              : loadVocabulary,                            //
-        getUpdatedStatusName        : getUpdatedStatusName,                            //
-        getStatus                   : getStatus,                            //
-        setStatus                   : setStatus,                            //
-        hasInternet                 : hasInternet,                            //
-        setTrainVocabularyPresence  : setTrainVocabularyPresence                            //
+        loadVocabulary              : loadVocabulary,                  //
+        saveTrainVocabulary         : saveTrainVocabulary,             //
+        unloadVocabulary            : unloadVocabulary,                 //
+        getStatus                   : getStatus,                       //
+        setStatus                   : setStatus,                       //
+        hasInternet                 : hasInternet                     //
     };
     //======================================================================================================================================
 });

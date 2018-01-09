@@ -145,7 +145,7 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
         return FileSystemSrv.createFile(voicebank_commands_filerel_path, vb_string, overwrite, { title: 'Attenzione', template: 'Stai aggiornando la lista dei tuoi comandi, sei sicuro?'})
     }; 
     
-    setVoiceBankUserVocabulary = function(cmds, uservbvoc) 
+    setVoiceBankUserVocabulary = function(cmds, usercmds) 
     {
         var vb_string   = JSON.stringify({"commands_categories":commands_categories, "voicebank_commands": cmds});
         var uvb_string  = JSON.stringify({"voicebank_usercommands": usercmds});
@@ -219,7 +219,7 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
         var vbdeepcopy  = JSON.parse(JSON.stringify(voicebank_commands));        
         
         var id2remove   = sentence.id;
-        var categoryid  = _getCategoryFromID(id2remove);
+        var categoryid  = CommandsSrv.getCategoryFromID(id2remove);
         
         for(s=0; s<lenvb;  s++) if(vbdeepcopy[s].id == id2remove)   vbdeepcopy.splice(s,1);
         for(s=0; s<lenuvb; s++) if(uvbdeepcopy[s].id == id2remove)  uvbdeepcopy.splice(s,1);

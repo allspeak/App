@@ -98,9 +98,12 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         //-----------------------------------------------------------------------------------------------------------------------------    
         // already exist?
         return service.existFile(relative_path)
-        .then(function(exist){
-            if(exist){ // exist...see if can overwrite
-                switch (_overwrite){
+        .then(function(exist)
+        {
+            if(exist)
+            { // exist...see if can overwrite
+                switch (_overwrite)
+                {
                     case 2:
                         // overwrite
                         return service.overwriteFile(relative_path, jsonstrcontent);
@@ -278,18 +281,22 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         });        
     };
         
-    
+    // returns: 0 : directory already existed and force=false
+    //          1 : directory was created
     service.createDir = function(relative_path, force)
     {
         if(force == null)   force = 0;
         if (!force)
         {
             return $cordovaFile.checkDir(service.resolved_data_storage_root, relative_path)
-            .then(function (success) {return 1;})
-            .catch(function (error){
+            .then(function (success) {return 0;})   // folder already existed and it was not created
+            .catch(function (error)
+            {
                 $cordovaFile.createDir(service.resolved_data_storage_root, relative_path, true)
-                .then(function (success) {
-                    if (success) {
+                .then(function (success) 
+                {
+                    if (success) 
+                    {
                         console.log("created directory", service.resolved_data_storage_root+ relative_path);
                         return 1;
                     }
@@ -334,6 +341,16 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
             return $q.reject(error);
         });
     };
+    
+    //--------------------------------------------------------------------------
+    //return if a folder is empty
+    service.isDirEmpty = function(relative_path, valid_extensions)
+    {
+        return service.countFilesInDir(relative_path, valid_extensions)
+        .then(function(files){
+            return (files.length ? true : false);
+        })
+    }
     
     //--------------------------------------------------------------------------
     //return the number of files contained in a folder, belonging to the [valid_extensions] formats.

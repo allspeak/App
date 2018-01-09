@@ -84,7 +84,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, $ionicPlatform, Ion
         $scope.Cfg.vadCfg.nAudioResultType      = ($scope.saveSentences ? $scope.pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA_SAVE_SENTENCE : $scope.pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA);
         $scope.Cfg                              = SpeechDetectionSrv.getUpdatedCfg($scope.Cfg, $scope.captureProfile, null);
 
-        $scope.Cfg.mfccCfg                      = MfccSrv.getUpdatedCfg($scope.initMfccParams);
+        $scope.Cfg.mfccCfg                      = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
         
         $scope.initTfParams                     = {nDataDest:$scope.pluginInterface.ENUM.PLUGIN.TF_DATADEST_MODEL_FILE};
 //        $scope.Cfg.tfCfg                        = TfSrv.getUpdatedCfgCopy($scope.initTfParams);
@@ -113,7 +113,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, $ionicPlatform, Ion
             // OVERRIDE LOADED VOC
             for(item in $scope.initTfParams)        $scope.vocabulary[item] = $scope.initTfParams[item];
             
-            return VocabularySrv.getTrainVocabularyVoicesPaths();  // get the path of the wav to playback once a sentence is recognized            
+            return VocabularySrv.getTrainVocabularyVoicesPaths($scope.vocabulary);  // get the path of the wav to playback once a sentence is recognized            
         })
         .then(function(voicefiles)
         {
@@ -308,8 +308,8 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, $ionicPlatform, Ion
         {
             $scope.isPlaying = 1;
             
-            if(filename == null)    IonicNativeMediaSrv.playAudio(resolvedfilename, vol, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
-            else                    IonicNativeMediaSrv.playAudio(resolvedfilename, vol, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
+            if(resolvedfilename == null)    IonicNativeMediaSrv.playAudio(resolvedfilename, vol, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
+            else                            IonicNativeMediaSrv.playAudio(resolvedfilename, vol, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
         }
     }; 
     
@@ -355,10 +355,11 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, $ionicPlatform, Ion
         for(s=0; s<$scope.modelsJson.length; s++)
             if(s != index)
                 $scope.modelsJson[s].checked = false;
-        return TfSrv.loadTFModelPath($scope.modelsJson[index].jsonpath)
+//        return TfSrv.loadTFModelPath($scope.modelsJson[index].jsonpath)
+        return RuntimeStatusSrv.loadVocabulary($scope.modelsJson[index].localfolder)
         .then(function(res)
         {
-            console.log("selectModel success:" + res.toString());       
+            console.log("selectModel success:" + (res ? res.toString() : ""));       
             $scope.loadedModel      = TfSrv.getCfg();
             $scope.commandsList     = $scope.loadedModel.commands.map(function(item) { return item.id});
             $scope.loadedToggleId   = index;
@@ -391,7 +392,7 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, $ionicPlatform, Ion
             for (d=0; d<len; d++)
             {
                 var jsonpath            = $scope.vocabularies_relpath + "/" + dirs[d].name + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
-                $scope.modelsJson[d]    = {"label": dirs[d].name, "jsonpath":jsonpath};
+                $scope.modelsJson[d]    = {"label": dirs[d].name, "localfolder": dirs[d].name, "jsonpath":jsonpath};
                 if($scope.loadedJsonFolderName == dirs[d].name)
                 {
                     $scope.modelsJson[d].checked    = true;

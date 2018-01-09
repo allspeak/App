@@ -215,8 +215,8 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
         TfSrv.init(service.config.defaults.tf, service.config.defaults.file_system.vocabularies_folder, service.plugin);
         MfccSrv.init(service.config.defaults.mfcc, service.plugin);
         RemoteAPISrv.init(service.config.appConfig.remote, service.plugin, service);    // I pass the current appConfig values (not the defauls ones)
-        RuntimeStatusSrv.init(service.config.defaults.file_system.vocabularies_folder, service.config.defaults.file_system.training_folder);
-        VocabularySrv.init(service.config.defaults.file_system, service.plugin);
+        RuntimeStatusSrv.init(service.config.defaults.file_system.vocabularies_folder, service.config.defaults.file_system.training_folder, service);
+        VocabularySrv.init(service.config.defaults.file_system);
     };
     
     //====================================================================================================================

@@ -83,7 +83,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         {
             $scope.appStatus.isFirstUse     = false;
             $scope.appStatus.appModality    = int;            
-            $scope.checkIsAssisted();
+            return $scope.checkIsAssisted();
         })
         .catch(function(error)
         {
@@ -93,11 +93,25 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         });
     };    
 
-    // if not assisted  => goto home
-    // if assisted      => check register and if ok => get tasks
+    // called by:
+    //          - $ionicView.enter && !firstuse
+    //          - OnWant2beAssisted
+    // it does:
+    //          - if not assisted  => goto home
+    //          - if assisted      => check register and if ok => get tasks
+    //
     $scope.checkIsAssisted = function() 
     {
-        if($scope.appStatus.appModality != EnumsSrv.MODALITY.ASSISTED)  $scope.endCheck('home');    // if SOLO or GUEST
+        if($scope.appStatus.appModality != EnumsSrv.MODALITY.ASSISTED)
+        {
+             // if SOLO or GUEST
+            return RuntimeStatusSrv.loadDefault() 
+            .then(function(res) 
+            {            
+                $scope.endCheck('home');
+                return true;
+            })
+        }   
         else
         {
             if($scope.appStatus.isDeviceRegistered)
@@ -106,9 +120,9 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                 if($scope.api_key == null || !$scope.api_key.length) 
                 {
                     alert("Errore critico ! Contatta il responsabile del App");
-                    $scope.endCheck('home');
+                    return $scope.endCheck('home');
                 }
-                $scope.onApiKey({"label":$scope.api_key});
+                return $scope.onApiKey({"label":$scope.api_key});
             }
             else
             {
@@ -116,8 +130,8 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                 return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi registrare ora il telefono sul server?\nIn caso contrario, potrai farlo in seguito\nCosi puoi utilizzare solo le funzioni base'})
                 .then(function(res) 
                 {
-                    if(!res)    $scope.endCheck('home');
-                    else        $scope.modalInsertApiKey.show();
+                    if(!res)    return $scope.endCheck('home');
+                    else        return $scope.modalInsertApiKey.show();
                 });        
             }            
         }
@@ -130,6 +144,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         {
             $scope.endCheck('home');
             $scope.modalInsertApiKey.hide();
+            return;
         }  
         else
         {
@@ -184,11 +199,12 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                 RuntimeStatusSrv.setStatus("isLogged", false);
                 $scope.endCheck('home');
                 error.message = "ERRORE CRITICO in InitCheckCtrl::checkIsAssisted " + error.message;
-                $q.reject(error);
+                return $q.reject(error);
             });
         }
     };    
     
+    // successfull onApiKey
     $scope.getTaskList = function()
     {
         return RemoteAPISrv.getActivities()         // if successfull it calls: RuntimeStatusSrv.setStatus({"isLogged":true})
@@ -203,10 +219,11 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         {
             return $scope.endCheck('home');   
         })
-        .catch(function(error){
+        .catch(function(error)
+        {
             alert("ERRORE CRITICO in InitCheckCtrl::doLogin " + error.toString());
             error.message = "ERRORE CRITICO in InitCheckCtrl::doLogin " + error.message;
-            $q.reject(error);
+            return $q.reject(error);
         });     
     };    
 

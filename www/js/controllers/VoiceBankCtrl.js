@@ -79,6 +79,9 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
             if($scope.elems2display == EnumsSrv.VOICEBANK.SHOW_ALL) $scope.refreshAudioList();
             else                                                    $scope.refreshTrainingAudioList();
         })
+        .catch(function(error){
+            alert(error.message);
+        });        
    });
 
     // ask user's confirm after pressing back (thus trying to exit from the App)
@@ -88,7 +91,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     //==================================================================================================================    
     $scope.loadVoc = function(foldername)
     {
-        if(foldername != "")    return VocabularySrv.getTempTrainVocabularyName($scope.foldername);
+        if(foldername != "")    return VocabularySrv.getTrainVocabularyName($scope.foldername);
         else                    return Promise.resolve([]);
     };
     //==================================================================================================================    
@@ -150,7 +153,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         .then(function(res) 
         {    
             $scope.isBusy    = 1;
-            VocabularySrv.removeUserVoiceBankSentence(sentence)
+            return VoiceBankSrv.removeUserVoiceBankCommand(sentence)
             .then(function()
             {
                 var filename = $scope.rel_rootpath + "/" + $scope.audiofileprefix + "_" + sentence.id;
@@ -192,7 +195,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
             return;
         };
         
-        return VocabularySrv.addUserVoiceBankSentence(sentencelabel, $scope.selCategory.data, $scope.audiofileprefix)
+        return VoiceBankSrv.addUserVoiceBankCommand(sentencelabel, $scope.selCategory.data, $scope.audiofileprefix)
         .then(function(res)
         {
             if(res == 0)    alert("Il comando esiste gia! cambialo");  // new sentence is already present
@@ -262,7 +265,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         if(sentence.filename == "")
         {
             sentence.filename = $scope.getFileName(sentence_id);
-            return VocabularySrv.setVoiceBankSentenceFilename(sentence_id, sentence.filename)
+            return VoiceBankSrv.setVoiceBankCommandFilename(sentence_id, sentence.filename)
             .then(function(){
                 $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, commandId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
             })

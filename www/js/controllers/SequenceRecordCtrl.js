@@ -208,7 +208,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         $scope.Cfg.vadCfg           = null;
         $scope.Cfg                  = SpeechDetectionSrv.getUpdatedCfg($scope.Cfg, $scope.captureProfile);        
 
-        $scope.Cfg.mfccCfg          = MfccSrv.getUpdatedCfg($scope.initMfccParams);
+        $scope.Cfg.mfccCfg          = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
 
         //-------------------------------------------------------------------------------
         // may exists only when substituting a voicebank command, otherwise in training mode is always new

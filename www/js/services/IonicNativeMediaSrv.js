@@ -3,7 +3,7 @@ Use the ionic-native MediaPlugin
  */
 
 
-function IonicNativeMediaSrv($cordovaMediaPlugin)
+function IonicNativeMediaSrv($cordovaMediaPlugin, FileSystemSrv)
 {
     var service = {};
     

@@ -62,7 +62,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         return FileSystemSrv.existFile($scope.vocabulary_json_path)
         .then(function(exist)
         {
-            if(exist)   return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_json_path)
+            if(exist)   return VocabularySrv.getTrainVocabulary($scope.vocabulary_json_path)
             else        return null;        
         })
         .then(function(voc)
@@ -91,7 +91,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
     {
         if(!do_update)  return Promise.resolve(RuntimeStatusSrv.getStatus());
         else 
-            return RuntimeStatusSrv.getUpdatedStatusName(localFolder)
+            return VocabularySrv.getUpdatedStatusName(localFolder)
         .then(function(rtstatus)
         {
             $scope.status = rtstatus;

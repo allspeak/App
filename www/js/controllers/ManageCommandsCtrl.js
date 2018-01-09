@@ -111,7 +111,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         if($scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
         {
             // TRAINING.EDIT_TV || TRAINING.SHOW_TV
-            return VocabularySrv.getTempTrainVocabulary($scope.vocabulary_json_path)
+            return VocabularySrv.getTrainVocabulary($scope.vocabulary_json_path)
             .then(function(voc)
             {
                 $scope.vocabulary             = voc;
@@ -156,7 +156,6 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
                 {
                     $scope.modalSelectNewVocabulary = modal; 
                     $scope.modalSelectNewVocabulary.show();
-                    $scope.$apply();                    
                 })
                 .catch(function(error)
                 {
@@ -301,7 +300,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     // EDIT COMMANDS ($scope.editTrainVocabulary = true)
     //-------------------------------------------------------------------  
     $scope.addSentence = function() {
-        var voicebank_voc = VocabularySrv.getVoiceBankVocabulary();
+        var voicebank_voc = VoiceBankSrv.getVoiceBankVocabulary();
     };
     
     $scope.selectAll = function(bool)
@@ -310,7 +309,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             $scope.commands[s].checked = bool;
     };
     
-    // button 1
+    // button 1 
     $scope.saveTrainVocabulary = function()
     {
         var selected_commands = [];
@@ -321,9 +320,10 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             return;
         }
         
+        // push also the checked ones
         for(s=0; s<$scope.commands.length; s++)
             if($scope.commands[s].checked)
-                selected_commands.push({"title":$scope.commands[s].title, "id":$scope.commands[s].id});
+                selected_commands.push($scope.commands[s]);
         
         if(!selected_commands.length)
         {
@@ -334,33 +334,19 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         }
         else
         {
-            $scope.commands = selected_commands;
-
-            return FileSystemSrv.createDir($scope.vocabulary_relpath, false)
+            $scope.vocabulary.commands = selected_commands;
+            return VocabularySrv.setTrainVocabulary($scope.vocabulary)
             .then(function()
             {
-                return FileSystemSrv.createDir($scope.training_relpath, false)
-            })
-            .then(function()
-            {
-                $scope.vocabulary.sLocalFolder       = $scope.foldername;
-                $scope.vocabulary.commands           = $scope.commands.map(function(item) { return {"title":item.title, "id":item.id} });
-                $scope.vocabulary.nItems2Recognize   = $scope.commands.length;
-                return VocabularySrv.setTrainVocabulary($scope.vocabulary, $scope.vocabulary_relpath + "/" + $scope.default_tv_filename);
-            })
-            .then(function()
-            {
-                RuntimeStatusSrv.setTrainVocabularyPresence($scope.vocabulary.sLocalFolder);
-                return InitAppSrv.setStatus({"userActiveVocabularyName":$scope.vocabulary.sLocalFolder});
-            })
-            .then(function()
-            {
+                $scope.commands             = $scope.vocabulary.commands;
                 $scope.selectList           = false;
                 $scope.editTrainVocabulary  = false;
                 $scope.showTrainVocabulary  = true;    
                 $scope.$apply();
             })
-            .catch(function(error){
+            .catch(function(error)
+            {
+//                if(error.mycode) { switch(error.mycode) { } }
                 alert(error.message);
             });          
         };

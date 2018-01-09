@@ -10,7 +10,7 @@
         ........
     ]
  */
-function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $ionicModal, InitAppSrv, RuntimeStatusSrv, VocabularySrv, MfccSrv, TfSrv, RemoteAPISrv, ClockSrv, FileSystemSrv, UITextsSrv)
+function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $ionicModal, InitAppSrv, RuntimeStatusSrv, VocabularySrv, MfccSrv, TfSrv, RemoteAPISrv, ClockSrv, FileSystemSrv, UITextsSrv, ErrorSrv)
 {
     // input params
     $scope.foldername           = "";       // "gigi"
@@ -124,19 +124,17 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.initMfccParams           = { "nDataDest": $scope.plugin_enum.MFCC_DATADEST_FILE,
                                             "nDataType": $scope.plugin_enum.MFCC_DATATYPE_MFFILTERS,  //write FILTERS to FILE        
                                             "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX};  //    
-        $scope.mfccCfg                  = MfccSrv.getUpdatedCfg($scope.initMfccParams);
+        $scope.mfccCfg                  = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
         
         //------------------------------------------------------------------------------------------
         // TF
-        $scope.initTfParams             = { "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX};  //           
-        $scope.tfCfg                    = TfSrv.getUpdatedCfgCopy($scope.initTfParams);  
+        $scope.initTfParams             = { "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX,
+                                            "nModelType":$scope.plugin_enum.TF_MODELTYPE_USER_FT};
+        $scope.tfCfg                    = TfSrv.getUpdatedStandardCfgCopy($scope.initTfParams);  
         
         $scope.aProcScheme              = TfSrv.getPreProcTypes();
         $scope.aNetType                 = TfSrv.getNetTypes();        
         
-        $scope.selectedProcScheme       = $scope.selectObjByValue($scope.tfCfg.nProcessingScheme, $scope.aProcScheme);
-        $scope.selectedNetType          = $scope.selectObjByValue($scope.plugin_enum.TF_MODELTYPE_USER_FT, $scope.aNetType);
-
         $scope.training_relpath         = InitAppSrv.getAudioFolder() + "/" + $scope.foldername;
         $scope.training_relpath         = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
         
@@ -155,11 +153,16 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
 
     $scope.refresh = function()
     {
-        return RuntimeStatusSrv.loadVocabulary($scope.foldername)
+        return VocabularySrv.getUpdatedStatusName($scope.foldername)
         .then(function(status)
         {
-            $scope.vocabulary_status    = status;
             $scope.vocabulary           = status.vocabulary;
+            $scope.vocabulary_status    = status.vocabulary.status;
+            
+            $scope.updateProcScheme($scope.selectObjByValue($scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX, $scope.aProcScheme));
+            $scope.updateModelType($scope.selectObjByValue($scope.plugin_enum.TF_MODELTYPE_USER_FT, $scope.aNetType));
+        
+        
             $scope.$apply();
         })
         .catch(function(error)
@@ -281,7 +284,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     // called by startNewSession
     $scope.createSubmitSessionJson = function(jsonpath) 
     {
-        var ids = VocabularySrv.getTrainVocabularyIDLabels();
+        var ids = VocabularySrv.getTrainVocabularyIDLabels($scope.vocabulary);
         return TfSrv.createSubmitDataJSON($scope.foldername, $scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelType, jsonpath);
     };
     
@@ -405,38 +408,39 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.isDownloading                            = false;
         console.log("network downloaded");
         
-        return FileSystemSrv.createJSONFileFromObj($scope.vocabulary_json_path, $scope.temp_sess_voc, 2)
+        // I test the new NET
+        return TfSrv.testNewTFModel($scope.temp_sess_voc)   // return string or reject
+        .then(function()
+        {        
+            return FileSystemSrv.createJSONFileFromObj($scope.vocabulary_json_path, $scope.temp_sess_voc, 2)    // return 1 or reject
+        })
         .then(function()
         {
-            return $ionicPopup.confirm({ title: 'Attenzione', template: 'Hai scaricato la rete, vuoi attivarla e passare al riconoscimento?'})
-        })
-        .then(function(res) 
-        {
             $scope.modalSubmitSession.hide();
-            if(res)
+            return $ionicPopup.confirm({ title: 'Attenzione', template: 'Hai correttamente scaricato la rete, vuoi attivarla e passare al riconoscimento?'})
+            .then(function(r)
             {
-                // carico nuova rete
-                var current_net = TfSrv.getCfg()
-                return TfSrv.loadTFModelPath($scope.vocabulary_json_path)
-                .then(function(loaded)
-                {
-                    if(loaded)  $state.go("recognition", {foldername:$scope.foldername});   // vado a riconoscimento
-                    else        
-                    {
-                        // a problem occurred while loading the new net
-                        return $ionicPopup.confirm({ title: 'Attenzione', template: 'Hai scaricato la rete, vuoi attivarla e passare al riconoscimento?'})
-                        .then(function(res) 
-                        {
-                            if(res)                         $state.go('vocabulary',  {foldername:$scope.foldername});
-
-                        })
-                    }
-                })
-            }
-            else    $state.go('vocabulary', {"foldername":$scope.foldername});
-        })      
+                if(r)   $state.go("recognition", {foldername:$scope.foldername});   // vado a riconoscimento
+                else    $state.go('vocabulary', {"foldername":$scope.foldername});
+            })
+        })
         .catch(function(error)
-        {       
+        {   
+            if(error.mycode)
+            {
+                switch(error.mycode)
+                {
+                    case ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST:
+                    case ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY:
+                        // #ERROR_RESET#
+                        break;
+                    case ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL:
+                        // the new net is invalid !  #ERROR_CRASH#
+//                        return $ionicPopup.confirm({ title: 'Attenzione', template: 'La rete che hai scaricato non funziona. Prova e ripetere il procedimento'})
+                        
+                        break;
+                }
+            }
             console.log("ManageTrainingCtrl::onDownloadSuccess :" + error.message);
             $scope.modalSubmitSession.hide();
             $state.go('vocabulary', {"foldername":$scope.foldername});
