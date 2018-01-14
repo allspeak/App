@@ -229,8 +229,9 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv)
     fixTfModel = function(voc)
     {
         delete voc.status;
-        voc.sModelFilePath  = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + voc.sModelFileName;  
-        voc.nDataDest       = standardTfCfg.nDataDest;
+        voc.sModelFilePath          = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + voc.sModelFileName;  
+        voc.nDataDest               = standardTfCfg.nDataDest;
+        voc.fRecognitionThreshold   = standardTfCfg.fRecognitionThreshold;
         return voc;
     }
     

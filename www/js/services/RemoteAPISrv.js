@@ -48,13 +48,14 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         pluginInterface = plugin;
         initAppSrv      = initappserv;
         
-//        ServerCfg.url   = "http://192.168.1.65:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://10.245.72.37:8095";     // OVERWRITE FOR DEBUG
+        ServerCfg.url   = "http://192.168.1.251:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.71:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.90:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.0.8:8095";     // OVERWRITE FOR DEBUG
-        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.77:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.180:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.133:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://api.allspeak.eu";     // OVERWRITE FOR DEBUG
     };
@@ -185,7 +186,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         var req     = {
                         method      : 'POST',
                         url         : url,
-                        headers     : {"api_key": key},
+                        headers     : {"api-key": key},
                         data        : data                
                     };
        
@@ -198,7 +199,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         var req     = {
                         method      : 'GET',
                         url         : url,
-                        headers     : {"api_key": key} 
+                        headers     : {"api-key": key} 
                     };
        
         return $http(req)        
@@ -239,7 +240,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
             {
                 case "Forbidden":
                     if(error.status == 401)
-                        str += "Il codice che hai inserito è sbagliato.\nVerifica di aver inserito il codice corretto e riprova.\nIn caso l'errore si ripresenti, prego contatta il tuo medico"
+                        str += "Il codice che hai inserito è sbagliato.\nVerifica di aver inserito il codice corretto e premi OK per riprovare. Premi Cancel per proseguire senza registrarsi.\nIn caso l'errore si ripresenti, prego contatta il tuo medico"
                     else if(error.status == 403)
                         str += "non specificato. stato: " + error.statusText + ", codice: " + error.status.toString();
                     break;
@@ -326,7 +327,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         uploadOptions.fileName      = filename;
         uploadOptions.httpMethod    = "POST";
         uploadOptions.chunkedMode   = false,
-        uploadOptions.headers       = {"api_key" : api_key};
+        uploadOptions.headers       = {"api-key" : api_key};
         
         return fileTransfer.upload(resolved_file_path, api_url, uploadOptions, true)
         .then(function(result) 

@@ -11,13 +11,18 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsS
     getCommandFilesByPath = function(command, relpath)
     {    
         if (command == null)   return null;
-        return FileSystemSrv.listFilesInDir(relpath, ["wav"])
+        return FileSystemSrv.existDir(relpath)
+        .then(function(exist)
+        {
+            if(exist)   return FileSystemSrv.listFilesInDir(relpath, ["wav"])
+            else        return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.TRAINFOLDER_NOTEXIST, message:"training folder does not exist"});
+        })
         .then(function(files){
             // files = [wav file names with extension]
             return updateCommandFiles(command, files);// update sentence.files[]
         })         
         .catch(function(error){
-            error.message = "ERRORE CRITICO in CommandSrv::getCommandFilesByPath " + error.message;
+            error.message = "ERRORE CRITICO in CommandSrv::getCommandFilesByPath, " + error.message;
             return $q.reject(error);
         });         
     };     

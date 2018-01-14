@@ -79,7 +79,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         $scope.modalWant2beAssisted.hide();
 
         return InitAppSrv.setStatus({"isFirstUse":false, "appModality":int})
-        .then(function(res)
+        .then(function()
         {
             $scope.appStatus.isFirstUse     = false;
             $scope.appStatus.appModality    = int;            
@@ -97,54 +97,61 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     //          - $ionicView.enter && !firstuse
     //          - OnWant2beAssisted
     // it does:
-    //          - if not assisted  => goto home
-    //          - if assisted      => check register and if ok => get tasks
+    //          - solo      => LD & goto home
+    //          - guest     => LAV & goto home
+    //          - assisted  => check register and if ok => get tasks => LAV & goto home
     //
     $scope.checkIsAssisted = function() 
     {
-        if($scope.appStatus.appModality != EnumsSrv.MODALITY.ASSISTED)
+        switch($scope.appStatus.appModality)
         {
-             // if SOLO or GUEST
-            return RuntimeStatusSrv.loadDefault() 
-            .then(function(res) 
-            {            
-                $scope.endCheck('home');
-                return true;
-            })
-        }   
-        else
-        {
-            if($scope.appStatus.isDeviceRegistered)
-            {
-                $scope.api_key = RemoteAPISrv.getApiKey();
-                if($scope.api_key == null || !$scope.api_key.length) 
+            case EnumsSrv.MODALITY.ASSISTED:
+                if($scope.appStatus.isDeviceRegistered)
                 {
-                    alert("Errore critico ! Contatta il responsabile del App");
-                    return $scope.endCheck('home');
+                    $scope.api_key = RemoteAPISrv.getApiKey();
+                    if($scope.api_key == null || !$scope.api_key.length) 
+                    {
+                        alert("Errore critico ! Contatta il responsabile del App");
+                        return $scope.endCheck('home');
+                    }
+                    return $scope.onApiKey({"label":$scope.api_key});
                 }
-                return $scope.onApiKey({"label":$scope.api_key});
-            }
-            else
-            {
-                $cordovaSplashscreen.hide();            
-                return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi registrare ora il telefono sul server?\nIn caso contrario, potrai farlo in seguito\nCosi puoi utilizzare solo le funzioni base'})
-                .then(function(res) 
+                else
                 {
-                    if(!res)    return $scope.endCheck('home');
-                    else        return $scope.modalInsertApiKey.show();
-                });        
-            }            
+                    // assisted & NOT registered
+                    $cordovaSplashscreen.hide();            
+                    return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi registrare ora il telefono sul server?\nIn caso contrario, potrai farlo in seguito\nCosi puoi utilizzare solo le funzioni base'})
+                    .then(function(res) 
+                    {
+                        if(!res)    return $scope.endCheck('home');
+                        else        return $scope.modalInsertApiKey.show();
+                    });        
+                }                 
+                break;
+                
+            case EnumsSrv.MODALITY.SOLO:
+            case EnumsSrv.MODALITY.GUEST:
+                return $scope.endCheck('home');
+                break;
         }
     };
         
     // callback from modalInsertApiKey or, whether already registered, called from checkIsAssisted
+    // if connection absent => LV or LD => go home
+    // if login ok          => getTaskList()
     $scope.onApiKey = function(apikey)
     {
-        if(apikey == null) // l'utente ha premuto cancella
+        if(apikey == null) // user pressed cancel in modalInsertApiKey
         {
-            $scope.endCheck('home');
-            $scope.modalInsertApiKey.hide();
-            return;
+            return $ionicPopup.confirm({ title: 'Attenzione', template: "Premendo Cancel non si potrà accedere alle funzioni avanzate di AllSpeak, sicuro di voler saltare la registrazione?"})
+            .then(function(res) 
+            {
+                if(res)    // user wants to skip registration
+                {
+                    $scope.modalInsertApiKey.hide();
+                    return $scope.endCheck('home');
+                }
+            });              
         }  
         else
         {
@@ -153,7 +160,13 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
             .then(function(response)
             {
                 $scope.appStatus.isDeviceRegistered = response.result;
-                if(!response.result)    // ERRORE
+                if(response.result)    // CODICE VALIDO
+                {
+                    RuntimeStatusSrv.setStatus("isLogged", true);
+                    $scope.modalInsertApiKey.hide();
+                    return $scope.getTaskList();      // device is registered, get task list
+                }   
+                else                   // ERRORE
                 {
                     $cordovaSplashscreen.hide();
                     switch(response.status)
@@ -162,10 +175,10 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                             return $ionicPopup.confirm({ title: 'Attenzione', template: response.message})
                             .then(function(res) 
                             {
-                                if(!res)
+                                if(!res)    // user pressed cancel, aborted to login in
                                 {
                                     $scope.modalInsertApiKey.hide();
-                                    $scope.endCheck('home');
+                                    return $scope.endCheck('home');
                                 }
                             });                    
                             break;
@@ -173,38 +186,31 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                         default:
                             // here goes the timeout error. in this case go home but load the active vocabulary, if exists
                             return $ionicPopup.alert({ title: 'Attenzione', template: response.message})
-                            .then(function(res) 
-                            {
-                                if($scope.appStatus.userActiveVocabularyName != "") return RuntimeStatusSrv.loadVocabulary($scope.appStatus.userActiveVocabularyName);                            
-                                else                                                return true;
-                            })
                             .then(function()
                             {
                                 $scope.modalInsertApiKey.hide();
-                                $scope.endCheck('home');   
+                                return $scope.endCheck('home');   
                             });                    
                             break
                     }
-                }   
-                else                    // CODICE VALIDO
-                {
-                    RuntimeStatusSrv.setStatus("isLogged", true);
-                    $scope.modalInsertApiKey.hide();
-                    return $scope.getTaskList();      // device is registered, get task list
+
                 }
             })
             .catch(function(error)
             {
                 alert("ERRORE CRITICO in InitCheckCtrl::checkIsAssisted " + error.toString());
                 RuntimeStatusSrv.setStatus("isLogged", false);
-                $scope.endCheck('home');
-                error.message = "ERRORE CRITICO in InitCheckCtrl::checkIsAssisted " + error.message;
-                return $q.reject(error);
+                return $scope.endCheck('home')
+                .then(function(){
+                    error.message = "ERRORE CRITICO in InitCheckCtrl::checkIsAssisted " + error.message;
+                    return $q.reject(error);
+                })
             });
         }
     };    
     
     // successfull onApiKey
+    // getActivities => LV or LD => go home
     $scope.getTaskList = function()
     {
         return RemoteAPISrv.getActivities()         // if successfull it calls: RuntimeStatusSrv.setStatus({"isLogged":true})
@@ -212,11 +218,6 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         {
             // user is logged in I receive a task list (download, execute something)
             // I can do it or ignore them. in the latter, I have to tell whether repeat the question next time or not. TODO
-            if($scope.appStatus.userActiveVocabularyName != "") return RuntimeStatusSrv.loadVocabulary($scope.appStatus.userActiveVocabularyName);                            
-            else                                                return true;
-        })
-        .then(function()
-        {
             return $scope.endCheck('home');   
         })
         .catch(function(error)
@@ -228,12 +229,12 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     };    
 
     //-----------------------------------------------------------------------
-    // MOVE TO DEST STATE
+    // LOAD ACTIVE VOC & MOVE TO DEST STATE
+    //-----------------------------------------------------------------------
     $scope.endCheck = function(nextstate) 
     {
         $cordovaSplashscreen.hide();
-        if(nextstate == "home")     $state.go(nextstate, {"isUpdated":true});       // add isupdated params to tell home to not recalculate everything
-        else                        $state.go(nextstate);
+        $state.go(nextstate);
     };
     //-----------------------------------------------------------------------
 };

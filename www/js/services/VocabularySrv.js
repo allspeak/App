@@ -71,6 +71,79 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });
     }; 
     
+    // given a root folder, returns the voc object of each vocabulary that can recognize
+    getValidTrainVocabularies = function(rootfolder)
+    {
+        var validvocs = [];
+        return FileSystemSrv.listDir(rootfolder)    // AllSpeak/vocabularies/
+        .then(function(folders)
+        {
+            // Promises cycle !!
+            var subPromises = [];
+            for (var v=0; v<folders.length; v++) 
+            {
+                var foldername = folders[v].name;
+                (function(jsonfile) 
+                {
+//                    var inputjson       = $scope.vocabularies[j].inputjson;
+                    var subPromise  = getTrainVocabulary(jsonfile)
+                    .then(function(voc) 
+                    {
+                        return voc;
+                    })
+                    subPromises.push(subPromise);
+                })(rootfolder + "/" + foldername + "/" + "vocabulary.json");           
+            }
+            $q.all(subPromises)
+            .then(function(vocs)
+            {
+                var subPromises = [];
+                for(var v=0; v<vocs.length; v++)
+                {
+                    (function(voc) 
+                    {
+                        if(voc.sModelFilePath.length)
+                        {
+                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
+                            .then(function(exist) 
+                            {                            
+                                if(exist)
+                                {
+                                    voc.sStatus = "PRONTO";
+                                    return voc;
+                                }
+                            })
+                            .catch(function(error)
+                            {
+                               return $q.reject(error); 
+                            });                              
+                        }   
+                        subPromises.push(subPromise);
+                    })(vocs[v]);                        
+                }
+                $q.all(subPromises)
+                .then(function(validvocs)
+                {                
+                    return validvocs;
+                })
+                .catch(function(error)
+                {
+                   return $q.reject(error); 
+                }); 
+            })
+            .catch(function(error)
+            {
+                alert("ERROR in VocabularySrv::getValidTrainVocabularies. " + error);
+                error.message = "ERROR in VocabularySrv::getValidTrainVocabularies. " + error.message;
+                return $q.reject(error);
+            }); 
+        })
+        .catch(function(error) 
+        {
+            alert("Error", "VocabularySrv::getValidTrainVocabularies : " + error.message);
+            return $q.reject(error);
+        });
+    };
     //====================================================================================================================================================
     //  GET SOME COMMANDS
     //==================================================================================================================================================== 
@@ -280,7 +353,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         var train_folder                = training_folder + "/" + voc.sLocalFolder;
         var zip_file                    = train_folder + "/" + "data.zip";
         
-        return VocabularySrv.hasVoicesTrainVocabulary(voc)                  // ? vocabularyHasVoices
+        return hasVoicesTrainVocabulary(voc)                  // ? vocabularyHasVoices
         .then(function(res)
         {
             voc.status.vocabularyHasVoices = res;
@@ -296,12 +369,12 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             }
             else    
             {
-                return VocabularySrv.existCompleteRecordedTrainSession(train_folder, voc)  // ? haveValidTrainingSession
+                return existCompleteRecordedTrainSession(train_folder, voc)  // ? haveValidTrainingSession
                 .then(function(existtrainsession)
                 {
                     // TODO: should set to existtrainsession....but it's problematic
                     voc.status.haveValidTrainingSession = true;
-                    return VocabularySrv.existFeaturesTrainSession(train_folder);   // ? haveFeatures
+                    return existFeaturesTrainSession(train_folder);   // ? haveFeatures
                 })
                 .then(function(res)
                 {
@@ -336,7 +409,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         if(uservocabularyname == null || uservocabularyname == "") return getUpdatedStatus(null);
         vocabularyjsonpath = vocabularies_folder + "/" + uservocabularyname + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
 
-        return VocabularySrv.getTrainVocabulary(vocabularyjsonpath)
+        return getTrainVocabulary(vocabularyjsonpath)
         .then(function(voc)
         {    
             return getUpdatedStatus(voc);
@@ -460,6 +533,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         getTrainVocabulary                  : getTrainVocabulary,                   // returns promise of a train_vocabulary, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
         getTrainVocabularyName              : getTrainVocabularyName,               // returns promise of a volatile train_vocabulary, given a foldername
         setTrainVocabulary                  : setTrainVocabulary,                   // write train_vocabulary to file
+        getValidTrainVocabularies           : getValidTrainVocabularies,            // returns the list of train vocabularies which can recognize
 
         existsTrainVocabulary               : existsTrainVocabulary,                // returns voc.commands.length ? 1 : 0 
         getTrainCommand                     : getTrainCommand,                      // get TV's sentence entry given its ID

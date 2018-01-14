@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function RecognitionCtrl($scope, $state, SpeechDetectionSrv, $ionicPlatform, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, RuntimeStatusSrv, VocabularySrv, UITextsSrv)
+function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, RuntimeStatusSrv, VocabularySrv, UITextsSrv)
 {
     //--------------------------------------------------------------------
     // debug
@@ -374,7 +374,6 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, $ionicPlatform, Ion
             $scope.modelsJson[currentId].checked = true;
             console.log("selectModel ERROR:" + error.message); 
             return $scope.selectModel(currentId);
-//            $scope.$apply();
         })
     };
     
@@ -383,29 +382,88 @@ function RecognitionCtrl($scope, $state, SpeechDetectionSrv, $ionicPlatform, Ion
         $scope.loadedModel          = TfSrv.getCfg();
         if($scope.loadedModel)      $scope.loadedJsonFolderName = $scope.loadedModel.sLocalFolder;
         else                        $scope.loadedJsonFolderName   = "";
-        
-        return FileSystemSrv.listDir(dir)
-        .then(function(dirs)
+
+        return FileSystemSrv.listDir($scope.vocabularies_relpath)    // AllSpeak/vocabularies/
+        .then(function(folders)
         {
-            var len = dirs.length;
-            $scope.modelsJson = [];
-            for (d=0; d<len; d++)
+            // Promises cycle !!
+            var subPromises = [];
+            for (var v=0; v<folders.length; v++) 
             {
-                var jsonpath            = $scope.vocabularies_relpath + "/" + dirs[d].name + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
-                $scope.modelsJson[d]    = {"label": dirs[d].name, "localfolder": dirs[d].name, "jsonpath":jsonpath};
-                if($scope.loadedJsonFolderName == dirs[d].name)
+                var foldername = folders[v].name;
+                (function(jsonfile) 
                 {
-                    $scope.modelsJson[d].checked    = true;
-                    $scope.loadedToggleId           = d;
-                }
-                else $scope.modelsJson[d].checked   = false;
+                    var subPromise  = VocabularySrv.getTrainVocabulary(jsonfile)
+                    .then(function(voc) 
+                    {
+                        return voc;
+                    })
+                    subPromises.push(subPromise);
+                })($scope.vocabularies_relpath + "/" + foldername + "/" + "vocabulary.json");           
             }
-            $scope.$apply();
-            return 1;
+            $q.all(subPromises)
+            .then(function(vocs)
+            {
+                var subPromises = [];
+                for(var v=0; v<vocs.length; v++)
+                {
+                    (function(voc) 
+                    {
+                        if(voc.sModelFilePath.length)
+                        {
+                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
+                            .then(function(exist) 
+                            {                            
+                                if(exist)
+                                {
+                                    voc.sStatus = "PRONTO";
+                                    return voc;
+                                }
+                            })
+                            .catch(function(error)
+                            {
+                               return $q.reject(error); 
+                            });                              
+                        }   
+                        subPromises.push(subPromise);
+                    })(vocs[v]);                        
+                }
+                $q.all(subPromises)
+                .then(function(vocs)
+                {                
+                    if(vocs == null || !vocs.length) return;
+
+                    var len = vocs.length;
+                    $scope.modelsJson = [];
+                    for (var d=0; d<len; d++)
+                    {
+                        var jsonpath            = $scope.vocabularies_relpath + "/" + vocs[d].sLocalFolder + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
+                        $scope.modelsJson[d]    = {"label": vocs[d].sLocalFolder, "localfolder": vocs[d].sLocalFolder, "jsonpath":jsonpath};
+                        if($scope.loadedJsonFolderName == vocs[d].sLocalFolder)
+                        {
+                            $scope.modelsJson[d].checked    = true;
+                            $scope.loadedToggleId           = d;
+                        }
+                        else $scope.modelsJson[d].checked   = false;
+                    }
+                    return 1;    
+                })
+                .catch(function(error)
+                {
+                   return $q.reject(error); 
+                }); 
+            })
+            .catch(function(error)
+            {
+//                alert("ERROR in VocabularySrv::getValidTrainVocabularies. " + error);
+                error.message = "ERROR in VocabularySrv::getValidTrainVocabularies. " + error.message;
+                return $q.reject(error);
+            }); 
         })
-        .catch(function(error){
-            alert(error.message);
-            return 0;
+        .catch(function(error) 
+        {
+            alert("Error", "VocabularySrv::getValidTrainVocabularies : " + error.message);
+            return $q.reject(error);
         });
     };
     //=====================================================================================        

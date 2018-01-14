@@ -3,7 +3,7 @@
     {   
         "appModality"               : 110,
         "isFirstUse"                : true,        
-        "userActiveVocabularyName"  : "",        
+        "userActiveVocabularyName"  : "default",        
         "plugin_interface_name"     : "window.speechrecognition",
         "file_system"               : {
             "data_storage_root"                     : "externalRootDirectory",

@@ -303,7 +303,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
         
         service.config.appConfig.isFirstUse                 = true;
         service.config.appConfig.appModality                = EnumsSrv.MODALITY.SOLO;
-        service.config.appConfig.userActiveVocabularyName   = "";
+        service.config.appConfig.userActiveVocabularyName   = "default";
     };
 
     // try to connect the registered devices

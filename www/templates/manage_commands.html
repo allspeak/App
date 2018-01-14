@@ -20,14 +20,12 @@
         
         <div class="button-bar" ng-if="showTrainVocabulary">        
             <button class="bu button button-custom button-block button-positive" ng-click="cancel()">RITORNA</button>
-            <button class="button button-custom button-block button-positive" ng-click="doEditTrainVocabulary()">{{labelEditTrainVocabulary}}</button>        
+            <button class="button button-custom button-block button-positive" ng-disabled="isDefault" ng-click="doEditTrainVocabulary()">{{labelEditTrainVocabulary}}</button>        
         </div>          
     </ion-footer-bar>    
     
-    <!--<ion-content multiple-headers>-->
     <ion-content>
 
-            
         <button class="button button-full button-positive" ng-if="selectList" ng-click="selectSentences()">{{labelSelectSentences}}</button>  
 
         <ion-list ng-if="editTrainVocabulary">
@@ -43,8 +41,6 @@
         <ion-list ng-if="showTrainVocabulary">
             <ion-item ng-repeat="cmd in commands track by cmd.id">{{cmd.title}}</ion-item>
         </ion-list>     
-        
-        
         
     </ion-content>
 </ion-view>

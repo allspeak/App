@@ -18,7 +18,7 @@
     <ion-content>
         <ion-item class="item item-divider">VOCABOLARIO SELEZIONATO</ion-item>
         
-        <div class="card" ng-if="activeVocabulary" ng-click="selectVocabulary(activeVocabulary)">
+        <div class="card" ng-if="activeVocabulary" ng-click="editVocabulary(activeVocabulary)">
             <div class="item item-divider">
                {{activeVocabulary.sLabel}}
             </div>
@@ -30,32 +30,21 @@
       
         <ion-list>
             <ion-item ng-repeat="item in vocabularies track by $index">
-                <div class="card" ng-if="item.sLocalFolder != activeVocabularyFolder" ng-click="selectVocabulary(item)">
-                    <div class="item item-divider" >
-                       {{item.sLabel}}
-                    </div>
-                    <label class="item">Numero comandi : <span class="badge">{{item.nItems2Recognize}}</span></label>        
-                    <label class="item">Status : <span class="badge">{{item.sStatus}}</span></label>   
-<!--                    <ion-toggle class="item item-dark" ng-model="toogleSelectAll" ng-if="editTrainVocabulary" ng-click="selectAll(toogleSelectAll)">
-                        {{labelToggleSentences}}
-                     </ion-toggle>                     -->
+                <div class="card" ng-if="item.sLocalFolder != activeVocabularyName">
+                    
+                    <ion-item class="item item-divider item-button-right"  style="background-color: #C2A5A5 !important">{{item.sLabel}}
+                        <div class="buttons">
+                            <button class="button" ng-click="editVocabulary(item)">
+                                <i class="icon ion-edit"></i>
+                            </button>
+                        </div>                
+                    </ion-item>
+                    
+                    <label class="item">Numero comandi : <span class="badge">{{item.nItems2Recognize}}</span></label>      
+                    <label class="item">Status : <span class="badge">{{activeVocabulary.sStatus}}</span></label>        
+                    <button class="button button-block button-positive" ng-click="activateVocabulary(item)">ATTIVA VOCABOLARIO</button>                  
                 </div>                    
             </ion-item>
         </ion-list>
-        
     </ion-content>
-    
 </ion-view>
-
-                        <!--<label class="item">Numero comandi : <span class="badge" ng-class="isSpeaking == 'ON' ? 'color-green' : 'color-red'">{{voiceDB}}/{{thresholdDB}}</span></label>-->        
-                        
-<!--                        <ion-toggle
-                                    ng-checked="item.checked"
-                                    ng-model="item.checked"
-                                    ng-click="selectVocabulary($index)"
-                                    ng-disabled="!item.isCompleted"
-                                    class="item item-text-wrap">
-                            Numero comandi : {{item.nItems2Recognize}}
-                            
-                        </ion-toggle>-->
-

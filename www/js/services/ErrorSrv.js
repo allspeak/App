@@ -23,7 +23,10 @@ function ErrorSrv()
     service.ENUMS.VOCABULARY.COMMANDSVARIABLE_NULL      = 2007;     // vocabulary.commands  = null
     service.ENUMS.VOCABULARY.COMMANDSVARIABLE_EMPTY     = 2008;     // vocabulary.commands  = []
     
-    service.ENUMS.VOCABULARY.LOADTFMODEL                = 2009;     // vocabulary.commands  = []
+    service.ENUMS.VOCABULARY.TRAINFOLDER_NOTEXIST       = 2009;
+    service.ENUMS.VOCABULARY.TRAINFOLDERVARIABLE_EMPTY  = 2010;    
+    
+    service.ENUMS.VOCABULARY.LOADTFMODEL                = 2015;     // vocabulary.commands  = []
     
     
     

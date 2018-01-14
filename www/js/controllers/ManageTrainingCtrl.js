@@ -10,7 +10,7 @@
         ........
     ]
  */
-function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $ionicModal, InitAppSrv, RuntimeStatusSrv, VocabularySrv, MfccSrv, TfSrv, RemoteAPISrv, ClockSrv, FileSystemSrv, UITextsSrv, ErrorSrv)
+function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $ionicModal, InitAppSrv, VocabularySrv, RuntimeStatusSrv, MfccSrv, TfSrv, RemoteAPISrv, ClockSrv, FileSystemSrv, UITextsSrv, ErrorSrv)
 {
     // input params
     $scope.foldername           = "";       // "gigi"
@@ -33,12 +33,12 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.training_relpath     = "";   // AllSpeak/training_sessions/gigi
     
     $scope.vocabulary_status    = null;
-//    haveValidTrainingSession  // according to the selected modelType, indicates if we have enough recordings
-//    haveFeatures              // indicates if the present recordings have their cepstra
-//    haveZip                   // indicates if the zip file is ready to be sent
-//    isNetAvailableRemote      // net calculated. available online
-//    isNetAvailableLocale      // net calculated. download, available locally
-//    isNetLoaded               // net loaded
+                                        //    haveValidTrainingSession  // according to the selected modelType, indicates if we have enough recordings
+                                        //    haveFeatures              // indicates if the present recordings have their cepstra
+                                        //    haveZip                   // indicates if the zip file is ready to be sent
+                                        //    isNetAvailableRemote      // net calculated. available online
+                                        //    isNetAvailableLocale      // net calculated. download, available locally
+                                        //    isNetLoaded               // net loaded
 
     $scope.training_json_path   = "";   // $scope.training_relpath + "/" + $scope.training_json;
     $scope.vocabulary_json_path = "";   // $scope.vocabulary_relpath + "/vocabulary.json";
@@ -420,7 +420,15 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             return $ionicPopup.confirm({ title: 'Attenzione', template: 'Hai correttamente scaricato la rete, vuoi attivarla e passare al riconoscimento?'})
             .then(function(r)
             {
-                if(r)   $state.go("recognition", {foldername:$scope.foldername});   // vado a riconoscimento
+                if(r)
+                {
+                    // force loadVocabulary (I may retraining the same active voc, without the force, loadVocabulary could exit immediately)
+                    return RuntimeStatusSrv.loadVocabulary($scope.foldername, true)
+                    .then(function()
+                    {
+                        $state.go("recognition", {foldername:$scope.foldername});   // vado a riconoscimento
+                    })
+                }
                 else    $state.go('vocabulary', {"foldername":$scope.foldername});
             })
         })

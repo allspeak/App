@@ -13,6 +13,9 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
     $scope.headerTitle  = "Vocabolario: ";
     $scope.vocabulary   = null;
     $scope.modelLoaded  = false;    // model toggle
+    $scope.isDefault    = false;    // if is a default NET, I cannot train it, doesn't have any recordings
+                                    // I can see the commands, but cannot edit them
+    
     
     $scope.$on("$ionicView.enter", function(event, data)
     {
@@ -24,8 +27,8 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             $state.go("vocabularies");
         }, 100); 
 
-        $scope.trainingsessions_relpath                = InitAppSrv.getAudioFolder();
-        $scope.vocabularies_relpath               = InitAppSrv.getVocabulariesFolder();
+        $scope.trainingsessions_relpath     = InitAppSrv.getAudioFolder();
+        $scope.vocabularies_relpath         = InitAppSrv.getVocabulariesFolder();
         $scope.default_tv_filename          = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;        
         
         $scope.labelEditTrainVocabulary     = UITextsSrv.TRAINING.labelEditTrainVocabulary;
@@ -37,7 +40,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         $scope.labelManageRecordingSession  = UITextsSrv.TRAINING.labelManageRecordingSession;
         
         $scope.enum_recordsession           = EnumsSrv.TRAINING.RECORD_TV;
-        $scope.enum_manage_commands       = EnumsSrv.TRAINING.EDIT_TV;
+        $scope.enum_manage_commands         = EnumsSrv.TRAINING.EDIT_TV;
         $scope.enum_showvoccommands         = EnumsSrv.TRAINING.SHOW_TV;
         $scope.enum_show_vb_voc             = EnumsSrv.VOICEBANK.SHOW_TRAINED;
         
@@ -57,45 +60,23 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
                 $state.go("home");
             }         
         };  
+        $scope.plugin_enums = InitAppSrv.getPlugin().ENUM.PLUGIN;
         
-        $scope.appStatus    = InitAppSrv.getStatus();
-        return FileSystemSrv.existFile($scope.vocabulary_json_path)
-        .then(function(exist)
+        return VocabularySrv.getUpdatedStatusName($scope.foldername)
+        .then(function(vocstatus)
         {
-            if(exist)   return VocabularySrv.getTrainVocabulary($scope.vocabulary_json_path)
-            else        return null;        
-        })
-        .then(function(voc)
-        {
-            if(voc == null) $state.go("home");
-            else
-            {
-                $scope.vocabulary   = voc;
-                $scope.headerTitle  = "VOCABOLARIO:    " + voc.sLabel;
-                $scope.updateRuntimeStatus($scope.foldername, true)
-            }
-        })
-        .catch(function(error)
-        {
-            console.log("Error in HomeCtrl::$ionicView.enter ");
-            alert("Error in VocabularyCtrl::$ionicView.enter "+ error.toString());
-        });
-    });
-
-    $scope.$on('$ionicView.leave', function(){
-        if($scope.deregisterFunc)   $scope.deregisterFunc();
-    }); 
-    //===============================================================================================
-    //===============================================================================================
-    $scope.updateRuntimeStatus = function(localFolder, do_update)
-    {
-        if(!do_update)  return Promise.resolve(RuntimeStatusSrv.getStatus());
-        else 
-            return VocabularySrv.getUpdatedStatusName(localFolder)
-        .then(function(rtstatus)
-        {
-            $scope.status = rtstatus;
-            switch($scope.status.AppStatus)
+            $scope.vocabulary           = vocstatus.vocabulary;
+            $scope.vocabulary_status    = vocstatus.vocabulary.status;
+            $scope.appStatus            = vocstatus.AppStatus;
+            
+            $scope.headerTitle          = "VOCABOLARIO:    " + $scope.vocabulary.sLabel;            
+            
+            $scope.isDefault            = false;
+            if($scope.vocabulary.nModelType != null)
+                if($scope.vocabulary.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
+                    $scope.isDefault = true;
+            
+            switch($scope.appStatus)
             {
                 case EnumsSrv.STATUS.NEW_TV:
                     break;
@@ -112,9 +93,21 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
                 case EnumsSrv.STATUS.CAN_RECOGNIZE:
                     break;
             };
-            $scope.$apply();            
+            $scope.$apply(); 
+        })
+        .catch(function(error)
+        {
+            console.log("Error in HomeCtrl::$ionicView.enter ");
+            alert("Error in VocabularyCtrl::$ionicView.enter "+ error.toString());
+            $state.go("home");
         });        
-    };    
+    });
+
+    $scope.$on('$ionicView.leave', function(){
+        if($scope.deregisterFunc)   $scope.deregisterFunc();
+    }); 
+    //===============================================================================================
+  
    
 //    $scope.deleteVocabulary = function()    
 //    {

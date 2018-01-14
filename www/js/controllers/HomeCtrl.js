@@ -8,10 +8,8 @@
  *
  */
  
-function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, EnumsSrv, UITextsSrv)
+function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, EnumsSrv, UITextsSrv)
 {
-    $scope.modelLoaded = false;
-    
     $scope.$on('$ionicView.enter', function(event, data)
     {
         // delete history once in the home
@@ -19,21 +17,12 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
         // ask user's confirm after pressing back (thus trying to exit from the App)
         $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
         {
-            $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
-            .then(function(res) { if (res) ionic.Platform.exitApp(); });
+            $scope.exit();
         }, 100); 
-        
-        // isUpdated=true only when the present (home) state follows the InitCheck one
-        // I update the runtimestate in InitCheck, remove the Splash and go here, where I simply get the status without recalculating it.
-        // in all other occasion, I recalculate it.
-        var do_update = true;
-        if(data.stateParams != null)
-            if(data.stateParams.isUpdated != null)
-                if(data.stateParams.isUpdated == 'true')  do_update = false;    
         
         $scope.appStatus    = InitAppSrv.getStatus();
 
-        return $scope.updateRuntimeStatus($scope.appStatus.userActiveVocabularyName, do_update)     // loadVocabulary or RuntimeStatusSrv.getStatus
+        return RuntimeStatusSrv.loadVocabulary($scope.appStatus.userActiveVocabularyName)
         .then(function(rtstatus)
         {
             $scope.runtimeStatus = rtstatus;
@@ -70,14 +59,9 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
     $scope.$on('$ionicView.leave', function(){
         if($scope.deregisterFunc)   $scope.deregisterFunc();
     });
-    // ---------------------------------------------------------------------------------------------------------
-    
-    $scope.updateRuntimeStatus = function(localFolder, do_update)
-    {
-        if(localFolder == "" || !do_update)   return Promise.resolve(RuntimeStatusSrv.getStatus());  
-        if(do_update)  return RuntimeStatusSrv.loadVocabulary(localFolder);
-    };
-    
+    // ===============================================================================================
+    // EXIT APP
+    // ===============================================================================================
     $scope.exit = function()
     {
         $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
@@ -87,6 +71,9 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $ionicHistor
         });
     };
     
+    // ===============================================================================================
+    // BUTTONS
+    // ===============================================================================================    
     $scope.action = function()
     {
         switch($scope.runtimeStatus.AppStatus)

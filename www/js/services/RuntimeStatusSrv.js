@@ -1,5 +1,5 @@
 /*
- * Manage RUNTIME (thus volatile) App status, mostly related to the recognition process
+ * Manage the active vocabulary RUNTIME (thus volatile) App status, mostly related to the recognition process
  * gets involved after InitAppSrv and InitCheckCtrl have managed persistent App status (all configs + appModality, FirstUse, isDeviceRegistered)
  * first called in InitCheckCtrl
  * 
@@ -37,8 +37,14 @@
 main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, EnumsSrv, $cordovaNetwork, FileSystemSrv, UITextsSrv, ErrorSrv) 
 {
     service                         = this;
+    initAppSrv                      = null;
     
     AppStatus                       = 0;        // calculated here
+    isLogged                        = false;    // InitCheckCtrl <== RemoteAPISrv     
+    isConnected                     = false;    // here accessing ionic native     
+    
+    vocabularies_folder             = "";       // <= init <= InitAppSrv        AllSpeak/vocabularies
+    training_folder                 = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
     
     _resetVoc = function()
     {
@@ -50,15 +56,6 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         train_relpath                   = "";       // defined in loadVocabulary    AllSpeak/training_sessions/gigi        
         vocabulary_json_path            = "";       //  AllSpeak/vocabularies/gigi/vocabulary.json
     };
-    
-    isLogged                        = false;    // InitCheckCtrl <== RemoteAPISrv     
-    isConnected                     = false;    // here accessing ionic native     
-
-    vocabularies_folder             = "";       // <= init <= InitAppSrv        AllSpeak/vocabularies
-    training_folder                 = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
-    
-    initAppSrv                      = null;
-
     //==============================================================================================================================
     // INIT SERVICE
     //==============================================================================================================================      
@@ -121,7 +118,6 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
             AppStatus = EnumsSrv.STATUS.NEW_TV;
             return AppStatus;
         }
-        
         if(vocabulary.status == null)
         {
             AppStatus = EnumsSrv.STATUS.NEW_TV;
@@ -130,33 +126,44 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
             
         vocabulary.status.canRecognize    = false;
         if(!vocabulary.status.hasTrainVocabulary)                   
-                                AppStatus = EnumsSrv.STATUS.NEW_TV;
+                                AppStatus                       = EnumsSrv.STATUS.NEW_TV;
         else
         {
             if(vocabulary.status.isNetLoaded && vocabulary.status.vocabularyHasVoices)
             {
-                                AppStatus = EnumsSrv.STATUS.CAN_RECOGNIZE;
+                                AppStatus                       = EnumsSrv.STATUS.CAN_RECOGNIZE;
                                 vocabulary.status.canRecognize  = true;
+                                vocabulary.status.label         = "PRONTO";
             }
             else
             {
-                if(!isNetLoaded) // give precedence to complete recordings/training rather than record voices
+                if(!vocabulary.status.isNetLoaded) // give precedence to complete recordings/training rather than record voices
                 {
                     //model doesn't exist, check whether (record a new / resume an existing) TS or send it to remote training
                     if(vocabulary.status.vocabulary.status.haveValidTrainingSession)  
-                                AppStatus = EnumsSrv.STATUS.TRAIN_TV;
-                    else                                            
-                                AppStatus = EnumsSrv.STATUS.RECORD_TV;
+                    {
+                                AppStatus                       = EnumsSrv.STATUS.TRAIN_TV;
+                                vocabulary.status.label         = "ADDESTRA RETE";
+                    }
+                    else
+                    {
+                                AppStatus                       = EnumsSrv.STATUS.RECORD_TV;
+                                vocabulary.status.label         = "REGISTRA DATI";
+                    }
                 }
                 else
                 {
                     // model exists
-                    if(!vocabulary.status.vocabularyHasVoices)      
-                                AppStatus = EnumsSrv.STATUS.RECORD_TVA;
+                    if(!vocabulary.status.vocabularyHasVoices)
+                    {
+                                AppStatus                       = EnumsSrv.STATUS.RECORD_TVA;
+                                vocabulary.status.label         = "REGISTRA VOCI DA RIPRODURRE";
+                    }
                     else
                     {
                                 alert("Error: inconsistent state");
                                 AppStatus = 0; 
+                                vocabulary.status.label         = "ERRORE";
                     }
                 }
             }
@@ -178,19 +185,19 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     loadDefault = function()
     {
         
-        vocabulary_relpath  = initAppSrv.getDefaultVocabularyFolder();
-        train_relpath       = "";
-        var vocjsonpath     = vocabulary_relpath    + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
+        vocabulary_relpath      = initAppSrv.getDefaultVocabularyFolder();
+        train_relpath           = "";
+        vocabulary_json_path    = vocabulary_relpath + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         
         return FileSystemSrv.existDir(vocabulary_relpath)
         .then(function(existfolder)
         {
-            if(existfolder)     return FileSystemSrv.existFile(vocjsonpath);
+            if(existfolder)     return FileSystemSrv.existFile(vocabulary_json_path);
             else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.VOCFOLDER_NOTEXIST, message:"NO_FOLDER of vocabulary : default"});
         })
         .then(function(existfile)
         {
-            if(existfile)       return VocabularySrv.getTrainVocabulary(vocjsonpath);
+            if(existfile)       return VocabularySrv.getTrainVocabulary(vocabulary_json_path);
             else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"NO_FILE of vocabulary : default"});
         })
         .then(function(voc)
@@ -207,34 +214,40 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
             $q.reject(error);
         });    
     };
+    //--------------------------------------------------------------------------
     // load a vocabulary given a folder name:
+    // if already loaded => return getStatus
+    // input foldername CANNOT be empty
     // - check folder existence
     // - check json existence
-    // - load json
-    // - check commands>0 (user can not create a voc with no commands, but user can later delete all the commands...thus check it).
-    // - check & suggest next step status (select commands, create/complete rec session/train net/load net/manage voices)
+    // - load voc
     // - load net if available
+    // - set userActiveVocabularyName
+    // - updates and return status
     //
-    loadVocabulary = function(uservocabularyname)
+    loadVocabulary = function(uservocabularyname, force)
     {
+        var doforce = (force == null ? false : force);
+        if(userVocabularyName == uservocabularyname && !doforce)  return Promise.resolve(getStatus());
+        
         vocabulary_old = cloneObj(vocabulary);
         
         if(uservocabularyname == "" || uservocabularyname == null)  
             return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.VOCFOLDERVARIABLE_EMPTY, message:"Error in RuntimeStatusSrv::loadVocabulary : input voc folder (" + userVocabularyName + ") is not valid"});
         
-        vocabulary_relpath  = vocabularies_folder   + "/" + uservocabularyname;
-        train_relpath       = training_folder       + "/" + uservocabularyname;
-        var vocjsonpath     = vocabulary_relpath    + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
+        vocabulary_relpath      = vocabularies_folder + "/" + uservocabularyname;
+        train_relpath           = training_folder     + "/" + uservocabularyname;
+        vocabulary_json_path    = vocabulary_relpath  + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         
         return FileSystemSrv.existDir(vocabulary_relpath)
         .then(function(existfolder)
         {
-            if(existfolder)     return FileSystemSrv.existFile(vocjsonpath);
+            if(existfolder)     return FileSystemSrv.existFile(vocabulary_json_path);
             else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.VOCFOLDER_NOTEXIST, message:"NO_FOLDER"});
         })
         .then(function(existfile)
         {
-            if(existfile)       return VocabularySrv.getTrainVocabulary(vocjsonpath);
+            if(existfile)       return VocabularySrv.getTrainVocabulary(vocabulary_json_path);
             else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"NO_FILE"});
         })
         .then(function(voc)
@@ -246,7 +259,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         {
 //            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST || error.mycode == ErrorSrv.ENUMS.VOCABULARY.VOCFOLDER_NOTEXIST)
             if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY || error.mycode == ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST)
-                return $q.resolve(false); 
+                return $q.resolve(false); // this reject are not problematic, there could be 
             else
                 return $q.reject(error);
         })        
@@ -279,7 +292,8 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
 //            }
         });    
     };
-    
+    //
+    //--------------------------------------------------------------------------
     // called by ManageCommandsCtrl::saveTrainVocabulary
     saveTrainVocabulary = function(voc)
     {
@@ -292,14 +306,14 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         .then(function()
         {  
             return loadVocabulary(voc.sLocalFolder);
-        })     
+        });     
     };  
     
     unloadVocabulary = function()
     {
         _resetVoc();
-        userActiveVocabularyName = "";
-        return initAppSrv.setStatus({"userActiveVocabularyName":""})
+        userActiveVocabularyName = "default";
+        return initAppSrv.setStatus({"userActiveVocabularyName":userActiveVocabularyName})
         .then(function()
         {
             return loadDefault();
@@ -326,6 +340,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     //======================================================================================================================================
     return {
         init                        : init,                            //
+        loadDefault                 : loadDefault,                  //
         loadVocabulary              : loadVocabulary,                  //
         saveTrainVocabulary         : saveTrainVocabulary,             //
         unloadVocabulary            : unloadVocabulary,                 //

@@ -5,7 +5,7 @@
  *  - start a recording session
  */
 
-function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ionicModal, $ionicPopup, VocabularySrv, VoiceBankSrv, InitAppSrv, FileSystemSrv, StringSrv, EnumsSrv, RuntimeStatusSrv, UITextsSrv)  
+function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ionicModal, $ionicPopup, VocabularySrv, VoiceBankSrv, InitAppSrv, FileSystemSrv, StringSrv, EnumsSrv, UITextsSrv)  
 {
     $scope.labelStartTrainSession                   = "REGISTRA COMANDI";
     $scope.labelEditTrainVocabulary                 = "CAMBIA COMANDI";
@@ -37,6 +37,8 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     $scope.successState             = "manage_recordings";
     $scope.cancelState              = "vocabularies";
     
+    $scope.isDefault                = false;    // if is a default NET, I cannot train it, doesn't have any recordings
+                                                // I can see the commands, but cannot edit them    
     // =======================================================================================================
     // MODAL
     // =======================================================================================================
@@ -107,6 +109,9 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         //---------------------------------------------------------------------------------------------------------------------
         $scope.default_voc_folder       = InitAppSrv.getDefaultVocabularyName();    // default
         $scope.createNewVocabularyText  = UITextsSrv.TRAINING.MODAL_CREATE_NEWVOCABULARY;
+
+        $scope.plugin_enums = InitAppSrv.getPlugin().ENUM.PLUGIN;
+        
         
         if($scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
         {
@@ -114,8 +119,13 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             return VocabularySrv.getTrainVocabulary($scope.vocabulary_json_path)
             .then(function(voc)
             {
-                $scope.vocabulary             = voc;
-                $scope.commands               = voc.commands;
+                $scope.vocabulary               = voc;
+                $scope.commands                 = voc.commands;
+                
+                $scope.isDefault                = false;
+                if($scope.vocabulary.nModelType != null)
+                    if($scope.vocabulary.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
+                        $scope.isDefault = true;                
                 
                 if($scope.mode_id == EnumsSrv.TRAINING.EDIT_TV) 
                 {
@@ -253,7 +263,10 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     $scope.onCancelNewVocabularyName = function()
     {
         $scope.modalSelectNewVocabulary.hide(); 
-        $state.go('home');    
+        if($scope.backState != "")
+            $state.go($scope.backState)
+        else
+            $state.go('home');    
     };    
 
   

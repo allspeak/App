@@ -23,11 +23,11 @@
         
         <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_commands({modeId:enum_showvoccommands, foldername:foldername, backState:'vocabulary'})" >{{labelEditTrainVocabulary}}</button>
         
-        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
+        <button class="button button-outline button-tall button-block button-large button-positive" ng-disabled="isDefault" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
         
         <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="voicebank({elems2display:enum_show_vb_voc, foldername:foldername, backState:'vocabulary'})" >{{labelRecordVoice}}</button>
         
-        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
+        <button class="button button-outline button-tall button-block button-large button-positive" ng-disabled="isDefault" ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
         
         <ion-toggle
             ng-disabled="!status.modelExist"
