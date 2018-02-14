@@ -115,7 +115,7 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
     // called by any controller pretending to override some default properties 
     // ctrlcfg = {captureCfg: {nSampleRate, nBufferSize, } , vafCfg: }
     // standardCfg = {capture_configurations[{nSampleRate, nBufferSize, }, {nSampleRate, nBufferSize, }, ...] , vafCfg: }
-    getUpdatedCfg = function (ctrlcfg, captureProfile, output_chunks)
+    getUpdatedCfgCopy = function (ctrlcfg, captureProfile, output_chunks)
     {
         if(lockMode == LOCK_TYPES.FREE)
         {        
@@ -667,8 +667,8 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
     //==========================================================================
     return {
         init                    : init,
-        setCfg               : setCfg, 
-        getUpdatedCfg           : getUpdatedCfg, 
+        setCfg                  : setCfg, 
+        getUpdatedCfgCopy       : getUpdatedCfgCopy, 
         getCfg                  : getCfg, 
         startMicPlayback        : startMicPlayback,
         startRawCapture         : startRawCapture, 

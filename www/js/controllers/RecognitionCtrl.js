@@ -23,6 +23,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
     $scope.voicebank_relpath           = "";   // AllSpeak/voicebank
     $scope.voicebank_resolved_root  = "";   // 
     
+    $scope.recThreshold             = 0;
     $scope.pluginInterface          = null; 
     //--------------------------------------------------------------------------
     // INITIALIZATIONS    
@@ -82,7 +83,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
         $scope.Cfg.captureCfg                   = $scope.initCaptureParams;
         $scope.Cfg.vadCfg                       = $scope.initVadParams;
         $scope.Cfg.vadCfg.nAudioResultType      = ($scope.saveSentences ? $scope.pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA_SAVE_SENTENCE : $scope.pluginInterface.ENUM.PLUGIN.VAD_RESULT_PROCESS_DATA);
-        $scope.Cfg                              = SpeechDetectionSrv.getUpdatedCfg($scope.Cfg, $scope.captureProfile, null);
+        $scope.Cfg                              = SpeechDetectionSrv.getUpdatedCfgCopy($scope.Cfg, $scope.captureProfile, null);
 
         $scope.Cfg.mfccCfg                      = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
         
@@ -113,6 +114,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
             // OVERRIDE LOADED VOC
             for(item in $scope.initTfParams)        $scope.vocabulary[item] = $scope.initTfParams[item];
             
+            $scope.recThreshold         = $scope.vocabulary.fRecognitionThreshold;     
             return VocabularySrv.getTrainVocabularyVoicesPaths($scope.vocabulary);  // get the path of the wav to playback once a sentence is recognized            
         })
         .then(function(voicefiles)
@@ -183,6 +185,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
     {
         if (!$scope.isvoicemonitoring)
         {
+            $scope.vocabulary.fRecognitionThreshold = ($scope.recThreshold/100);
             $scope.initMonitoring();
             if($scope.saveSentences)
             {
@@ -202,6 +205,12 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
         $state.go('settings.recognition'); 
     };
 
+    $scope.changeThreshold = function(boolincrement)
+    {
+        $scope.recThreshold = (boolincrement == true ? $scope.recThreshold+5    :   $scope.recThreshold-5)
+        $scope.recThreshold = Math.max($scope.recThreshold, 0);
+        $scope.recThreshold = Math.min($scope.recThreshold, 50);
+    }
     //==================================================================================
     // PLUGIN CALLBACKS
     //==================================================================================

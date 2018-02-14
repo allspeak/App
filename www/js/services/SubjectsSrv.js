@@ -5,11 +5,12 @@
  */
 
 
-function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
+function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv, CommandsSrv)
 {
     var subjects                = null;
     var initSubjectsJson        = {"subjects" : []}
 
+    var tempsubjects            = null;     // used to store subjects while performing ops on it.
     // values taken by defaults.json
     var subjects_filerel_path   = "";   // AllSpeak/json/subjects.json
     var training_folder   = "";            // AllSpeak/audiofiles
@@ -18,7 +19,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
     init = function(default_paths)
     {
         subjects_filerel_path   = default_paths.subjects_filerel_path;
-        training_folder            = default_paths.training_folder;
+        training_folder         = default_paths.training_folder;
         
         return FileSystemSrv.existFile(subjects_filerel_path)
         .then(function(exist){
@@ -31,18 +32,77 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
     };
     //-----------------------------------------------------------------------------------------------------------------
     // read from json and return it
-    getSubjects = function (path) {
+    getSubjects = function (path) 
+    {
         if (path)  subjects_filerel_path = path;
 
         if (subjects) return Promise.resolve(subjects);
         
         return FileSystemSrv.readJSON(subjects_filerel_path)
-        .then(function(content){
+        .then(function(content)
+        {
             subjects = content.subjects;
             return subjects;
         });
     };
 
+    updateSubjects = function () 
+    {
+        subjects = [];
+        return FileSystemSrv.listDir(training_folder)
+        .then(function(folders)
+        {
+            for(var f=0; f<folders.length; f++)
+                if(folders[f].name != "temp")   
+                    insertSubject({"label":folders[f].name})
+            return subjects;
+        })
+        .catch(function(error)
+        {
+            alert("Error while updating subjects: " + error.toString());
+            subjects = tempsubjects;
+            return subjects;
+        });
+    };
+    
+    updateSubjects = function () 
+    {
+        subjects = [];
+        return FileSystemSrv.listDir(training_folder)
+        .then(function(folders)
+        {
+            for(var f=0; f<folders.length; f++)
+                if(folders[f].name != "temp")   
+                    insertSubject({"label":folders[f].name})
+            return subjects;
+        })
+        .catch(function(error)
+        {
+            alert("Error while updating subjects: " + error.toString());
+            subjects = tempsubjects;
+            return subjects;
+        });
+    };
+    
+    updateSubjects = function () 
+    {
+        subjects = [];
+        return FileSystemSrv.listDir(training_folder)
+        .then(function(folders)
+        {
+            for(var f=0; f<folders.length; f++)
+                if(folders[f].name != "temp")   
+                    insertSubject({"label":folders[f].name})
+            return subjects;
+        })
+        .catch(function(error)
+        {
+            alert("Error while updating subjects: " + error.toString());
+            subjects = tempsubjects;
+            return subjects;
+        });
+    };
+    
     getHttpSubjects = function (path) {
         return $http.get(path)
         .then(function(res){
@@ -103,7 +163,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
         return getSubjectAudioFiles(relpath)
         .then(function(files){
             // I get only wav file names without extension
-            return VocabularySrv.updateCommandsFiles(commands, files);// writes subject.commands[:].files[]
+            return CommandsSrv.updateCommandsFiles(commands, files);// writes subject.commands[:].files[]
         })
         .catch(function(error){
             return $q.reject(error);
@@ -169,7 +229,8 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
         else        return $q.reject({"message": "subject id not found....very bad error!"});
     };
     
-    insertSubject = function(subject, root_folder)
+    // update array and writes
+    insertSubject = function(subject)
     {
         subject.commands  = [];
         subject.folder      = StringSrv.format2filesystem(subject.label);
@@ -182,7 +243,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
             return setSubjects(subjects);
         })
         .then(function(success){
-            return FileSystemSrv.createDir(root_folder + "/" + subject.folder);
+            return FileSystemSrv.createDir(subject.path);
         })      
         .catch(function(error){
            return $q.reject(error);
@@ -205,6 +266,15 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
         var subjects = {"subjects" : []};
     };
     
+    validateSubject = function(new_subject)
+    {
+        var len = subjects.length;
+        for (s=0; s<len; s++){
+           if(subjects[s].label == new_subject.label)
+               return 0;
+        }
+        return 1;
+    };     
     //================================================================================
     // public interface
     //================================================================================
@@ -212,6 +282,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
         init: init,
         setSubjects: setSubjects,
         getSubjects: getSubjects, 
+        updateSubjects: updateSubjects, 
         createSubjectsFile: createSubjectsFile,
         insertSubject: insertSubject, 
         deleteSubject: deleteSubject, 
@@ -221,7 +292,8 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv)
         getHighestID: getHighestID,
         getSubjectAudioFiles: getSubjectAudioFiles,
         getSubjectVocabularyFiles: getSubjectVocabularyFiles,
-        getSubjectSentenceAudioFiles: getSubjectSentenceAudioFiles
+        getSubjectSentenceAudioFiles: getSubjectSentenceAudioFiles,
+        validateSubject: validateSubject
     };
 };
 

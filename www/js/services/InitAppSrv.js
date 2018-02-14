@@ -34,6 +34,7 @@
     {   
         "appModality": 112,
         "isFirstUse": false,
+        "isDeviceRegistered":true
         "file_system"               : {},   
         "capture_configurations"    : {
             "recognition"   : {},
@@ -43,7 +44,7 @@
         "vad"           : {},
         "mfcc"          : {},
         "tf"            : {},       
-        "remote"        : {"isDeviceRegistered"},
+        "remote"        : {},
         "bluetooth"     : {},
         "device"        : {}
     }
@@ -52,7 +53,7 @@
  */
 
 
-function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, MfccSrv, VocabularySrv, RemoteAPISrv, FileSystemSrv, RuntimeStatusSrv, EnumsSrv)
+function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, MfccSrv, VocabularySrv, RemoteAPISrv, FileSystemSrv, RuntimeStatusSrv, EnumsSrv)
 {
     var service                     = {}; 
     service.default_json_www_path   = "./json/defaults.json";
@@ -66,37 +67,29 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
     {
         return service.initPermissions()
         .then( function() {
-            return service.loadDefaults();        
-        })      // load defaults
+            return service.loadDefaults();          // load defaults
+        })     
         .then( function() {
-            return service.createFileSystemDirs();
-        })      // create FS dirs
+            return service.createFileSystemDirs();  // create FS dirs
+        })      
         .then( function() {
-            return service.loadConfigFile();        
-        })      // load config file
+            return service.loadConfigFile();        // load config file
+        })      
         .then( function() {
-            return service.initServices();        
-        })      // init services    
+            return service.getVersion();            // get App version and write it to config.json
+        })          
         .then( function() {
-            return service.LoadVBVocabularies();
-        })      // load VB vocs
+            return service.initServices();          // init services
+        })          
+        .then( function() {
+            return service.LoadVBVocabularies();    // load VB vocs
+        })      
         .then( function() {     
-            return service.manageTFModels();
-        })      // copy def net
+            return service.manageTFModels();        // copy def net
+        })      
         .then( function() {
-            return service.setupAudioDevices();
-        })      // setup audio     
-//        .then( function(){
-//            if ( service.config.appConfig.isAssisted)
-//                return service.login(service.config.appConfig.remote);
-//            else
-//                return 0;
-//        })
-//        .then( function(){
-//            if (true)  
-//                // manage login errors
-//                return 0;
-//        })
+            return service.setupAudioDevices();     // setup audio
+        })           
         .catch(function(error){
             return $q.reject(error);
         });
@@ -197,7 +190,7 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
             service.config.appConfig        = appconfig;
             service.config.appConfig.device = HWSrv.getDevice();
             
-            service.plugin                  = eval(service.config.defaults.plugin_interface_name);
+            service.plugin                  = eval(service.config.defaults.system.plugin_interface_name);
             
             if(service.plugin == null)
                 return $q.reject({"message": "audioinput plugin is not present"});
@@ -205,6 +198,23 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
         .catch(function(error){ 
             return $q.reject(error);               
         });        
+    };
+    
+    //====================================================================================================================
+    // get App version
+    service.getVersion = function()
+    {
+        return $cordovaAppVersion.getVersionNumber()
+        .then(function(vern)
+        {
+            service.config.appConfig.system.versionnum = vern;
+            return $cordovaAppVersion.getVersionCode();
+        })
+        .then(function(verc)
+        {
+            service.config.appConfig.system.versioncode    = verc;
+            return FileSystemSrv.createJSONFileFromObj(service.config.defaults.file_system.config_filerel_path, service.config.appConfig, 2);
+        });
     };
     
     //====================================================================================================================
@@ -271,7 +281,8 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
             service.config.appConfig.audio_devices = ad;
             return 1;
         })
-        .then( function() {
+        .then(function() 
+        {
             return service._connectBluetoothDevices(service.config.appConfig.blt_devices); // TODO:
         })        
         .catch(function(error){ 
@@ -296,13 +307,15 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
         service.config.appConfig.vad                        = service.config.defaults.vad;
         service.config.appConfig.bluetooth                  = service.config.defaults.bluetooth;
         service.config.appConfig.remote                     = service.config.defaults.remote;
+        service.config.appConfig.system                     = service.config.defaults.system;
         service.config.appConfig.device                     = HWSrv.getDevice();
         
         service.config.appConfig.file_system.resolved_odp   = FileSystemSrv.getResolvedOutDataFolder();  // ends with '/'
-        service.config.appConfig.remote.isDeviceRegistered  = false;
         
         service.config.appConfig.isFirstUse                 = true;
         service.config.appConfig.appModality                = EnumsSrv.MODALITY.SOLO;
+        service.config.appConfig.isDeviceRegistered         = false;
+        service.config.appConfig.api_key                    = "";
         service.config.appConfig.userActiveVocabularyName   = "default";
     };
 
@@ -333,38 +346,28 @@ function InitAppSrv($http, $q, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, M
         return {"isFirstUse"                : service.config.appConfig.isFirstUse,
                 "appModality"               : service.config.appConfig.appModality,
                 "userActiveVocabularyName"  : service.config.appConfig.userActiveVocabularyName,
-                "isDeviceRegistered"        : service.config.appConfig.remote.isDeviceRegistered
+                "isDeviceRegistered"        : service.config.appConfig.isDeviceRegistered,
+                "api_key"                   : service.config.appConfig.api_key
         };
     }; 
  
     //==========================================================================
     // UPDATE STATUS & CONFIG
     //==========================================================================
-    // write to json the following :  AppStatus, isFirstUse, userActiveVocabulary, remote.isDeviceRegistered
+    // write to json the following :  AppStatus, isFirstUse, userActiveVocabulary, isDeviceRegistered, api_key
     service.setStatus = function(statusobj)
     {
         var old = {};
         for(elem in statusobj)
         {
-            if(elem == "isDeviceRegistered" || elem == "api_key")
-            {
-                old[elem]                               = service.config.appConfig.remote[elem];
-                service.config.appConfig.remote[elem]   = statusobj[elem];
-            }
-            else
-            {
-                old[elem]                               = service.config.appConfig[elem];
-                service.config.appConfig[elem]          = statusobj[elem];
-            }
+            old[elem]                               = service.config.appConfig[elem];
+            service.config.appConfig[elem]          = statusobj[elem];
         };
         return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config.appConfig))
         .catch(function(error)
         { 
             for(elem in old)
-                if(elem == "isDeviceRegistered")
-                    service.config.appConfig.remote[elem]   = old[elem];
-                else
-                    service.config.appConfig[elem]          = old[elem];
+                service.config.appConfig[elem]          = old[elem];
                 
             return $q.reject(error);              
         });        

@@ -206,7 +206,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         // get standard capture params + overwrite some selected
         $scope.Cfg.captureCfg       = $scope.initCaptureParams;
         $scope.Cfg.vadCfg           = null;
-        $scope.Cfg                  = SpeechDetectionSrv.getUpdatedCfg($scope.Cfg, $scope.captureProfile);        
+        $scope.Cfg                  = SpeechDetectionSrv.getUpdatedCfgCopy($scope.Cfg, $scope.captureProfile);        
 
         $scope.Cfg.mfccCfg          = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
 

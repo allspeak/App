@@ -5,7 +5,8 @@
  * it manages:
  *  - AppStatus.isFirstUse
  *  - AppStatus.appModality
- *  - remote.isDeviceRegistered
+ *  - isDeviceRegistered
+ *  - api_key
  *  
  * Then, it calculates the vocabulary status
  * 
@@ -51,27 +52,50 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     //-----------------------------------------------------------------------------------------
     $scope.$on('$ionicView.enter', function()
     {
-        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function() 
-        {
-            var a=1;
-        }, 100);         
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(){ var a=1; }, 100);         
         
+        $scope.appStatus = RuntimeStatusSrv.getStatus();
+        if($scope.appStatus.isConnected)
+            RemoteAPISrv.checkAppUpdate($scope.startApp, $scope.OnUpdateAppError);
+        else
+            $scope.startApp(false);
+    });
+    
+    $scope.$on('$ionicView.leave', function(){if($scope.deregisterFunc)   $scope.deregisterFunc();});    
+   
+    // in case of error during update check...start the current App
+    // The timeout error is managed within RemoteAPISrv with a proper timer, which is expected to trigger much later than this callback error. 
+    // thus this error should be related to a response from the server. which should be ON.
+    $scope.OnUpdateAppError = function(error) 
+    {
+        $scope.startApp(true);  
+    };
+    
+    // callback from RemoteAPISrv.checkAppUpdate
+    // callback after update finish/ no update
+    // if trylogin = false the server should be considered down
+    $scope.startApp = function(isServerOn) 
+    {    
         $scope.appStatus    = InitAppSrv.getStatus();
         $scope.modalities   = EnumsSrv.MODALITY;
         $scope.modeljson    = "";
-        RuntimeStatusSrv.setStatus("isLogged", false);
+        RuntimeStatusSrv.setStatus({"isLogged": false, "isServerOn": isServerOn});
         
-        if($scope.appStatus.isFirstUse)
+        if(isServerOn)
         {
-            $cordovaSplashscreen.hide();
-            $scope.modalWant2beAssisted.show();
+            if($scope.appStatus.isFirstUse)
+            {
+                $cordovaSplashscreen.hide();
+                $scope.modalWant2beAssisted.show();
+            }
+            else $scope.checkIsAssisted();        
         }
-        else $scope.checkIsAssisted();
-    });
-    
-    $scope.$on('$ionicView.leave', function(){
-        if($scope.deregisterFunc)   $scope.deregisterFunc();
-    });    
+        else
+        {
+            alert("Il server sembra attualmente non funzionante, puoi continuare ad usare l\'App senza pero accedere alle funzioni speciali")
+            $scope.endCheck('home'); 
+        }
+    }
    
     // callback from modalWant2beAssisted 
     $scope.OnWant2beAssisted = function(int) 
@@ -200,11 +224,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
             {
                 alert("ERRORE CRITICO in InitCheckCtrl::checkIsAssisted " + error.toString());
                 RuntimeStatusSrv.setStatus("isLogged", false);
-                return $scope.endCheck('home')
-                .then(function(){
-                    error.message = "ERRORE CRITICO in InitCheckCtrl::checkIsAssisted " + error.message;
-                    return $q.reject(error);
-                })
+                return $scope.endCheck('home');
             });
         }
     };    

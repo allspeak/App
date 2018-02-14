@@ -20,11 +20,11 @@ function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
     $scope.$on("$ionicView.enter", function(event, data)
     {
         pluginInterface                     = InitAppSrv.getPlugin();            
-        $scope.Cfg.captureParams            = $scope.captureParams;
-        $scope.Cfg.captureParams.nDataDest  = pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_DB;        
+        $scope.Cfg.captureCfg               = $scope.captureParams;
+        $scope.Cfg.captureCfg.nDataDest     = pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_DB;        
 
         // get standard capture params + overwrite some selected
-        $scope.Cfg                          = SpeechDetectionSrv.getUpdatedCfg($scope.Cfg, $scope.captureProfile, $scope.chunkSaveParams);
+        $scope.Cfg                          = SpeechDetectionSrv.getUpdatedCfgCopy($scope.Cfg, $scope.captureProfile, $scope.chunkSaveParams);
     });        
 
     $scope.start = function()

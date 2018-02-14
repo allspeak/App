@@ -28,6 +28,9 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     user                = {};
     user_id             = 0;
     
+    onUpdateError       = null;
+    onUpdateSuccess     = null;
+    
     // training process
     is_training         = false;    // indicate whether a training process have been started on the server
     session_id          = 0;        // got from server (after uploadTrainingData) 
@@ -39,6 +42,10 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     
     oldUploadPerc       = 0;
     oldDownloadPerc     = 0;
+    
+//    abortCheckUpdate    = false;    // this flag is used to disable the server callback in case of server down. a timer is activated 
+    waitServerTime      = 3000;
+    isServerOn          = false;
     // ==========================================================================================================================
     // PUBLIC
     // ==========================================================================================================================
@@ -48,17 +55,72 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         pluginInterface = plugin;
         initAppSrv      = initappserv;
         
-//        ServerCfg.url   = "http://10.245.72.37:8095";     // OVERWRITE FOR DEBUG
-        ServerCfg.url   = "http://192.168.1.251:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://10.245.72.25:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://10.245.71.136:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.251:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.124:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.71:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.90:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.0.8:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
+        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.180:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.133:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://api.allspeak.eu";     // OVERWRITE FOR DEBUG
+        Enums           = window.AppUpdate.ENUM.PLUGIN;
     };
+    
+    //===============================================================================================
+    // UPDATE APP
+    //===============================================================================================
+    checkAppUpdate = function(succ, error)
+    {
+        var opts = {};
+        if(error == null)   onUpdateError = succ;
+        else                onUpdateError = error;
+        
+        onUpdateSuccess = succ;
+//        $timeout(onTimeout, waitServerTime);        
+        window.AppUpdate.checkAppUpdate(onCheckAppUpdateSuccess, onCheckAppUpdateError, ServerCfg.url + "/" + initAppSrv.config.appConfig.remote.stableupdateurl,  waitServerTime, opts);
+//        onUpdateSuccess(true);
+    };
+    
+//    onTimeout = function()
+//    {
+//        abortCheckUpdate = true;    // disable the timeout error, evoked by the system after several seconds
+//        isServerOn = false;
+//        onUpdateSuccess(false);
+//    };
+    
+    onCheckAppUpdateSuccess = function(result)
+    {
+        isServerOn = true;
+ 
+        console.log(result.msg);        
+        switch(result.code)
+        {
+            case Enums.VERSION_UP_TO_UPDATE:
+                onUpdateSuccess(isServerOn);
+                break;
+
+            case Enums.VERSION_NEED_UPDATE:
+                break;
+
+        }        
+    };
+    
+    onCheckAppUpdateError = function(err)
+    {
+        console.log(err.msg);
+        if(err.type == window.AppUpdate.ENUM.PLUGIN.TIMEOUT_ERROR)
+        {
+            isServerOn = false;
+            onUpdateSuccess(isServerOn);
+        }
+        else
+            onUpdateError(err);
+    };
+    //===============================================================================================
     
     getApiKey = function()
     {
@@ -402,6 +464,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     //==========================================================================
     return {
         init                        : init,
+        checkAppUpdate              : checkAppUpdate,
         getApiKey                   : getApiKey,
         registerDevice              : registerDevice,
         uploadTrainingData          : uploadTrainingData,

@@ -31,7 +31,7 @@
         <ion-list>
             <ion-item class="item-button-right" ng-repeat="sent in voicebankSentences track by $index"> {{sent.title}}
                 <div class="buttons">
-                    <button class="button button-clear button-balanced" ng-disabled="isBusy" ng-show="sent.nrepetitions" ng-click="playAudio(sent.filename)">
+                    <button class="button button-clear button-balanced" ng-disabled="isBusy" ng-show="sent.nrepetitions" ng-click="playAudio(sent.files[0].label)">
                         <i class="icon ion-play"></i>
                     </button>
                     <button class="button button-clear button-assertive" ng-disabled="isBusy" ng-click="recordAudio(sent.id)">

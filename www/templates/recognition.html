@@ -23,6 +23,13 @@
             
             <ion-toggle class="item" ng-model="headsetSelected" ng-disabled="isvoicemonitoring || !headsetAvailable" ng-click="useHS(headsetSelected)">Attiva Microfono esterno</ion-toggle>             
             
+            <div class="item item-input">
+                <div class="input-label">Soglia di riconoscimento</div>
+                 <span class="badge">{{recThreshold}}    
+                <button type="button button-right" ng-click="changeThreshold(false);">-</button>
+                <button type="button button-right" ng-click="changeThreshold(true);">+</button></span>
+            </div>            
+            
             <ion-list>
                 <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
                     <div class="buttons">
@@ -36,6 +43,15 @@
                     </div>                
                 </ion-item>
             </ion-list>
+
+            <div class="card">
+                <div class="item item-divider">COMANDO RICONOSCIUTO</div>
+                <ion-list>
+                    <ion-item ng-repeat="item in recognizedItems track by $index">
+                        <label>{{item.title}}<span class="badge">{{item.confidence}}</span></label>
+                    </ion-item>
+                </ion-list>         
+            </div>                
 
             <div class="card">
                 <div class="item item-divider">
@@ -52,16 +68,8 @@
                             {{model.label}}
                     </ion-toggle>            
                 </ion-list>  
-            </div>
-
-            <div class="card">
-                <div class="item item-divider">COMANDO RICONOSCIUTO</div>
-                <ion-list>
-                    <ion-item ng-repeat="item in recognizedItems track by $index">
-                        <label>{{item.title}}<span class="badge">{{item.confidence}}</span></label>
-                    </ion-item>
-                </ion-list>         
-            </div>                
+            </div>            
+            
         </div>      
     </ion-content>
   

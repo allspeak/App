@@ -8,7 +8,7 @@
  *
  */
  
-function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, EnumsSrv, UITextsSrv)
+function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, EnumsSrv, UITextsSrv, RemoteAPISrv)
 {
     $scope.$on('$ionicView.enter', function(event, data)
     {

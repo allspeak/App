@@ -2,9 +2,15 @@
     "defaults":
     {   
         "appModality"               : 110,
-        "isFirstUse"                : true,        
-        "userActiveVocabularyName"  : "default",        
-        "plugin_interface_name"     : "window.speechrecognition",
+        "isFirstUse"                : true,
+        "isDeviceRegistered"        : false,
+        "api_key"                   : "",
+        "userActiveVocabularyName"  : "default",
+        "system"                    : {
+            "plugin_interface_name"     : "window.speechrecognition",
+            "versioncode"               : 103,
+            "versionnum"                : "1.0.1"
+        },
         "file_system"               : {
             "data_storage_root"                     : "externalRootDirectory",
             "data_assets_folder"                    : "www",
@@ -28,7 +34,6 @@
             "universalJsonFileName"                 : "vocabulary.json",
 
             "train_vocabulary_filerel_path"         : "",
-            
             "resolved_odp"                          : ""
         },
         "capture_configurations"    : {
@@ -121,10 +126,9 @@
             "sLocalFolder"          : "default"
         },
         "remote"                    : {    
-            "patient_id"            : "",
-            "url"                   : "http://api.allspeak.eu:8888",
-            "api_key"               : "",
-            "isDeviceRegistered"    : false,
+            "url"                   : "http://api.allspeak.eu",
+            "stableupdateurl"       : "stableupdate.xml",
+            "expupdateurl"          : "expupdate.xml",
             "api"                   : {
                                         "register_device"               : "devices",
                                         "upload_training_session"       : "training-sessions",

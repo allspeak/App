@@ -1,6 +1,6 @@
 main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native']);
 
-main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootScope) //, $cordovaSplashscreen) 
+main_module.run(function($ionicPlatform, $ionicPopup, $cordovaSplashscreen, InitAppSrv, $state, $rootScope) //, $cordovaSplashscreen) 
 {
     $ionicPlatform.ready(function() 
     {
@@ -33,6 +33,7 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
                 else               str = error;
                 $ionicPopup.alert({ title: 'Errore', template: "L\'applicazione verra chiusa per il seguente errore:\n" + str })
                 .then(function() {
+                    $cordovaSplashscreen.hide();
                     console.log(error.message);
                     //ionic.Platform.exitApp(); // to uncomment in production
                 });                

@@ -34,7 +34,7 @@
  *      isConnected 
  */
 
-main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, EnumsSrv, $cordovaNetwork, FileSystemSrv, UITextsSrv, ErrorSrv) 
+main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, VocabularySrv, EnumsSrv, $cordovaNetwork, FileSystemSrv, UITextsSrv, ErrorSrv) 
 {
     service                         = this;
     initAppSrv                      = null;
@@ -42,9 +42,13 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     AppStatus                       = 0;        // calculated here
     isLogged                        = false;    // InitCheckCtrl <== RemoteAPISrv     
     isConnected                     = false;    // here accessing ionic native     
+    isServerOn                      = false;    // indicated if the server is ON
     
     vocabularies_folder             = "";       // <= init <= InitAppSrv        AllSpeak/vocabularies
     training_folder                 = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
+    
+    updateTimeout        = null; // timer started when check for update
+    waitServerTime       = 5000;
     
     _resetVoc = function()
     {
@@ -82,6 +86,8 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         }, function(error){
             alert("RuntimeStatusSrv::$cordovaNetwork.onDisconnect " + error.toString());
         });    
+        
+        isConnected = (navigator.connection.type != "none" ? true : false);
     }
     //==============================================================================================================================
     // LOADED VOCABULARY STATUS
@@ -94,6 +100,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
                  "AppStatus"                     :AppStatus,
                  "isLogged"                      :isLogged,  
                  "isConnected"                   :isConnected,  
+                 "isServerOn"                    :isServerOn  
                 };
     };
 
