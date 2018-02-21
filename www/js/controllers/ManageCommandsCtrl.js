@@ -39,6 +39,8 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     
     $scope.isDefault                = false;    // if is a default NET, I cannot train it, doesn't have any recordings
                                                 // I can see the commands, but cannot edit them    
+    $scope.isNewVoc                 = false; 
+                                                
     // =======================================================================================================
     // MODAL
     // =======================================================================================================
@@ -112,7 +114,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
 
         $scope.plugin_enums = InitAppSrv.getPlugin().ENUM.PLUGIN;
         
-        
+        $scope.isNewVoc                 = false
         if($scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
         {
             // TRAINING.EDIT_TV || TRAINING.SHOW_TV
@@ -164,6 +166,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
                 })
                 .then(function(modal) 
                 {
+                    $scope.isNewVoc                 = true;
                     $scope.modalSelectNewVocabulary = modal; 
                     $scope.modalSelectNewVocabulary.show();
                 })
@@ -174,6 +177,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             }   
             else
             {
+                $scope.isNewVoc = true;
                 $scope.modalSelectNewVocabulary.show();
                 $scope.$apply();
             }
@@ -188,7 +192,10 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     // button back to vocabulary
     $scope.cancel = function()
     {
-        $state.go('vocabulary', {"foldername":$scope.foldername});
+        if($scope.isNewVoc)
+            $state.go('home');
+        else
+            $state.go('vocabulary', {"foldername":$scope.foldername});
     };     
     //-------------------------------------------------------------------
     // NO VOCABULARY EXIST ($scope.selectList = true)
@@ -351,6 +358,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             return VocabularySrv.setTrainVocabulary($scope.vocabulary)
             .then(function()
             {
+                $scope.isNewVoc             = false;
                 $scope.commands             = $scope.vocabulary.commands;
                 $scope.selectList           = false;
                 $scope.editTrainVocabulary  = false;

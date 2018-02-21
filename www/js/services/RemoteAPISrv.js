@@ -96,7 +96,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     {
         isServerOn = true;
  
-        console.log(result.msg);        
+        console.log(result.message);        
         switch(result.code)
         {
             case Enums.VERSION_UP_TO_UPDATE:
@@ -111,7 +111,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     
     onCheckAppUpdateError = function(err)
     {
-        console.log(err.msg);
+        console.log(err.message);
         if(err.type == window.AppUpdate.ENUM.PLUGIN.TIMEOUT_ERROR)
         {
             isServerOn = false;

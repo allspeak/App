@@ -295,7 +295,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
 //                case "NO_FILE":
 //                    return getStatus();
 //                default:
-                    $q.reject(error);
+                    return $q.reject(error);
 //            }
         });    
     };

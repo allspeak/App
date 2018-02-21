@@ -365,7 +365,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
             if(s != index)
                 $scope.modelsJson[s].checked = false;
 //        return TfSrv.loadTFModelPath($scope.modelsJson[index].jsonpath)
-        return RuntimeStatusSrv.loadVocabulary($scope.modelsJson[index].localfolder)
+        return RuntimeStatusSrv.loadVocabulary($scope.modelsJson[index].localfolder, true)
         .then(function(res)
         {
             console.log("selectModel success:" + (res ? res.toString() : ""));       
