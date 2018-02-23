@@ -100,7 +100,13 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
                 {
                     (function(voc) 
                     {
-                        if(voc.sModelFilePath.length)
+                        
+                        if(voc.sModelFilePath == null || !voc.sModelFilePath.length)
+                        {
+                            voc.sStatus = "NON PRONTO";
+                            return voc;                            
+                        }   
+                        else
                         {
                             var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
                             .then(function(exist) 
@@ -120,11 +126,7 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
                             {
                                return $q.reject(error); 
                             });                              
-                        }   
-                        else
-                        {
-                            voc.sStatus = "NON PRONTO";
-                            return voc;
+
                         }
                         subPromises.push(subPromise);
                     })(vocs[v]);                        

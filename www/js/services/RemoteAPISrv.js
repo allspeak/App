@@ -49,12 +49,14 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     // ==========================================================================================================================
     // PUBLIC
     // ==========================================================================================================================
-    init = function(servercfg, plugin, initappserv)
+    init = function(apikey, servercfg, plugin, initappserv)
     {  
         ServerCfg       = servercfg;
         pluginInterface = plugin;
         initAppSrv      = initappserv;
+        api_key         = apikey;
         
+        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://10.245.72.25:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://10.245.71.136:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.251:8095";     // OVERWRITE FOR DEBUG
@@ -63,7 +65,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
 //        ServerCfg.url   = "http://192.168.1.71:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.90:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.0.8:8095";     // OVERWRITE FOR DEBUG
-        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.180:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.1.133:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://api.allspeak.eu";     // OVERWRITE FOR DEBUG
@@ -124,7 +126,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     
     getApiKey = function()
     {
-        return ServerCfg.api_key;
+        return api_key;
     };
     
     registerDevice = function(apikey)

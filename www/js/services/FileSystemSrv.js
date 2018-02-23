@@ -451,5 +451,4 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     // =========================================================================
     return service;
 }
-
- main_module.service('FileSystemSrv', FileSystemSrv);
+main_module.service('FileSystemSrv', FileSystemSrv);

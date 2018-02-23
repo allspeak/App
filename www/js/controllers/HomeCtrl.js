@@ -93,7 +93,7 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
 //                break;
 
             case EnumsSrv.STATUS.RECORD_TVA:
-                $state.go('voicebank', {elems2display:EnumsSrv.VOICEBANK.SHOW_ALL, backState:"home"});
+                $state.go('voicebank', {elems2display:EnumsSrv.VOICEBANK.SHOW_TRAINED, backState:"home"});
                 break;
 
             case EnumsSrv.STATUS.CAN_RECOGNIZE:

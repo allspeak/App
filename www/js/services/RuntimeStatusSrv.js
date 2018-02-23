@@ -147,7 +147,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
                 if(!vocabulary.status.isNetLoaded) // give precedence to complete recordings/training rather than record voices
                 {
                     //model doesn't exist, check whether (record a new / resume an existing) TS or send it to remote training
-                    if(vocabulary.status.vocabulary.status.haveValidTrainingSession)  
+                    if(vocabulary.status.haveValidTrainingSession)  
                     {
                                 AppStatus                       = EnumsSrv.STATUS.TRAIN_TV;
                                 vocabulary.status.label         = "ADDESTRA RETE";

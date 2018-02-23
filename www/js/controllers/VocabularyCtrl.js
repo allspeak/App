@@ -107,32 +107,34 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         if($scope.deregisterFunc)   $scope.deregisterFunc();
     }); 
     //===============================================================================================
-  
-   
-//    $scope.deleteVocabulary = function()    
-//    {
-//        $ionicPopup.confirm({ title: 'Warning', template: 'You are deleting the current subject recording SESSION, are you sure ?'}).then(function(res) 
-//        {
-//            if (res){
-//                FileSystemSrv.deleteDir($scope.relpath)
-//                .then(function()
-//                {
-//                    if($scope.subject)  $state.go("subject", {subjId:$scope.subject.id});       
-//                    else                $state.go("vocabularies");    
-//                })
-//                .catch(function(error){
-//                    alert(error.message);
-//                });
-//            }
-//        });          
-//    };
+    $scope.deleteVocabulary = function()    
+    {
+        $ionicPopup.confirm({ title: 'Warning', template: 'Vuoi veramente cancellare il vocabolario?'})
+        .then(function(res) 
+        {
+            if(res)
+            {
+                return FileSystemSrv.deleteDir($scope.vocabulary_relpath)
+                .then(function()
+                {
+                    return FileSystemSrv.deleteDir($scope.training_relpath);
+                })
+                .then(function()
+                {
+                    $state.go("vocabularies");    
+                })
+                .catch(function(error)
+                {
+                    alert(error.message);
+                });
+            }
+        });          
+    };
     
     $scope.loadModel = function()    
     {
         RuntimeStatusSrv.loadVocabulary($scope.foldername)
     };
-    
-    
     //===============================================================================================
  };
 controllers_module.controller('VocabularyCtrl', VocabularyCtrl);   

@@ -142,7 +142,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         
         $scope.training_json_path       = $scope.training_relpath + "/" + $scope.training_json;
         $scope.vocabulary_json_path     = $scope.vocabulary_relpath + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
-        $scope.session_zip              = $scope.training_relpath + "/" + "data.zip"
+        $scope.session_zip              = $scope.training_relpath + "/" + "data.zip";
         
         $scope.refresh();
     });
@@ -211,7 +211,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     //==============================================================================================================================
     $scope.startNewSession = function() 
     {
-        $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai per inviare le tue registrazioni al server per ottenere la tua nuova rete neurale.\nVuoi proseguire?'})
+        $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai per inviare le tue registrazioni al server per addestrare nuovamente la tua applicazione.\nVuoi proseguire?'})
         .then(function(res) 
         {
             if (res)
