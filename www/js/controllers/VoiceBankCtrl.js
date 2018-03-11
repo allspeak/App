@@ -196,10 +196,20 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         };
         
         return VoiceBankSrv.addUserVoiceBankCommand(sentencelabel, $scope.selCategory.data, $scope.audiofileprefix)
-        .then(function(res)
+        .then(function(newsentence)
         {
-            if(res == 0)    alert("Il comando esiste gia! cambialo");  // new sentence is already present
-            else            return $scope.refreshAudioList().then(function(){ $scope.closeModal(); })
+            if(newsentence == null)    alert("Il comando esiste gia! cambialo");  // new sentence is already present
+            else            
+                return $scope.refreshAudioList()
+                .then(function()
+                {
+                    $scope.closeModal(); 
+                    return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi registrare la tua voce mentre pronunci questo nuovo comando ?'})
+                })
+                .then(function(dorecordvoice) 
+                {                
+                    if(dorecordvoice)   $scope.recordAudio(newsentence.id)
+                })
         })
         .catch(function(error){
             alert(error.message);

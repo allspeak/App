@@ -162,7 +162,6 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             $scope.updateProcScheme($scope.selectObjByValue($scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX, $scope.aProcScheme));
             $scope.updateModelType($scope.selectObjByValue($scope.plugin_enum.TF_MODELTYPE_USER_FT, $scope.aNetType));
         
-        
             $scope.$apply();
         })
         .catch(function(error)
@@ -185,7 +184,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.selectedNetType              = selNT;
         $scope.tfCfg.nModelType             = parseInt($scope.selectedNetType.value);
         
-        if($scope.tfCfg.nModelType == $scope.plugin_enum.TF_MODELTYPE_USER_FT_APPEND)
+        if($scope.tfCfg.nModelType == $scope.plugin_enum.TF_MODELTYPE_USER_READAPTED)
             $scope.vocabulary_status.haveValidTrainingSession = true;
         else
         {
@@ -248,7 +247,6 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             }
         });        
     };
-    
 
     $scope.closeModalSubmit = function()
     {
@@ -276,6 +274,113 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         {
             
         });        
+    };
+   
+    
+    //==============================================================================================================================
+    // EXTRACT FEATURES
+    //==============================================================================================================================
+    $scope.askExtractFeatures = function() 
+    {  
+        var myPopup = $ionicPopup.show(
+        {
+//            template: '<center><img src="https://officeimg.vo.msecnd.net/en-us/images/MR900185586.gif"/></center> <br> <input type="password" ng-model="data.wifi">',
+            title: 'Attenzione',
+            subTitle: 'Stai per rianalizzare i dati.\nVuoi sovrascrivere i dati esistenti?',
+            scope: $scope,
+            buttons: [
+             {
+                    text: '<b>CANCELLA</b>',
+                    type: 'button-positive',
+                    onTap: function() { return -1; }
+                },
+                {
+                    text: '<b>SI</b>',
+                    type: 'button-positive',
+                    onTap: function() { return 1; }
+                },
+                {
+                    text: '<b>NO</b>',
+                    type: 'button-positive',
+                    onTap: function() { return 0; }
+                }]
+        });
+        myPopup.then(function(res) 
+        {
+            if(res > -1)  $scope.extractFeatures((res>0 ? true : false));
+        });        
+    };        
+
+    $scope.extractFeatures = function(overwrite) 
+    {  
+        window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
+        window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
+        window.addEventListener('pluginError'       , $scope.onMFCCError);
+        
+        return FileSystemSrv.countFilesInDir($scope.training_relpath, ["wav"])
+        .then(function(cnt)
+        {
+            $scope.nFiles           = cnt;
+            $scope.nCurFile         = 0;
+            $scope.isCalcFeatures   = true;
+            $scope.percFiles        = 0;
+            
+            MfccSrv.getMFCCFromFolder($scope.training_relpath, 
+                                      $scope.mfccCfg.nDataType,
+                                      $scope.plugin_enum.MFCC_DATADEST_FILE,
+                                      $scope.mfccCfg.nProcessingScheme,
+                                      overwrite);  // does not overwrite existing (and valid) mfcc files
+            $scope.percFiles = 0;
+            $scope.$apply(); 
+        });
+    };
+    
+    // manage pluginevents
+    $scope.onMFCCProgressFolder = function(res)
+    {
+        $scope.resetExtractFeatures();
+        console.log(res);        
+    };
+    
+    // onFile processed
+    $scope.onMFCCProgressFile = function(res)
+    {
+        $scope.nCurFile++;
+        if($scope.nCurFile < $scope.nFiles)
+        {
+//            cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
+            $scope.percFiles = Math.round(($scope.nCurFile/$scope.nFiles)*100)
+            console.log("Feature file processed : " + $scope.nCurFile.toString());
+            $scope.$apply();
+        }
+        else    $scope.onExtractFeaturesEnd();
+        
+        console.log("_ManageTrainingCtrl::onMFCCProgressFile : " + res);
+    };
+    
+    // if submitting => it calls $scope.zipSession();
+    $scope.onExtractFeaturesEnd = function()
+    {
+        $scope.resetExtractFeatures();
+        $scope.vocabulary_status.haveFeatures   = [];
+        $scope.isCalcFeatures                   = false;
+        $scope.$apply();
+        if($scope.isSubmitting) $scope.zipSession();
+    };
+    
+    $scope.resetExtractFeatures = function()
+    {
+        window.removeEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
+        window.removeEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
+        window.removeEventListener('pluginerror'       , $scope.onMFCCError);  
+    };
+    
+    $scope.onMFCCError = function(error)
+    {
+        console.log("_ManageTrainingCtrl::onMFCCError : " + error);
+        $scope.vocabulary_status.haveFeatures = false;
+        $scope.modalSubmitSession.hide();
+        $scope.$apply();        
     };
    
     //==============================================================================================================================
@@ -469,121 +574,6 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         console.log(progress.label);
 //        $scope.$apply();
    };
-    
-    //==============================================================================================================================
-    // EXTRACT FEATURES
-    //==============================================================================================================================
-    $scope.askExtractFeatures = function() 
-    {  
-        var myPopup = $ionicPopup.show(
-        {
-//            template: '<center><img src="https://officeimg.vo.msecnd.net/en-us/images/MR900185586.gif"/></center> <br> <input type="password" ng-model="data.wifi">',
-            title: 'Attenzione',
-            subTitle: 'Stai per rianalizzare i dati.\nVuoi sovrascrivere i dati esistenti?',
-            scope: $scope,
-            buttons: [
-             {
-                    text: '<b>CANCELLA</b>',
-                    type: 'button-positive',
-                    onTap: function() { return -1; }
-                },
-                {
-                    text: '<b>SI</b>',
-                    type: 'button-positive',
-                    onTap: function() { return 1; }
-                },
-                {
-                    text: '<b>NO</b>',
-                    type: 'button-positive',
-                    onTap: function() { return 0; }
-                }]
-        });
-        myPopup.then(function(res) 
-        {
-            if(res > -1)  $scope.extractFeatures((res>0 ? true : false));
-        });        
-    };        
-
-    $scope.extractFeatures = function(overwrite) 
-    {  
-        window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
-        window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
-        window.addEventListener('pluginError'       , $scope.onMFCCError);
-        
-        return FileSystemSrv.countFilesInDir($scope.training_relpath, ["wav"])
-        .then(function(cnt)
-        {
-            $scope.nFiles           = cnt;
-            $scope.nCurFile         = 0;
-            $scope.isCalcFeatures   = true;
-            $scope.percFiles        = 0;
-            
-    //        $scope.training_relpath  = "AllSpeakVoiceRecorder/audiofiles/allcontrols/allcontrols";  // debug code to calc cepstra in a huge folder
-    //        $scope.nFiles   = 2385;
-    //
-    //        $scope.training_relpath  = "AllSpeakVoiceRecorder/audiofiles/allpatients/allpatients";  // debug code to calc cepstra in a huge folder
-    //        $scope.nFiles   = 1857;
-    //
-    //        $scope.training_relpath  = "AllSpeakVoiceRecorder/audiofiles/newpatients/newpatients";  // debug code to calc cepstra in a huge folder
-    //        $scope.nFiles   = 907;
-
-            MfccSrv.getMFCCFromFolder($scope.training_relpath, 
-                                      $scope.mfccCfg.nDataType,
-                                      $scope.plugin_enum.MFCC_DATADEST_FILE,
-                                      $scope.mfccCfg.nProcessingScheme,
-                                      overwrite);  // does not overwrite existing (and valid) mfcc files
-            $scope.percFiles = 0;
-            $scope.$apply(); 
-        });
-    };
-    
-    // manage pluginevents
-    $scope.onMFCCProgressFolder = function(res)
-    {
-        $scope.resetExtractFeatures();
-        console.log(res);        
-    };
-    
-    // onFile processed
-    $scope.onMFCCProgressFile = function(res)
-    {
-        $scope.nCurFile++;
-        if($scope.nCurFile < $scope.nFiles)
-        {
-//            cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
-            $scope.percFiles = Math.round(($scope.nCurFile/$scope.nFiles)*100)
-            console.log("Feature file processed : " + $scope.nCurFile.toString());
-            $scope.$apply();
-        }
-        else    $scope.onExtractFeaturesEnd();
-        
-        console.log("_ManageTrainingCtrl::onMFCCProgressFile : " + res);
-    };
-    
-    // if submitting => it calls $scope.zipSession();
-    $scope.onExtractFeaturesEnd = function()
-    {
-        $scope.resetExtractFeatures();
-        $scope.vocabulary_status.haveFeatures   = [];
-        $scope.isCalcFeatures                   = false;
-        $scope.$apply();
-        if($scope.isSubmitting) $scope.zipSession();
-    };
-    
-    $scope.resetExtractFeatures = function()
-    {
-        window.removeEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
-        window.removeEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
-        window.removeEventListener('pluginerror'       , $scope.onMFCCError);  
-    };
-    
-    $scope.onMFCCError = function(error)
-    {
-        console.log("_ManageTrainingCtrl::onMFCCError : " + error);
-        $scope.vocabulary_status.haveFeatures = false;
-        $scope.modalSubmitSession.hide();
-        $scope.$apply();        
-    };
 
     //==============================================================================================================================
     // ACCESSORY

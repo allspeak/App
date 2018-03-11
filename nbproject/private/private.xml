@@ -3,7 +3,11 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="3"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/data/AllSpeak/CODE/ionic/App/www/js/services/RemoteAPISrv.js</file>
+            <file>file:/data/AllSpeak/CODE/ionic/App/www/templates/manage_recordings.html</file>
+            <file>file:/data/AllSpeak/CODE/ionic/App/www/templates/manage_training.html</file>
+            <file>file:/data/AllSpeak/CODE/ionic/App/www/js/services/VocabularySrv.js</file>
+            <file>file:/data/AllSpeak/CODE/ionic/App/www/js/controllers/ManageTrainingCtrl.js</file>
+            <file>file:/data/AllSpeak/CODE/ionic/App/www/js/controllers/SessionSentenceCtrl.js</file>
         </group>
     </open-files>
 </project-private>

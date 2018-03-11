@@ -466,7 +466,8 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                 {
                     var idvb = vbcmds[v].id;
                     if(id == idvb)
-                        if(!CommandsSrv.getCommandProperty(vbcmds, idvb, "nrepetitions")) return false;
+                        if(!CommandsSrv.getCommandProperty(vbcmds, idvb, "nrepetitions")) 
+                            return false;
                 }
             }  
             return true;

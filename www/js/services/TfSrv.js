@@ -220,7 +220,7 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv)
         train_obj.sLocalFolder          = localfolder;    
         train_obj.commands              = commandsids;
         train_obj.nProcessingScheme     = procscheme;
-        train_obj.nModelType            = (modeltype == plugin_enum_tf.TF_MODELTYPE_USER_FT_APPEND  ?  plugin_enum_tf.TF_MODELTYPE_USER_FT :  modeltype);    
+        train_obj.nModelType            = (modeltype == plugin_enum_tf.TF_MODELTYPE_USER_READAPTED  ?  plugin_enum_tf.TF_MODELTYPE_USER_FT :  modeltype);    
         return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj));
     };
     
@@ -240,7 +240,7 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv)
     //=========================================================================
     getNetTypes = function()
     {
-        return [{"label": "NUOVA UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER}, {"label": "NUOVA MISTA", "value": plugin_enum_tf.TF_MODELTYPE_USER_FT}, {"label": "AGGIUNGI MISTA", "value": plugin_enum_tf.TF_MODELTYPE_USER_FT_APPEND}];
+        return [{"label": "NUOVA UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER}, {"label": "NUOVA MISTA", "value": plugin_enum_tf.TF_MODELTYPE_USER_FT}, {"label": "AGGIUNGI MISTA", "value": plugin_enum_tf.TF_MODELTYPE_USER_READAPTED}];
     };
  
     getPreProcTypes = function()

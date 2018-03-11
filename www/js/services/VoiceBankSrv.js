@@ -175,7 +175,7 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
     // uVB sentences' ids starts with a "user_sentences_digit" ("9")
     addUserVoiceBankCommand = function(sentencetitle, categoryid, audiofileprefix)
     {
-        if(!_isCommandUnique(sentencetitle)) return 0;
+        if(!_isCommandUnique(sentencetitle)) return Promise.resolve(null);
         
         var len = voicebank_commands_by_category[categoryid].length;  // num of existing sentence of the given category
         var max = parseInt(user_sentences_digit + categoryid.toString() + "00") - 1;  // ID(-1) of the first ID of the given category
@@ -206,7 +206,8 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
             voicebank_usercommands    = uvbdeepcopy;
             if(voicebank_commands_by_category[categoryid] == null) voicebank_commands_by_category[categoryid] = []; //should not be necessary
             voicebank_commands_by_category[categoryid].push(newsentence);                
-            return voicebank_commands;
+//            return voicebank_commands;
+            return newsentence;
         });
     };
     

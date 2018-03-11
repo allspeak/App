@@ -54,11 +54,20 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         else
         {
             $scope.subject                      = null
-            $scope.training_relpath                      = InitAppSrv.getAudioFolder() + "/" + $scope.foldername + "/" + $scope.sessionPath; 
+            $scope.training_relpath             = InitAppSrv.getAudioFolder() + "/" + $scope.foldername + "/" + $scope.sessionPath; 
             $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.training_relpath;        
-            $scope.sentence                     = VocabularySrv.getTrainCommand($scope.commandId);
             $scope.titleLabel                   = $scope.foldername + "/" + $scope.sessionPath;
-            $scope.refreshAudioList();
+            
+            return VocabularySrv.getTrainVocabularyName($scope.foldername)
+            .then(function(voc)
+            {            
+                return VocabularySrv.getTrainCommand($scope.commandId, voc)
+            })
+            .then(function(cmd)
+            {
+                $scope.sentence = cmd;
+                $scope.refreshAudioList();
+            })
         }
     });
     
