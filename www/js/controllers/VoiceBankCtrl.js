@@ -24,6 +24,8 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.selCategory          = {};
     
     $scope.vocabulary           = null;
+    $scope.modalRecordNewCommand  = null;
+    $scope.newSentenceObj       = null; // used to 
     //==================================================================================================================
     //==================================================================================================================
     $scope.$on("$ionicView.enter", function(event, data)
@@ -76,8 +78,16 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         .then(function(voc)
         {
             $scope.vocabulary   = voc;   
-            if($scope.elems2display == EnumsSrv.VOICEBANK.SHOW_ALL) $scope.refreshAudioList();
-            else                                                    $scope.refreshTrainingAudioList();
+            if($scope.elems2display == EnumsSrv.VOICEBANK.SHOW_ALL) return $scope.refreshAudioList();
+            else                                                    return $scope.refreshTrainingAudioList();
+        })
+        .then(function()
+        {
+            if($scope.modalRecordNewCommand == null)
+            {
+                $ionicModal.fromTemplateUrl('templates/modal/modal2QuestionsBigButtons.html', {
+                    scope: $scope, animation: 'slide-in-up'}).then(function(modal) {$scope.modalRecordNewCommand = modal;});                
+            }        
         })
         .catch(function(error){
             alert(error.message);
@@ -200,22 +210,36 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         {
             if(newsentence == null)    alert("Il comando esiste gia! cambialo");  // new sentence is already present
             else            
+            {
+                $scope.newSentenceObj= newsentence;
+            
                 return $scope.refreshAudioList()
                 .then(function()
                 {
                     $scope.closeModal(); 
-                    return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi registrare la tua voce mentre pronunci questo nuovo comando ?'})
+                    $scope.modalText = "VUOI REGISTRARE LA TUA VOCE MENTRE PRONUNCI QUESTO NUOVO COMANDO ?"
+                    $scope.labelActionA = "REGISTRA"
+                    $scope.labelActionB = "RITORNA"
+                    $scope.modalRecordNewCommand.show();
+//                    return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi registrare la tua voce mentre pronunci questo nuovo comando ?'})
                 })
-                .then(function(dorecordvoice) 
-                {                
-                    if(dorecordvoice)   $scope.recordAudio(newsentence.id)
-                })
+            }
+//                .then(function(dorecordvoice) 
+//                {                
+//                    if(dorecordvoice)   $scope.recordAudio(newsentence.id)
+//                })
         })
         .catch(function(error){
             alert(error.message);
             $scope.isBusy    = 0;
             $scope.$apply();
         });        
+    };
+    
+    $scope.TwoQuestionsAction = function(bool)
+    {
+        $scope.modalRecordNewCommand.hide()
+        if(bool)        $scope.recordAudio($scope.newSentenceObj.id)
     };
     
     $ionicModal.fromTemplateUrl('templates/modal/modalNewSentence.html', 

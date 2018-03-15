@@ -8,46 +8,82 @@ it provides curr_sequence_id
  */
 
 
-function SequencesRecordingSrv($q, FileSystemSrv, CommandsSrv, EnumsSrv)
+function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, EnumsSrv, StringSrv)
 {
     var sequence            = [];   // array of sentences to be recorded
-    var modality            = 1;    // by sentence....blocks of nrepetitions sentences
+    var repetitionOrder     = EnumsSrv.RECORD.BY_REPETITIONS;    // by repetitions....blocks of nsentences repetitions S1R1, S2R1, SnR1,....., S1Rm,..SnRm
+    var sequenceMode        = EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND;
     var repetitions         = EnumsSrv.RECORD.SESSION_MIN_REPETITIONS;
     var curr_sequence_id    = 0;
-    var seq_folder          = "";
+    
+    var destDir             = "";       // final folder to store recorded repetitions == training_sessions
     
     var separator_filename_rep = "_";
     
     var training_modalities  = [{"label": "by sentences", "value":EnumsSrv.RECORD.BY_SENTENCE},
                                 {"label": "by repetitions", "value":EnumsSrv.RECORD.BY_REPETITIONS}];    
 
+    // replace mode vars
+    var backupDir           = "";   // folder to store replaced repetitions
+    var sourceDir           = "";   // coincides with training_sessions (append) or training_sessions/temp/temp_XXXXXX (replace)
     
-    // updated sentences    = [{nrepetitions:int, files:["filename.wav", ""], firstAvailableId:int, id:int, title:String}] 
-    // seq_folder           = rel_folder_root + "/training_" + StringSrv.formatDate();
-    calculateSequence = function(sentences, mode, sessrep, rel_folder_root, file_prefix, add_rep_cnt)
+    // sentences            : [{nrepetitions:int, files:["filename.wav", ""], firstAvailableId:int, id:int, title:String}] 
+    // mode                 : RECORD.BY_REPETITIONS | RECORD.BY_SENTENCE
+    // sessrep              : define number of repetitions that must have the full session. 
+    //                        It plans to record as much repetitions to reach this number. Thus default behavior is to complete a session
+    // rel_folder_root      : determined file name : rel_folder_root + "/"+ file_prefix + separator_filename_rep + sentence.id.toString();
+    // appendRepetitions    : [true] determine whether append current session with new repetitions OR substitute existing one with
+    // file_prefix          : ["audio"] define file prefix 
+    // add_rep_cnt          : [true] indicates whether append file name with _REPNUM 
+    // 
+    // RETURNS:             [{"id":int, "rel_filepath":string, "title":string}]
+    calculateSequence = function(sentences, rep_mode, sessrep, rel_folder_root, seq_mode, file_prefix, add_rep_cnt)
     {
         _clear();
-        if(file_prefix == null) file_prefix = "audio";
-        if(add_rep_cnt == null) add_rep_cnt = true;
-        var modality            = mode;
-        var new_folder          = false;
-        var nsentences          = sentences.length;
+
+        var new_folder  = false;
+        var nsentences  = sentences.length;
+        destDir         = rel_folder_root;      // AllSpeak/training_sessions
+        repetitionOrder = rep_mode;
+                
+        if(seq_mode == null)            sequenceMode        = EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND;
+        else                            sequenceMode        = seq_mode;
         
+        if(file_prefix == null)         file_prefix         = "audio";
+        if(add_rep_cnt == null)         add_rep_cnt         = true;
+       
         if(!add_rep_cnt && sessrep > 1)
         {
             alert("Errore Interno: tentativo di fare piu ripetizioni con lo stesso nome")
             return null;
         }
+        
+        // in case of replace mode, I create a brand new session in a temp folder
+        if(sequenceMode == EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE)
+        {
+            for(var s=0; s<sentences.length; s++)
+            {
+                sentences[s].firstAvailableId   = 0;
+                sentences[s].nrepetitions       = 0;
+            }
+            var date = StringSrv.formatDate();
+            
+            backupDir = InitAppSrv.getAudioBackupFolder() + "/backup_" + date;  // AllSpeak/training_sessions/backup/backup_XXXXXX
+            sourceDir = InitAppSrv.getAudioTempFolder() + "/temp_" + date;      // AllSpeak/training_sessions/temp/temp_XXXXXX
+            // destDir is AllSpeak/training_sessions
+        }
+        else  sourceDir = destDir;  
+            
 
-        return FileSystemSrv.existDir(rel_folder_root)
+        return FileSystemSrv.existDir(sourceDir)
         .then(function(exist)
         {
             if(!exist) new_folder = true;   // if new, delete it in catch 
-            return FileSystemSrv.createDir(rel_folder_root)
+            return FileSystemSrv.createDir(sourceDir) // create dir preserving it in casa already exist
         })       
         .then(function()
         {
-            if(modality == EnumsSrv.RECORD.BY_REPETITIONS)
+            if(repetitionOrder == EnumsSrv.RECORD.BY_REPETITIONS)
             { 
                 // by repetitions: 
                 for(var r = 0; r < sessrep; r++)
@@ -61,7 +97,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, CommandsSrv, EnumsSrv)
                         else
                         {
                             var rep_id          = (parseInt(sentence.firstAvailableId) + r).toString();
-                            var rel_filepath    = rel_folder_root + "/"+ file_prefix + separator_filename_rep + sentence.id.toString();
+                            var rel_filepath    = sourceDir + "/"+ file_prefix + separator_filename_rep + sentence.id.toString();
                             if(add_rep_cnt)     rel_filepath += separator_filename_rep + rep_id + EnumsSrv.RECORD.FILE_EXT;
                             else                rel_filepath += EnumsSrv.RECORD.FILE_EXT;
 
@@ -76,16 +112,24 @@ function SequencesRecordingSrv($q, FileSystemSrv, CommandsSrv, EnumsSrv)
                 for(s = 0; s < nsentences; s++)
                 {
                     var sentence = sentences[s];
-                    for(r = 0; r < nrepetitions; r++)
+                    if(sentence == null) continue;
+                    for(r = 0; r < sessrep; r++)
                     {
-                        var rel_filepath    = rel_folder_root + "/"+ file_prefix + separator_filename_rep + sentence.id.toString();
-                        if(add_rep_cnt)     rel_filepath += separator_filename_rep + r.toString() + EnumsSrv.RECORD.FILE_EXT;
-                        else                rel_filepath += EnumsSrv.RECORD.FILE_EXT;
-                        sequence.push({"id": sentence.id, "rel_filepath":rel_filepath, "title":sentence.title});
+                        var curr_rep = sentence.nrepetitions + r;
+                        if(curr_rep > (sessrep-1))   continue;                    
+                        else
+                        {
+                            var rep_id          = (parseInt(sentence.firstAvailableId) + r).toString();
+                            var rel_filepath    = sourceDir + "/"+ file_prefix + separator_filename_rep + sentence.id.toString();
+                            if(add_rep_cnt)     rel_filepath += separator_filename_rep + rep_id + EnumsSrv.RECORD.FILE_EXT;
+                            else                rel_filepath += EnumsSrv.RECORD.FILE_EXT;
+
+                            sequence.push({"id": sentence.id, "rel_filepath":rel_filepath, "title":sentence.title});
+                        }
                     }
                 }
             }
-            return sequence;
+            return sequence;    // unused in the controller
         })
         .catch(function(error)
         {
@@ -95,22 +139,57 @@ function SequencesRecordingSrv($q, FileSystemSrv, CommandsSrv, EnumsSrv)
         });
     };
 
-    // for each command, get the highest recorded repetition IDs (+1). New repetitions will start from that Id
-    calculateFirstAvailableRepetitions = function(sentences, rel_folder_root)
+    // it manage sequence progression. 
+    // returns :
+    // - next sequence 
+    // - if sequence is finished : -1 (APPEND) mergeDirs and then -1 (REPLACE)
+
+    getNextSentenceId = function()
     {
-        return FileSystemSrv.listFilesInDir(rel_folder_root)
-        .then(function(files)               // files = [wav file names with extension]
+        curr_sequence_id++;
+        if(curr_sequence_id >= sequence.length)
         {
-            var len     = sentences.length;
-            var lastIDs = [];
-            for(var s=0; s<len; s++)
-                lastIDs[s] =  CommandsSrv.getFirstAvailable(sentences[s], files);
-            return lastIDs;
-        })         
-        .catch(function(error){
-            return $q.reject(error);
-        }); 
+            // sequence terminated. 
+            if(sequenceMode == EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE)
+            {
+                // merge this temp session with the current one
+                // I get a training_sessions/temp/temp_XXXXXX, I must backup to training_sessions/backup/backup_XXXXXX
+                return mergeDirs()
+                .then(function()
+                {
+                    return -1;
+                })
+                .catch(function(error)
+                {
+                    return $q.reject(error)
+                })
+            }
+            else return Promise.resolve(-1);
+        }
+        else  return Promise.resolve(curr_sequence_id);
     };
+    
+    mergeDirs = function()
+    {
+        return CommandsSrv.mergeDirs(sourceDir, destDir, backupDir);
+    }
+    // ======== UNUSED !!!!!!! ====================================================================================
+    // for each command, get the highest recorded repetition IDs (+1). New repetitions will start from that Id
+//    calculateFirstAvailableRepetitions = function(sentences, rel_folder_root)
+//    {
+//        return FileSystemSrv.listFilesInDir(rel_folder_root)
+//        .then(function(files)               // files = [wav file names with extension]
+//        {
+//            var len     = sentences.length;
+//            var lastIDs = [];
+//            for(var s=0; s<len; s++)
+//                lastIDs[s] =  CommandsSrv.getFirstAvailable(sentences[s], files);
+//            return lastIDs;
+//        })         
+//        .catch(function(error){
+//            return $q.reject(error);
+//        }); 
+//    };
     
     getSequenceLength = function()
     {
@@ -131,13 +210,6 @@ function SequencesRecordingSrv($q, FileSystemSrv, CommandsSrv, EnumsSrv)
     {
         curr_sequence_id++;
         return getSentenceBySequenceId(curr_sequence_id);
-    };
-    
-    getNextSentenceId = function()
-    {
-        curr_sequence_id++;
-        if(curr_sequence_id >= sequence.length) return -1;
-        else                                    return curr_sequence_id;
     };
     
     getSentenceBySequenceId = function(seq_id)
@@ -173,6 +245,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, CommandsSrv, EnumsSrv)
     //================================================================================
     return {
         calculateSequence: calculateSequence,
+        mergeDirs: mergeDirs,
         getRepetitions: getRepetitions,
         getModalities: getModalities,
         getNextSentence: getNextSentence,

@@ -17,6 +17,7 @@
             "app_folder"                            : "AllSpeak",
             "training_folder"                       : "AllSpeak/training_sessions",
             "audio_temp_folder"                     : "AllSpeak/training_sessions/temp",
+            "audio_backup_folder"                   : "AllSpeak/training_sessions/backup",
             "voicebank_folder"                      : "AllSpeak/voicebank",
             "vocabularies_folder"                   : "AllSpeak/vocabularies",
             "temp_folder"                           : "AllSpeak/temp",

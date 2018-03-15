@@ -18,7 +18,8 @@ function EnumsSrv()
     service.RECORD.MODE_SINGLE_BANK         = 1010;
     service.RECORD.MODE_SEQUENCE_BANK       = 1011;
     service.RECORD.MODE_SINGLE_TRAINING     = 1012;
-    service.RECORD.MODE_SEQUENCE_TRAINING   = 1013;
+    service.RECORD.MODE_SEQUENCE_TRAINING_APPEND   = 1013;
+    service.RECORD.MODE_SEQUENCE_TRAINING_REPLACE  = 1014;
     service.RECORD.SESSION_MIN_REPETITIONS  = 5;
     service.RECORD.SESSION_MAX_REPETITIONS  = 10;
     service.RECORD.FILE_EXT                 = ".wav";

@@ -82,17 +82,9 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         else                onUpdateError = error;
         
         onUpdateSuccess = succ;
-//        $timeout(onTimeout, waitServerTime);        
         window.AppUpdate.checkAppUpdate(onCheckAppUpdateSuccess, onCheckAppUpdateError, ServerCfg.url + "/" + initAppSrv.config.appConfig.remote.stableupdateurl,  waitServerTime, opts);
 //        onUpdateSuccess(true);
     };
-    
-//    onTimeout = function()
-//    {
-//        abortCheckUpdate = true;    // disable the timeout error, evoked by the system after several seconds
-//        isServerOn = false;
-//        onUpdateSuccess(false);
-//    };
     
     onCheckAppUpdateSuccess = function(result)
     {
@@ -107,20 +99,26 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
 
             case Enums.VERSION_NEED_UPDATE:
                 break;
-
         }        
     };
     
     onCheckAppUpdateError = function(err)
     {
         console.log(err.message);
-        if(err.type == window.AppUpdate.ENUM.PLUGIN.TIMEOUT_ERROR)
+        switch(err.type)
         {
-            isServerOn = false;
-            onUpdateSuccess(isServerOn);
+            case window.AppUpdate.ENUM.PLUGIN.NETWORK_ERROR:
+            case window.AppUpdate.ENUM.PLUGIN.TIMEOUT_ERROR:
+            case window.AppUpdate.ENUM.PLUGIN.CONNECTION_ERROR:
+                isServerOn = false;
+                onUpdateSuccess(isServerOn);
+                break;
+            
+            case window.AppUpdate.ENUM.PLUGIN.REMOTE_FILE_NOT_FOUND:
+                // server is on, but update file is not present...
+                isServerOn = true;
+                onUpdateSuccess(isServerOn);        
         }
-        else
-            onUpdateError(err);
     };
     //===============================================================================================
     

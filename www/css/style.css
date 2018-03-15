@@ -1,7 +1,25 @@
 /* Empty. Add your own CSS if you like */
 
+.text-maxi{
+    font-size: 32px !important;
+    line-height: 120%
+}  
+
+.text-big{
+    font-size: 20px !important;
+    line-height: 110%
+}  
+
 .button-maxi{
     height:120px !important;
+}  
+
+.button-big{
+    height:80px !important;
+}  
+
+.button-header-big{
+    height:40px !important;
 }  
 
 .button-tall{
@@ -15,8 +33,9 @@
 
 .bar-footer{
     height:50px !important;
-    .bar-footer .button{
+    .bar-footer.button{
         font-size: 12;
+        height:40px !important
     }
 }
 

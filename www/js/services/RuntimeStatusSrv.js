@@ -47,8 +47,10 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     vocabularies_folder             = "";       // <= init <= InitAppSrv        AllSpeak/vocabularies
     training_folder                 = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
     
-    updateTimeout        = null; // timer started when check for update
-    waitServerTime       = 5000;
+    updateTimeout                   = null; // timer started when check for update
+    waitServerTime                  = 5000;
+    
+    vocabulary                      = null;
     
     _resetVoc = function()
     {

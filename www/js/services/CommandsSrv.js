@@ -3,7 +3,7 @@
  * accessory functions useful for both VB and TV data
  */
 
-main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsSrv) 
+main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, FileSystemSrv) 
 {
     // for the given command, scan the relpath folder and updates its info
     // updates commands[:].files[] & firstAvailableId & nrepetitions
@@ -63,15 +63,10 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsS
         var max                 = 0;
         for (f=0; f<len_files; f++)
         {
-            var curr_file       = StringSrv.removeExtension(files[f]);   // xxx_1112_2.wav or xxx_9101_2.wav
-
-            var arr             = curr_file.split("_");
-            var idfile          = arr[1];
-            var rep_num         = arr[2];
-            if(command.id == idfile) 
+            var filedata        = getCommandRepetitionData(files[f]);
+            if(command.id == filedata.id) 
             {
-                var             id  = parseInt(rep_num);
-                if(id > max)    max = parseInt(id);
+                if(filedata.nrep > max)    max = filedata.nrep;
                 
                 command.files[command.nrepetitions] = {label: files[f]};
                 command.firstAvailableId            = ++max;
@@ -84,10 +79,10 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsS
     // calculate last repetition ID of a given command
     // returns: int
     // files is: wav file list (of all commands) with extension (e.g. ["vb_123_11.wav", "vb_123_10.wav", ..., "vb_123_0.wav"] 
-    getFirstAvailable = function(command, files)
-    {
-        return updateCommandFiles(command, files).firstAvailableId;
-    };     
+//    getFirstAvailable = function(command, files)
+//    {
+//        return updateCommandFiles(command, files).firstAvailableId;
+//    };     
     
     getCommandProperty = function(cmds, sentence_id, property)
     {
@@ -106,6 +101,115 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsS
     {
         return id.toString()[1];
     }
+
+    // convert a file name "prefix_id_rep.wav" => [id, rep] both as int
+    getCommandRepetitionData = function(repetition_name)
+    {
+        var curr_file       = StringSrv.removeExtension(repetition_name);   // xxx_1112_2.wav or xxx_9101_2.wav
+        var arr             = curr_file.split("_");
+        return {"id":parseInt(arr[1]), "nrep":parseInt(arr[2])};
+    };
+    
+    // compare two folders. 
+    // if a file is present in src_path and absent in dest_path :   source => dest
+    // if a file is present in both src_path and dest_path      :   dest => backup & source => dest
+    // 
+    // 1)   I create the backup folder
+    // 2)   I get the list of source files
+    // 3)   I create the unique list of repetitions to backup & replace
+    // 4)   I get the list of dest files
+    // 5)   I calculate the list og dest files to be moved to backup folder
+    // 6)   I move the latter files
+    // 7)   I move all source files to dest one
+    mergeDirs = function(src_path, dest_path, backup_path, valid_extensions)
+    {
+        var source_files = [];
+        var dest_files = [];
+        
+        var source_files = [];
+        var dest_files = [];
+        
+        var uniqueID2replace = [];
+        
+        var dest_files2backup = [];
+        var newpath_of_dest_files2backup = [];
+
+        return FileSystemSrv.createDir(backup_path)                             // 1
+        .then(function(res)
+        {       
+            return FileSystemSrv.listFilesInDir(src_path, valid_extensions);    // 2
+        })
+        .then(function(srcfiles)
+        {
+            source_files = srcfiles;
+            
+            // get unique list of commands to replace                           // 3
+            var s_id, addit;
+            for(var fs=0; fs<source_files.length; fs++)
+            {
+                s_id = getCommandRepetitionData(source_files[fs]).id;     
+                addit = true;
+                for(var c=0; c<uniqueID2replace.length; c++)
+                    if(s_id == uniqueID2replace[c]) addit = false;
+                if(addit) uniqueID2replace.push(s_id);
+            }             
+
+            return FileSystemSrv.listFilesInDir(dest_path, valid_extensions);   // 4
+        })
+        .then(function(destfiles)
+        {
+            dest_files = destfiles;
+            
+            // define dest files to be replaced in the backup folder            
+            var s_id, d_id;
+            for(var fd=0; fd<dest_files.length; fd++)
+            {
+                d_id = getCommandRepetitionData(dest_files[fd]).id;
+                for(var fs=0; fs<uniqueID2replace.length; fs++)
+                {
+                    if(d_id == uniqueID2replace[fs])
+                    {
+                        dest_files2backup.push(dest_path + "/" + dest_files[fd]);
+                        newpath_of_dest_files2backup.push(backup_path + "/" + dest_files[fd]);  // 5
+                    }
+                }
+            }
+            
+            // DO MOVE files 2 backup
+            var subPromises = [];
+            for (var f=0; f<dest_files2backup.length; f++) 
+            {
+                (function(src, dest) 
+                {
+                    var subPromise  = FileSystemSrv.renameFile(src, dest, true);
+                    subPromises.push(subPromise);
+                })(dest_files2backup[f], newpath_of_dest_files2backup[f]);
+            }
+            return $q.all(subPromises);                                         // 6
+        })
+        .then(function()
+        {
+            // DO MOVE source files to dest folder (training_folders)
+            var subPromises = [];
+            for (var f=0; f<source_files.length; f++) 
+            {
+                (function(src, dest) 
+                {
+                    var subPromise  = FileSystemSrv.renameFile(src, dest, true);
+                    subPromises.push(subPromise);
+                })(src_path + "/" + source_files[f], dest_path + "/" + source_files[f]);
+            }
+            return $q.all(subPromises);                                         // 7
+        })
+        .then(function()
+        {
+            return $q.defer().resolve(true);
+        })
+        .catch(function(error){
+            error.message = "ERRORE CRITICO in CommandSrv::mergeDirs " + error.message;
+            return $q.reject(error);
+        });        
+    };
     //---------------------------------------------------------------------------
     // public methods      
     return {
@@ -115,6 +219,7 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, EnumsS
         getCommandsFilesByPath          : getCommandsFilesByPath,
         getCommandProperty              : getCommandProperty,
         getCommand                      : getCommand,
-        getCategoryFromID               : getCategoryFromID
+        getCategoryFromID               : getCategoryFromID,
+        mergeDirs                       : mergeDirs
     };
 });

@@ -173,7 +173,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         return service.existFile(target_relative_path)
         .then(function(exist){
             if(exist && force)          return service.deleteFile(target_relative_path);
-            else if(!exist)             return 1;
+            else if(!exist)             return  1;
             else if(exist && !force)    return -1;
         })
         .then(function(success){
@@ -289,9 +289,10 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         if (!force)
         {
             return $cordovaFile.checkDir(service.resolved_data_storage_root, relative_path)
-            .then(function (success) {return 0;})   // folder already existed and it was not created
-            .catch(function (error)
+            .then(function () {return 0;})   // folder already existed and it was not created
+            .catch(function()
             {
+                // folder did not exist, create it !
                 $cordovaFile.createDir(service.resolved_data_storage_root, relative_path, true)
                 .then(function (success) 
                 {
@@ -420,7 +421,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
             return $q.reject(error);
         });
     };
-    
+
     // =========================================================================
     // ACCESSORY
     // =========================================================================

@@ -20,7 +20,7 @@
  
 function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPopup, $cordovaSplashscreen, InitAppSrv, RuntimeStatusSrv, RemoteAPISrv, EnumsSrv)
 {
-    $scope.want2beAssistedText      = "puoi utilizzare AllSpeak con le seguenti modalità: SOLO - GUEST - ASSISTITA";
+    $scope.want2beAssistedText      = "PUOI UTILIZZARE ALLSPEAK CON LE SEGUENTI MODALITA:";
     $scope.want2beRegisteredText    = "Inserisci il codice che ti è stato fornito dal tuo medico";
     $scope.createNewVocabularyText    = "Registra questo dispositivo";
     $scope.appStatus            = null;
@@ -56,7 +56,8 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         
         $scope.appStatus = RuntimeStatusSrv.getStatus();
         if($scope.appStatus.isConnected)
-            RemoteAPISrv.checkAppUpdate($scope.startApp, $scope.OnUpdateAppError);
+            RemoteAPISrv.checkAppUpdate($scope.startApp, null);
+//            RemoteAPISrv.checkAppUpdate($scope.startApp, $scope.OnUpdateAppError);
         else
             $scope.startApp(false);
     });
@@ -66,11 +67,11 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     // in case of error during update check...start the current App
     // The timeout error is managed within RemoteAPISrv with a proper timer, which is expected to trigger much later than this callback error. 
     // thus this error should be related to a response from the server. which should be ON.
-    $scope.OnUpdateAppError = function(error) 
-    {
-        $scope.startApp(true);  
-    };
-    
+//    $scope.OnUpdateAppError = function(error) 
+//    {
+//        $scope.startApp(true);  
+//    };
+//    
     // callback from RemoteAPISrv.checkAppUpdate
     // callback after update finish/ no update
     // if trylogin = false the server should be considered down
@@ -97,6 +98,15 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         }
     }
    
+    $scope.exit = function()
+    {
+        $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
+        .then(function(res) 
+        {
+            if (res){  ionic.Platform.exitApp();  }
+        });  
+    };
+    
     // callback from modalWant2beAssisted 
     $scope.OnWant2beAssisted = function(int) 
     {

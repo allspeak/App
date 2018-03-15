@@ -10,7 +10,7 @@
         ........
     ]
  */
-function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, CommandsSrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, SubjectsSrv, EnumsSrv, UITextsSrv)
+function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, CommandsSrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, SubjectsSrv, EnumsSrv, UITextsSrv, StringSrv)
 {
     $scope.subject              = null;     // stay null in AllSpeak
     $scope.foldername           = "";       // standard
@@ -34,6 +34,9 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
     $scope.pageTitle            = "Registrazioni Comandi";
     
     $scope.modalRecordSequence  = null;
+    $scope.modalAskRecordMode   = null;
+    
+    $scope.sequenceMode       = true;     // define whether appending an existing session or replace some repetitions with new versions
     //==============================================================================================================================
     // ENTER & REFRESH
     //==============================================================================================================================    
@@ -85,8 +88,8 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
                                        "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX};  //    
         $scope.mfccCfg              = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
         
-        $scope.training_relpath     = InitAppSrv.getAudioFolder() + "/" + $scope.foldername
-        $scope.training_relpath     = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
+        $scope.training_relpath     = InitAppSrv.getAudioFolder();
+//        $scope.training_relpath     = InitAppSrv.getAudioFolder() + "/" + $scope.foldername;  $scope.training_relpath     = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
         
         $scope.vocabulary_json_path = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         $scope.successState         = "manage_recordings";
@@ -106,7 +109,15 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
                 $ionicModal.fromTemplateUrl('templates/modal/modalSelectCmd2Record.html', {
                     scope: $scope, animation: 'slide-in-up'}).then(function(modal) {$scope.modalRecordSequence = modal;});                
             }
-        })     
+        })    
+        .then(function()
+        {
+            if($scope.modalAskRecordMode == null)
+            {
+                $ionicModal.fromTemplateUrl('templates/modal/modal2QuestionsBigButtons.html', {
+                    scope: $scope, animation: 'slide-in-up'}).then(function(modal) {$scope.modalAskRecordMode = modal;});                
+            }        
+        })        
         .catch(function(error){
             alert("ManageRecordingsCtrl::$ionicView.enter => " + error.message);
         });
@@ -148,7 +159,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
                 // session_commands = [{nrepetitions:int, files:["filename.wav", ""], firstAvailableId:int, id:int, title:String}]                
                 $scope.commands   = session_commands;
                 $scope.nFiles     = $scope._getFilesNum(session_commands);
-                $scope.canSubmit  = $scope._canSubmit(session_commands);
+//                $scope.canSubmit  = $scope._canSubmit(session_commands);
                 $scope.$apply();
                 return true;
             })        
@@ -162,8 +173,6 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
     //==============================================================================================================================
     // TRAINING SENTENCE SEQUENCES    
     //==============================================================================================================================
-    $scope.training_sequence    = [];
-    
     // add new sentences to train
     $ionicModal.fromTemplateUrl('templates/modal/modalSelectCmd2Record.html', {
         scope: $scope,
@@ -193,14 +202,26 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         $scope.onChangeToogle();
     };      
     
-    $scope.completeSession = function() {
-//        $scope.selectedTrainingModality    = $scope.selectObjByValue(1, $scope.training_modalities);
-        $scope.modalRecordSequence.show();
+    $scope.completeSession = function() 
+    {
+        $scope.modalText = "AGGIUNGI NUOVE RIPETIZIONI AD UNA SESSIONE ESISTENTE, OPPURE SOSTITUISCI LE RIPETIZIONI PRESENTI"
+        $scope.labelActionA = "AGGIUNGI"
+        $scope.labelActionB = "SOSTITUISCI"
+        $scope.modalAskRecordMode.show();
     };
+    
+    $scope.TwoQuestionsAction = function(append)
+    {
+        $scope.modalAskRecordMode.hide();
+        $scope.sequenceMode = (append ? EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND : EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE);
+        $scope.modalRecordSequence.show();
+    };    
 
     $scope.doCompleteSession = function() 
     {
         $scope.modalRecordSequence.hide();    
+        
+        // create a list of only checked ones
         var sentences = [];
         for(var cmd=0; cmd<$scope.commands.length; cmd++)
             if($scope.commands[cmd].checked)
@@ -208,24 +229,29 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         
         if(sentences.length)
         {
-            var record_relpath = $scope.training_relpath;//            var record_relpath = $scope.training_relpath + "/training_" + StringSrv.formatDate();
+//            var record_relpath = "";
+//            if(!$scope.sequenceMode)  // record repetitions in a new folder and then merge it with valid ones
+//                record_relpath = $scope.training_relpath + "/temp_" + StringSrv.formatDate();
+//            else
+//                record_relpath = $scope.training_relpath;//            
+            
+            // create dest folder (if not existing) and calculate sentence
             return SequencesRecordingSrv.calculateSequence( sentences, 
                                                             $scope.selectedTrainingModality.value, 
                                                             $scope.repetitionsCount, 
-                                                            record_relpath,
+                                                            $scope.training_relpath,    // AllSpeak/training_sessions
+                                                            $scope.sequenceMode,        // MODE_SEQUENCE_TRAINING_  append or replace
                                                             "train",
-                                                            true)                      //  add #repetition to file name
+                                                            true)                       //  add #repetition to file name
             .then(function(sequence)
             {
-                $scope.training_sequence = sequence;    
-                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING, commandId: 0, successState:$scope.successState, cancelState:$scope.cancelState});
+                $state.go('record_sequence', {modeId:$scope.sequenceMode, commandId: 0, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername});
             })
             .catch(function(error){
                 alert(error.message);
             });              
         }
-        else
-            alert("non hai scelto nessuna frase da addestrare");
+        else alert("non hai scelto nessuna frase da addestrare");
     };
   
     $scope.decrementRepCount = function() {
@@ -256,12 +282,6 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
             }
         });        
     };
-    
-    
-    $scope.submitSession = function() 
-    {
-        $state.go("manage_training", {foldername:$scope.foldername});
-    };    
     //==============================================================================================================================
     // PRIVATE
     //==============================================================================================================================
@@ -274,13 +294,13 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         return cnt;
     };
     
-    $scope._canSubmit = function(commands)
-    {
-        for(var f=0; f<commands.length; f++)
-            if(commands[f].nrepetitions < $scope.minNumRepetitions)
-                return false;
-        return true;
-    };
+//    $scope._canSubmit = function(commands)
+//    {
+//        for(var f=0; f<commands.length; f++)
+//            if(commands[f].nrepetitions < $scope.minNumRepetitions)
+//                return false;
+//        return true;
+//    };
     
     $scope._showAlert = function(title, message) {
         var alertPopup = $ionicPopup.alert({
