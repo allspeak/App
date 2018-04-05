@@ -54,12 +54,10 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     {
         $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(){ var a=1; }, 100);         
         
-        $scope.appStatus = RuntimeStatusSrv.getStatus();
-        if($scope.appStatus.isConnected)
+        if(RuntimeStatusSrv.hasInternet())
             RemoteAPISrv.checkAppUpdate($scope.startApp, null);
-//            RemoteAPISrv.checkAppUpdate($scope.startApp, $scope.OnUpdateAppError);
         else
-            $scope.startApp(false);
+            $scope.startApp(true);
     });
     
     $scope.$on('$ionicView.leave', function(){if($scope.deregisterFunc)   $scope.deregisterFunc();});    
@@ -93,7 +91,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         }
         else
         {
-            alert("Il server sembra attualmente non funzionante, puoi continuare ad usare l\'App senza pero accedere alle funzioni speciali")
+            alert("Non hai una connessione internet o il server sembra attualmente non funzionante, puoi continuare ad usare l\'App senza pero accedere alle funzioni speciali")
             $scope.endCheck('home'); 
         }
     }

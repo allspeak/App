@@ -26,6 +26,8 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
     pluginInterface     = null;
     plugin_enum         = null;    
     
+    initAppSrv          = null;
+
     captureProfile          = "recognition";
     captureConfigurations   = [];
     
@@ -84,7 +86,7 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
      * 
      * TODO call it before displaying a page....and prevent the state change
      */
-    init = function(jsonArrayCaptureCfg, jsonVadCfg, plugin)
+    init = function(jsonArrayCaptureCfg, jsonVadCfg, plugin, initappserv)
     {   
         // stores the three capture configurations (record, playback, recognition)
         captureConfigurations   = cloneObjs(jsonArrayCaptureCfg);
@@ -94,6 +96,7 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
         oldCfg                  = {"captureCfg":cloneObj(captureConfigurations[captureProfile]), "vadCfg": cloneObj(jsonVadCfg)};
         pluginInterface         = plugin;
         
+        initAppSrv              = initappserv;
         plugin_enum             = {};        
         plugin_enum.capture     = pluginInterface.ENUM.capture;        
         plugin_enum.vad         = pluginInterface.ENUM.vad;        
@@ -109,6 +112,12 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
     {  
         mCfg = getUpdateCfg(cfg, captureProfile, output_chunks);
         return mCfg;
+    };
+    
+    setVadCfg = function(vaduserobj)
+    {  
+        for(var item in vaduserobj) mCfg.vadCfg[item] = vaduserobj[item];
+        return initAppSrv.saveVadConfigField(vaduserobj);
     };
     
      // PUBLIC *************************************************************************************************
@@ -132,8 +141,8 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
             standardCfg.captureCfg          = cloneObj(captureConfigurations[captureProfile]);
             
             var cfg = {};
-            cfg.captureCfg  = cloneObj(standardCfg.captureCfg);
-            cfg.vadCfg      = cloneObj(standardCfg.vadCfg);
+            cfg.captureCfg  = cloneObj(mCfg.captureCfg);
+            cfg.vadCfg      = cloneObj(mCfg.vadCfg);        // TODO: verify this !
 
             if (ctrlcfg != null)
             {
@@ -153,14 +162,6 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
             return null;
         }            
     };
-
-    //==========================================================================
-     // PUBLIC *************************************************************************************************
-    getCfg = function()
-    {
-        return mCfg;
-    };    
-    //  end DEFAULT VALUES MANAGEMENT
 
     //==========================================================================
     // COMMANDS

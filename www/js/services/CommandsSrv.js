@@ -181,7 +181,7 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, FileSy
             {
                 (function(src, dest) 
                 {
-                    var subPromise  = FileSystemSrv.renameFile(src, dest, true);
+                    var subPromise  = FileSystemSrv.renameFile(src, dest, FileSystemSrv.OVERWRITE);    // force renaming
                     subPromises.push(subPromise);
                 })(dest_files2backup[f], newpath_of_dest_files2backup[f]);
             }
@@ -189,13 +189,13 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, FileSy
         })
         .then(function()
         {
-            // DO MOVE source files to dest folder (training_folders)
+            // DO MOVE source files to dest folder (recordings_folder)
             var subPromises = [];
             for (var f=0; f<source_files.length; f++) 
             {
                 (function(src, dest) 
                 {
-                    var subPromise  = FileSystemSrv.renameFile(src, dest, true);
+                    var subPromise  = FileSystemSrv.renameFile(src, dest, FileSystemSrv.OVERWRITE);    // force renaming
                     subPromises.push(subPromise);
                 })(src_path + "/" + source_files[f], dest_path + "/" + source_files[f]);
             }

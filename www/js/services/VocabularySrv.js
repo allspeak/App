@@ -14,25 +14,28 @@
  * NEW USER SENTENCE ?  : both uVB & VB files/structures are updated
 */
 
-
-
 main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, FileSystemSrv, TfSrv, StringSrv, EnumsSrv, UITextsSrv, ErrorSrv) 
 {
     universalJsonFileName                   = "";               // training.json
     vocabularies_folder                     = "";               // AllSpeak/vocabularies
-    training_folder                         = "";               // AllSpeak/training_sessions
+    recordings_folder                       = "";               // AllSpeak/training_sessions
     voicebank_folder                        = "";               // AllSpeak/voicebank
+    
+    pluginInterface                         = null;
+    plugin_enum                             = null;
 
     //========================================================================
     // just set inner paths
-    init = function(default_paths)
+    init = function(default_paths, plugin)
     {
-        training_folder                         = default_paths.training_folder;        
         voicebank_folder                        = default_paths.voicebank_folder;        
         vocabularies_folder                     = default_paths.vocabularies_folder;
-        training_folder                         = default_paths.training_folder;
+        recordings_folder                       = default_paths.recordings_folder;
         
         universalJsonFileName                   = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
+        
+        pluginInterface     = plugin;
+        plugin_enum         = pluginInterface.ENUM.PLUGIN;
     };
 
     //====================================================================================================================================================
@@ -82,7 +85,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             var subPromises = [];
             for (var v=0; v<folders.length; v++) 
             {
-                var foldername = folders[v].name;
+                var foldername = folders[v];
                 (function(jsonfile) 
                 {
 //                    var inputjson       = $scope.vocabularies[j].inputjson;
@@ -290,7 +293,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         
         var vocfile     = getTrainVocabularyJsonPath(voc.sLocalFolder);
         var vocfolder   = vocabularies_folder + "/" + voc.sLocalFolder;
-        var trainfolder = training_folder + "/" + voc.sLocalFolder;
+        var trainfolder = recordings_folder; // + "/" + voc.sLocalFolder;
         
         voc.nItems2Recognize = voc.commands.length;
         
@@ -334,7 +337,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
     //====================================================================================================================================================
     //  CHECK STATUS
     //====================================================================================================================================================  
-    // calculate the status of a vocabulary, given a voc object
+    // calculate the status of a vocabulary, given a voc object (called by RuntimeStatusSrv.loadVocabulary/Default
     getUpdatedStatus = function(voc)
     {
         if(voc.status == null)  voc.status         = {};
@@ -347,27 +350,24 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         voc.status.isNetLoaded                     = false;        
 
         voc.status.hasTrainVocabulary              = (voc ? voc.commands.length : false);
-        if(!voc.status.hasTrainVocabulary) return Promise.resolve(getStatus());        // ==> NO commands in the vocabulary (may exists but without any commands, as user deleted later all the commands)
+        if(!voc.status.hasTrainVocabulary) return Promise.resolve(voc);        // ==> NO commands in the vocabulary (may exists but without any commands, as user deleted later all the commands)
 
         var voc_folder                  = vocabularies_folder + "/" + voc.sLocalFolder;
-        var train_folder                = training_folder + "/" + voc.sLocalFolder;
+        var train_folder                = recordings_folder; // + "/" + voc.sLocalFolder;
         var zip_file                    = train_folder + "/" + "data.zip";
         
         return hasVoicesTrainVocabulary(voc)                  // ? vocabularyHasVoices
         .then(function(res)
         {
             voc.status.vocabularyHasVoices = res;
-            return FileSystemSrv.existDir(train_folder);                    // check if training_sessions folder exist
-        })
-        .then(function(existtrainfolder)
-        {
-            if(!existtrainfolder)   
+            
+            if(voc.nModelType == plugin_enum.TF_MODELTYPE_COMMON)
             {
-                // the default voc does not have a training folder, just a json and a pb file.
-                voc.status.isNetLoaded             = TfSrv.isModelLoaded(voc.sLocalFolder);
-                return getStatus();          // ==> NO training_sessions folder
+                // the default voc cannot be modified or retrained
+                voc.status.isNetLoaded  = TfSrv.isModelLoaded(voc.sLocalFolder);
+                return voc;     // ==> NO training_sessions folder                
             }
-            else    
+            else
             {
                 return existCompleteRecordedTrainSession(train_folder, voc)  // ? haveValidTrainingSession
                 .then(function(existtrainsession)
@@ -396,7 +396,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                 {
                     voc.status.isNetAvailableLocale    = existmodel;
                     voc.status.isNetLoaded             = TfSrv.isModelLoaded(voc.sLocalFolder);
-                    return getStatus();
+                    return voc;
                 });        
             }   
         })

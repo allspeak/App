@@ -54,6 +54,8 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
         $scope.countMIL             = $scope.vadCfg.nSpeechDetectionMinimum;
         $scope.countMXL             = $scope.vadCfg.nSpeechDetectionMaximum;
         $scope.countAD              = $scope.vadCfg.nSpeechDetectionAllowedDelay;
+        $scope.threshold            = $scope.vadCfg.nSpeechDetectionThreshold;      // TODO: set limits !
+        
 
         $scope.$apply();
     });      
@@ -150,13 +152,26 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
 //        $scope.calculateAllowedRanges();
     };  
 
+    $scope.onChangeThreshold = function(thresh)
+    {
+        $scope.threshold = thresh;
+    };
     
+    // updates local object and send only the user params to InitAppSrv
     $scope.save = function(doexit)
     {
-            return InitAppSrv.saveCaptureConfigField('vad', $scope.vadCfg)
-        .then(function(){
-            return InitAppSrv.saveCaptureConfigField('recognition', $scope.captureCfg);
-        })
+    
+        $scope.vadCfg.nSpeechDetectionMinimum       = $scope.countMIL;
+        $scope.vadCfg.nSpeechDetectionMaximum       = $scope.countMXL;
+        $scope.vadCfg.nSpeechDetectionAllowedDelay  = $scope.countAD;
+        $scope.vadCfg.nSpeechDetectionThreshold     = $scope.threshold;
+        
+        var obj2pass2configuser = {"nSpeechDetectionMinimum":       $scope.vadCfg.nSpeechDetectionMinimum,
+                                   "nSpeechDetectionMaximum":       $scope.vadCfg.nSpeechDetectionMaximum,
+                                   "nSpeechDetectionAllowedDelay":  $scope.vadCfg.nSpeechDetectionAllowedDelay,
+                                   "nSpeechDetectionThreshold":     $scope.vadCfg.nSpeechDetectionThreshold}
+        
+        return SpeechDetectionSrv.setVadCfg(obj2pass2configuser)
         .then(function(){        
             if(doexit)  $ionicHistory.goBack(); // back ! 
         })

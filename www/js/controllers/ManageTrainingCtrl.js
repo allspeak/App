@@ -1,16 +1,18 @@
-/* 
- *  Show subject info and list sentences with at least one recording ....allows deleting the subject and record a new/existing sentence
- *  
-    "subjects":
-    [
-        { "label": "Mario Rossi", "id": 1, "age": 91, "description: "abcdefghil", "commands": [
-            { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename": "ho_sete.wav", "nrepetitions": 0 },
-            { "title": "Chiudi la porta", "id": 2, "label": "chiudi_porta", "filename" : "chiudi_porta.wav", "nrepetitions": 0}
-        ]},
-        ........
-    ]
+/* TRAINING PROCESS SCHEME
+ * 
+ * create a temporary folder where it creates the features files, a vocabulary.json file and then a data.zip file.
+ * send the zip to the server and start checking if remote train process is over.
+ * when it's over, receives a json structure that saves as vocabulary_modeltype_procscheme.json 
+ * then ask whether downloading the new net
+ * when downloaded ask whether testing if is valid in the recognition page.
+ * 
+ * CHECK INCOMPLETE SESSIONS:
+ * each time user enter this page AND/OR want to train a new net, the app checks whether a previous unconfirmed net is present.
+ * if is present and not valid, it deletes the entire folder.
+ * if is present and valid, asks whether confirming it, substituting a similar (== model type & preprocscheme), or delete it or cancel the new training.
+ * 
  */
-function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $ionicModal, InitAppSrv, VocabularySrv, RuntimeStatusSrv, MfccSrv, TfSrv, RemoteAPISrv, ClockSrv, FileSystemSrv, UITextsSrv, ErrorSrv)
+function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $ionicModal, InitAppSrv, VocabularySrv, RuntimeStatusSrv, MfccSrv, TfSrv, RemoteAPISrv, ClockSrv, FileSystemSrv, UITextsSrv, ErrorSrv, StringSrv)
 {
     // input params
     $scope.foldername           = "";       // "gigi"
@@ -30,7 +32,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     // loaded vocabulary
     $scope.vocabulary           = null;
     $scope.vocabulary_relpath   = "";   // AllSpeak/vocabularies/gigi
-    $scope.training_relpath     = "";   // AllSpeak/training_sessions/gigi
+    $scope.recordings_relpath   = "";   // AllSpeak/training_sessions
     
     $scope.vocabulary_status    = null;
                                         //    haveValidTrainingSession  // according to the selected modelType, indicates if we have enough recordings
@@ -40,16 +42,20 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                                         //    isNetAvailableLocale      // net calculated. download, available locally
                                         //    isNetLoaded               // net loaded
 
-    $scope.training_json_path   = "";   // $scope.training_relpath + "/" + $scope.training_json;
-    $scope.vocabulary_json_path = "";   // $scope.vocabulary_relpath + "/vocabulary.json";
-    $scope.session_zip          = "";   // $scope.training_relpath + "/" + "data.zip"
+    $scope.training_relpath             = "";       // AllSpeak/vocabularies/gigi/netA ...temporary session
+    $scope.training_submitted_json_path = "";       // $scope.training_relpath + "/" + $scope.vocabulary_json_prefix + ".json";
+    $scope.training_received_json_path  = "";       // $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + nModelType + "_" + nProcessingScheme + ".json";
+    $scope.final_vocabulary_json_path   = "";       // $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + nModelType + "_" + nProcessingScheme + ".json";
+    $scope.session_zip                  = "";       // $scope.training_relpath + "/" + "data.zip"
 
+    $scope.temp_sess_voc        = null; // session temporary voc returned by server
     //--------------------------------------------------------------------------
     // constants
-    $scope.training_json            = "training.json";
+    $scope.vocabulary_json_prefix   = "vocabulary";
+    $scope.final_net_json_prefix    = "net";
     $scope.labelResumeTrainSession  = "REGISTRA RIPETIZIONI"
     $scope.labelSubmit              = "ADDESTRA"    
-    $scope.pageTitle                = "Addestramento Vocabolario Comandi";
+    $scope.pageTitle                = "ADDESTRA COMANDI";
     
     //--------------------------------------------------------------------------
     // gui elements (select modeltype, audioproc)
@@ -70,7 +76,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     {
         $scope.temp_sess_voc        = null;         // voc object of the ongoing session submit process
         $scope.timerID              = -1;           // ID of the clock (used to periodically check remote training completion
-        $scope.session_id           = 0;            // filled by onSubmitSuccess. id to be used to retrieve the net
+        $scope.sessionid            = 0;            // filled by onSubmitSuccess. id to be used to retrieve the net
+        $scope.init_sessionid       = 0;            // id of the session to use as init net (e.g. a pure user net or a user re-adapted one)
         $scope.isSubmitting         = false;        // net calculation process initiated
 
         $scope.isCalcFeatures       = false;
@@ -82,6 +89,12 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.percFiles            = 0;
         $scope.percUpload           = 0;
         $scope.percDownload         = 0;    
+        
+        $scope.vocabulary_status    = {};
+        $scope.vocabulary_status.haveFeatures           = false;
+        $scope.vocabulary_status.haveZip                = false;
+        $scope.vocabulary_status.isNetAvailableRemote   = false;
+        $scope.vocabulary_status.isNetAvailableLocale   = false;        
     }
     $scope.initSessionVariables();
     $scope.modalSubmitSession       = null;         // $ionicModal ref 
@@ -132,37 +145,61 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                                             "nModelType":$scope.plugin_enum.TF_MODELTYPE_USER_FT};
         $scope.tfCfg                    = TfSrv.getUpdatedStandardCfgCopy($scope.initTfParams);  
         
-        $scope.aProcScheme              = TfSrv.getPreProcTypes();
+        $scope.aProcScheme              = MfccSrv.getPreProcTypes();
         $scope.aNetType                 = TfSrv.getNetTypes();        
-        
-        $scope.training_relpath         = InitAppSrv.getAudioFolder() + "/" + $scope.foldername;
-        $scope.training_relpath         = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
-        
+
         $scope.vocabulary_relpath       = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername;
-        
-        $scope.training_json_path       = $scope.training_relpath + "/" + $scope.training_json;
         $scope.vocabulary_json_path     = $scope.vocabulary_relpath + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
-        $scope.session_zip              = $scope.training_relpath + "/" + "data.zip";
+
+        $scope.recordings_relpath       = InitAppSrv.getAudioFolder();
         
-        $scope.refresh();
+        $ionicModal.fromTemplateUrl('templates/modal/popupSubmitSession.html', 
+        {
+            scope: $scope,
+            animation: 'slide-in-up',
+            backdropClickToClose: false,
+            buttons: [
+                        { text: 'Annulla', type: 'button-positive', onTap: function(e) { return false;}},
+                        { text: 'Cambia', type: 'button-positive', onTap: function(e) { return true;}}
+                     ]
+        })
+        .then(function(modal) 
+        {
+            $scope.modalSubmitSession = modal;         
+            return $scope.refresh($scope.foldername);
+        })
+        .then(function()
+        {
+            return $scope.checkTempSessions();
+        })
+        .then(function()
+        {
+            return $scope.refreshExistingNets();
+        })
+        .catch(function(error)
+        {     
+            var title = "ERRORE: in ManageTrainingCtrl::checkSession"
+            alert(error.message);
+        });        
     });
 
     $scope.$on('$ionicView.leave', function(){
         if($scope.deregisterFunc)   $scope.deregisterFunc();
     });     
 
-    $scope.refresh = function()
+    $scope.refresh = function(folder)
     {
-        return VocabularySrv.getUpdatedStatusName($scope.foldername)
-        .then(function(status)
+        return VocabularySrv.getUpdatedStatusName(folder)
+        .then(function(voc)
         {
-            $scope.vocabulary           = status.vocabulary;
-            $scope.vocabulary_status    = status.vocabulary.status;
+            $scope.vocabulary           = voc;
+            $scope.vocabulary_status    = voc.status;
             
             $scope.updateProcScheme($scope.selectObjByValue($scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX, $scope.aProcScheme));
-            $scope.updateModelType($scope.selectObjByValue($scope.plugin_enum.TF_MODELTYPE_USER_FT, $scope.aNetType));
+            $scope.updateModelType($scope.selectObjByValue($scope.plugin_enum.TF_MODELTYPE_USER, $scope.aNetType));
         
             $scope.$apply();
+            return true;
         })
         .catch(function(error)
         {
@@ -184,12 +221,12 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.selectedNetType              = selNT;
         $scope.tfCfg.nModelType             = parseInt($scope.selectedNetType.value);
         
-        if($scope.tfCfg.nModelType == $scope.plugin_enum.TF_MODELTYPE_USER_READAPTED)
+        if($scope.tfCfg.nModelType == $scope.plugin_enum.TF_MODELTYPE_USER_READAPTED || $scope.tfCfg.nModelType == $scope.plugin_enum.TF_MODELTYPE_COMMON_READAPTED)
             $scope.vocabulary_status.haveValidTrainingSession = true;
         else
         {
             // TODO : check if the recorded set allows creating a USER_ONLY net 
-            return VocabularySrv.existCompleteRecordedTrainSession($scope.training_relpath, $scope.vocabulary)
+            return VocabularySrv.existCompleteRecordedTrainSession($scope.recordings_relpath, $scope.vocabulary)
             .then(function(isvalid)
             {
                 $scope.vocabulary_status.haveValidTrainingSession = isvalid;
@@ -208,48 +245,93 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     //==============================================================================================================================
     // PREPARE SESSION UPLOAD
     //==============================================================================================================================
-    $scope.startNewSession = function() 
+    $scope.startNewSessionDebug = function(net_type) 
     {
-        $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai per inviare le tue registrazioni al server per addestrare nuovamente la tua applicazione.\nVuoi proseguire?'})
-        .then(function(res) 
+        // DEBUG CODE (given folder contains data_274/275/276/277.zip files)
+        $scope.training_relpath                 = $scope.vocabulary_relpath + "/" + "test_23032018_005341";    
+        $scope.session_zip                      = $scope.training_relpath + "/" + "data_" + net_type.toString() + ".zip";      
+        $scope.training_received_json_path      = $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme + ".json";        
+        $scope.final_vocabulary_json_path       = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme + ".json";
+        $scope.vocabulary_status.haveZip        = true;
+        $scope.vocabulary_status.haveFeatures   = [];
+        $scope.isSubmitting                     = true;        
+        $scope.modalSubmitSession.show();
+        $scope.upLoadSession();
+        return;        
+    };
+    
+    $scope.startNewSession = function(net_type, isreplacing, initsessid) 
+    {
+        return (function(repl) 
+               {
+                    if(!repl) return Promise.resolve(true);
+                    else
+                    {
+                        return $ionicPopup.confirm({title:"Attenzione", template:"Una rete uguale esiste gia" +
+                                                   ".\Continuando, potrai prima provare la nuova rete, ma quando l\' accetterai " + 
+                                                   "la vecchia versione ora presente verra eliminata.\nVuoi proseguire?"})
+                        .then(function(res){ return res;})
+                    }
+               })(isreplacing)
+        .then(function(goontraining)
         {
-            if (res)
+            if(goontraining == 0)   return false;       // user answered to NOT substitute the existing version !
+            else                    return $scope.checkTempSessions()
+        })
+        .then(function(goontraining)
+        {
+            if(goontraining)
             {
-                $ionicModal.fromTemplateUrl('templates/modal/popupSubmitSession.html', 
+                
+                $scope.initSessionVariables();      // sessionid could be not empty
+                $scope.tfCfg.nModelType             = net_type;    
+                
+                if(initsessid)  $scope.init_sessionid = initsessid;
+                else            $scope.init_sessionid = "";
+        
+                $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai per inviare le tue registrazioni al server per addestrare nuovamente la tua applicazione.\nVuoi proseguire?'})
+                .then(function(res) 
                 {
-                    scope: $scope,
-                    animation: 'slide-in-up',
-                    backdropClickToClose: false      
-                })
-                .then(function(modal) 
-                {
-                    $scope.modalSubmitSession = modal; 
-                    $scope.modalSubmitSession.show();
-                    $scope.isSubmitting = true;
-                    return $scope.deleteSessionFile()                 
-                })
-                .then(function(){
-                    return $scope.refresh();
-                })
-                .then(function(){
-                    $scope.vocabulary_status.isNetAvailableLocale    = false;
-                    return $scope.createSubmitSessionJson($scope.training_json_path)
-                })
-                .then(function(){
-                    $scope.extractFeatures($scope.doOverwriteFeatures);  
-                })
-                .catch(function(error)
-                {
-                    alert("ShowRecSess::submitSession : " + error.message);
-                    $scope.isSubmitting = false;
-                    $scope.modalSubmitSession.hide();
-                });
+                    if (res)
+                    {
+                        $scope.modalSubmitSession.show();
+                        $scope.isSubmitting = true;
+
+                        $scope.temp_session_name            = "train_" + StringSrv.formatDate();
+                        $scope.training_relpath             = $scope.vocabulary_relpath + "/" + $scope.temp_session_name;  // AllSpeak/vocabularies/gigi/train_XXXXXX
+                        $scope.session_zip                  = $scope.training_relpath + "/" + "data.zip";
+                        $scope.training_submitted_json_path = $scope.training_relpath + "/" + $scope.vocabulary_json_prefix + ".json";
+                        $scope.training_received_json_path  = $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + $scope.tfCfg.nModelType.toString() + "_" + $scope.tfCfg.nProcessingScheme + ".json";
+                        
+                        $scope.final_vocabulary_json_path   = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + $scope.tfCfg.nModelType.toString() + "_" + $scope.tfCfg.nProcessingScheme + ".json";
+
+                        return FileSystemSrv.createDir($scope.training_relpath)
+                        .then(function(){
+                            $scope.vocabulary_status.isNetAvailableLocale    = false;
+                            return $scope.createSubmitSessionJson($scope.training_submitted_json_path)
+                        })
+                        .then(function(){
+                            $scope.extractFeatures($scope.doOverwriteFeatures);  
+                        })
+                        .catch(function(error)
+                        {
+                            alert("ManageTraining::startNewSession : " + error.message);
+                            $scope.isSubmitting = false;
+                            $scope.modalSubmitSession.hide();
+                        });
+                    }
+                });   
             }
-        });        
+        })
+        .catch(function(error)
+        {
+            alert("ManageTraining::startNewSession : " + error.message);
+        });
     };
 
     $scope.closeModalSubmit = function()
     {
+        ClockSrv.removeClock($scope.timerID);
         $scope.initSessionVariables();
         RemoteAPISrv.cancelTransfer();
         $scope.modalSubmitSession.hide();
@@ -257,25 +339,24 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $state.go('vocabulary', {"foldername":$scope.foldername});
     };
     
-    // deletes files: training.json, data.zip, all the cestra.
-    // deletes variables: 
-    $scope.deleteSessionFile = function(jsonpath) 
+    $scope.openSettings = function()
     {
-        return FileSystemSrv.deleteFile($scope.training_json_path)
-        .then(function()
+        $scope.temp_preprocscheme = $scope.selectedProcScheme;
+        return $ionicPopup.show({
+                            scope: $scope,
+                            templateUrl: "templates/modal/popupSelectTrainingParams.html",
+                            title: 'Parametri Addestramento',
+                            subTitle: 'Seleziona la modalità di addestramento della rete',
+                            buttons: [
+                                { text: 'Cambia',  type: 'button-positive', onTap: function() { return true;}},
+                                { text: 'Annulla', type: 'button-positive', onTap: function() { return false;}}
+                            ]                            
+                        })       
+        .then(function(res) 
         {
-            return FileSystemSrv.deleteFile($scope.session_zip);
-        })
-        .then(function()
-        {
-            return FileSystemSrv.deleteFilesInFolder($scope.training_relpath, ["dat"]);
-        })
-        .then(function()
-        {
-            
-        });        
-    };
-   
+            if(!res)    $scope.updateProcScheme($scope.temp_preprocscheme);
+        });
+    }
     
     //==============================================================================================================================
     // EXTRACT FEATURES
@@ -317,7 +398,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
         window.addEventListener('pluginError'       , $scope.onMFCCError);
         
-        return FileSystemSrv.countFilesInDir($scope.training_relpath, ["wav"])
+        return FileSystemSrv.countFilesInDir($scope.recordings_relpath, ["wav"])
         .then(function(cnt)
         {
             $scope.nFiles           = cnt;
@@ -325,11 +406,12 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             $scope.isCalcFeatures   = true;
             $scope.percFiles        = 0;
             
-            MfccSrv.getMFCCFromFolder($scope.training_relpath, 
+            MfccSrv.getMFCCFromFolder($scope.recordings_relpath, 
                                       $scope.mfccCfg.nDataType,
                                       $scope.plugin_enum.MFCC_DATADEST_FILE,
                                       $scope.mfccCfg.nProcessingScheme,
-                                      overwrite);  // does not overwrite existing (and valid) mfcc files
+                                      overwrite,
+                                      $scope.training_relpath);  // does not overwrite existing (and valid) mfcc files
             $scope.percFiles = 0;
             $scope.$apply(); 
         });
@@ -384,13 +466,13 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     };
    
     //==============================================================================================================================
-    // PREPARE DATA & ZIP SESSION
+    // CREATE JSON & ZIP SESSION
     //==============================================================================================================================     
     // called by startNewSession
     $scope.createSubmitSessionJson = function(jsonpath) 
     {
         var ids = VocabularySrv.getTrainVocabularyIDLabels($scope.vocabulary);
-        return TfSrv.createSubmitDataJSON($scope.foldername, $scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelType, jsonpath);
+        return TfSrv.createSubmitDataJSON($scope.foldername, $scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelType, $scope.init_sessionid, jsonpath);
     };
     
     // called by $scope.onExtractFeaturesEnd whether isSubmitting
@@ -418,23 +500,32 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     //==============================================================================================================================      
     $scope.upLoadSession = function() 
     {
-        RemoteAPISrv.uploadTrainingData($scope.foldername, $scope.session_zip, $scope.onSubmitSuccess, $scope.onSubmitError, $scope.onSubmitProgress);
+        RemoteAPISrv.uploadTrainingData($scope.session_zip, $scope.onSubmitSuccess, $scope.onSubmitError, $scope.onSubmitProgress);
         $scope.isUploading          = true;
     };
     
     $scope.onSubmitSuccess = function(sess_id) 
     {
-        $scope.session_id   = sess_id;
+        console.log("data uploaded");
+        $scope.sessionid   = sess_id;
         $scope.isUploading  = false;        
         $scope.isTraining   = true;
-        //alert("data uploaded");
+        
+        return FileSystemSrv.updateJSONFileWithObj($scope.training_submitted_json_path, {"sessionid":sess_id}, FileSystemSrv.OVERWRITE)
+        .then(function()
+        {
+            $scope.timerID = ClockSrv.addClock($scope.checkSession, 10000);
 //        $scope.$apply();
-        $scope.timerID = ClockSrv.addClock($scope.checkSession, 10000);
+        })
+        .catch(function(error)
+        {
+            console.log(error.toString());
+        });
     };
     
     $scope.onSubmitError = function(error) 
     {
-        $scope.session_id = 0;
+        $scope.sessionid = 0;
         $scope.isUploading = false;           
         alert("ERROR while uploading data : " + error.message);
         $scope.modalSubmitSession.hide();
@@ -445,7 +536,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     {
         console.log(progress.label + " " + progress.perc + " %");
         $scope.percUpload = progress.perc;
-        $scope.$apply();
+        if(!$scope.$$phase) $scope.$apply();
     };
 
     $scope.onPluginError = function(error)  // {message: error.message, type:error.type}
@@ -461,52 +552,80 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     //                                             ask=false    only returns true | false
     $scope.checkSession = function(ask) 
     {
-        var doask = (ask == null ? true : ask)        
+        var doask = (ask == null ? true : ask);
         $scope.isChecking                               = true;
-        $scope.vocabulary_status.isNetAvailableRemote   = false
-        return RemoteAPISrv.isNetAvailable($scope.session_id)
+        $scope.vocabulary_status.isNetAvailableRemote   = false;
+        return RemoteAPISrv.isNetAvailable($scope.sessionid)
         .then(function(train_obj)
         {
             $scope.isChecking       = false;
             if(train_obj)
             {
-                // ready 2 download
-                $scope.temp_sess_voc = TfSrv.fixTfModel(train_obj);  // remove status + add sModelFilePath & nDataDest
-                $scope.vocabulary_status.isNetAvailableRemote   = true;
+                // server responded: ok or error
                 ClockSrv.removeClock($scope.timerID);       // stop checking
-                
-                if(doask)
+                if(train_obj.status == "complete")
                 {
-                    // ask if download
-                    return $ionicPopup.confirm({ title: 'Attenzione', template: 'Il vocabolario è stato addestrato. Vuoi scaricarlo ora?\nIn caso contrario, potrai farlo in seguito'})
-                    .then(function(res) 
+                    // ready 2 download
+                    $scope.temp_sess_voc                            = TfSrv.fixTfModel(train_obj, $scope.temp_session_name);  // remove status + add sModelFilePath & nDataDest
+                    $scope.vocabulary_status.isNetAvailableRemote   = true;
+                    
+                    $scope.training_received_pb_path                = $scope.training_relpath + "/" + $scope.temp_sess_voc.sModelFileName;
+                    $scope.final_vocabulary_pb_path                 = $scope.vocabulary_relpath + "/" + $scope.temp_sess_voc.sModelFileName;
+
+
+                    // save "net_modeltype_procscheme.json" and delete vocabulary.json
+                    return FileSystemSrv.createJSONFileFromObj($scope.training_received_json_path, $scope.temp_sess_voc, 2)    // return 1 or reject
+                    .then(function()
                     {
-                        if(res) $scope.getNet();
-                        return true;
-                    });   
+                        return FileSystemSrv.deleteFile($scope.training_submitted_json_path);
+                    })
+                    .then(function()
+                    {
+                        if(doask)
+                        {
+                            // ask if download
+                            return $ionicPopup.confirm({ title: 'Attenzione', template: 'Il vocabolario è stato addestrato. Vuoi scaricarlo ora ? \nE possibile farlo in seguito'})
+                            .then(function(res) 
+                            {
+                                if(res) $scope.getNet($scope.temp_sess_voc.sessionid, $scope.temp_sess_voc.sModelFileName);
+                                return true;
+                            });   
+                        }
+                        else    return true;
+                    });
                 }
-                else    return true;
+                else return $q.reject(train_obj);   // train_obj is the result.data returned by the server in its remote catch
             }
-            else return false;
+            else return false;  // server responded "pending" = still training....
         })
         .catch(function(error)
         {     
-            alert("ERROR in ManageTrainingCtrl::checkSession " + error.message);
-            console.log("ERROR in ManageTrainingCtrl::checkSession " + error.message);
+            var title = "ERROR in ManageTrainingCtrl::checkSession. "
+            var msg = "";
+            if(error.status != null)
+            {
+                if(error.status == 500)             msg = error.data.error;
+                else if(error.status == 'error')    msg = "Errore irrecuperabile sul server.";
+            }
+            else                                    msg = error.message
+
+            console.log(title + msg);
+            $scope.closeModalSubmit();
+            alert(title + msg);
         });
     };
     
-    $scope.getNet = function()
+    // download in temp folder
+    $scope.getNet = function(sessionid, modelfilename)
     {   
         $scope.isDownloading = true;
-        RemoteAPISrv.getNet($scope.vocabulary_relpath, $scope.onDownloadSuccess, $scope.onDownloadError, $scope.onDownloadProgress);
+        RemoteAPISrv.getNet(sessionid, $scope.training_relpath, modelfilename, $scope.onDownloadSuccess, $scope.onDownloadError, $scope.onDownloadProgress);
     };
     
     // network downloaded:
     // - set flags
-    // - create vocabulary.json
     // - ask if activate=>"recognition" or =>"vocabulary" 
-    $scope.onDownloadSuccess = function(sess_id) 
+    $scope.onDownloadSuccess = function(fileentry) 
     {
         $scope.vocabulary_status.isNetAvailableLocale   = true;
         $scope.isSubmitting                             = false;
@@ -517,7 +636,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         return TfSrv.testNewTFModel($scope.temp_sess_voc)   // return string or reject
         .then(function()
         {        
-            return FileSystemSrv.createJSONFileFromObj($scope.vocabulary_json_path, $scope.temp_sess_voc, 2)    // return 1 or reject
+            // delete vocabulary.json ....only one json is still present in the folder
+            return FileSystemSrv.deleteFile($scope.training_submitted_json_path);                                       // return 1|true or reject        
         })
         .then(function()
         {
@@ -527,15 +647,15 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             {
                 if(r)
                 {
-                    // force loadVocabulary (I may retraining the same active voc, without the force, loadVocabulary could exit immediately)
+                    // force loadVocabulary (I may retrain the same active voc, without the force, loadVocabulary could exit immediately)
                     return RuntimeStatusSrv.loadVocabulary($scope.foldername, true)
                     .then(function()
                     {
-                        $state.go("recognition", {foldername:$scope.foldername});   // vado a riconoscimento
-                    })
+                        $state.go("recognition", {foldername:$scope.foldername, sessionname:$scope.temp_session_name});   // go to recognition page
+                    });
                 }
-                else    $state.go('vocabulary', {"foldername":$scope.foldername});
-            })
+                else    $state.go('vocabulary', {"foldername":$scope.foldername});  // go back to vocabulary page
+            });
         })
         .catch(function(error)
         {   
@@ -575,6 +695,322 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
 //        $scope.$apply();
    };
 
+    //==============================================================================================================================
+    // ACCESSORY
+    //==============================================================================================================================
+    // check whether one suspended train sessions is present and whether:
+    // - it has the json (thus remote train should be present and need to be downloaded)
+    // - it has both json & pb, thus net is probably under evaluation
+    // returns an object {res:int, path:"...", voc:{}}
+    //  res is  0 = no temp sessions are present
+    //          1 = a temp folder is present, it does not contain neither the json nor the pb...something crashed during training.....delete it ! or recover it (TODO)
+    //          2 = a temp folder is present and contains only the json => remote net should be present. ask whether:
+    //                  - try download the net
+    //                  - delete it
+    //                  - annulla
+    //          3 = a temp folder is present and contains both json and valid pb => ask to use it or delete it
+    //  path contains the temp train session rel path
+
+    $scope.checkTempSessions = function()
+    {
+        var temp_session_folder = "";   // folder name of the temp session
+        var temp_voc            = null; // content of the training json
+        var temp_voc_name       = "";   // name of the training json
+        var exist_pb            = false;
+        var exist_netjson       = false;
+        var res                 = 0;    // res values returned
+        
+        return FileSystemSrv.listDir($scope.vocabulary_relpath, "train_")
+        .then(function(dirs)
+        {
+            if(!dirs.length) return {"res":0};  // no temp sessions are present
+            else
+            {
+                temp_voc = null;
+                exist_netjson = false;
+                // check  net_*json & vocabulary.json (where I wrote the sessionid after data upload)
+                temp_session_folder = $scope.vocabulary_relpath + "/" + dirs[0];  // TODO verify only one is present...manage exception
+                
+                return FileSystemSrv.listFilesInDir(temp_session_folder, ["json"], "net_")
+                .then(function(jsonnameslist)
+                {
+                    if(jsonnameslist.length)
+                    {
+                        temp_voc_name = jsonnameslist[0];    // at least one net_*json is present : TODO verify only one is present...manage exception
+                        exist_netjson = true;
+                        return FileSystemSrv.readJSON(temp_session_folder + "/" + temp_voc_name);
+                    }
+                    else return FileSystemSrv.readJSON(temp_session_folder + "/" + $scope.vocabulary_json_prefix + ".json");       // no net_ json is present, read  vocabulary
+                })
+                .then(function(voc) // can be like upload json + sessionid, or valid if net is to be downloaded
+                {
+                    temp_voc = voc;
+                    return FileSystemSrv.countFilesInDir(temp_session_folder, ["pb"]); // check pb presence
+                })
+                .then(function(npb)
+                {
+                    if(npb)  exist_pb = true;      // pb is present
+                                                                    // presumably is:
+                    if(!exist_netjson        && !exist_pb)   res = 1;    // crashed/aborted training => delete it !
+                    else if(exist_netjson    && !exist_pb)   res = 2;    // valid train, still to be download => ask to download | delete it | cancel
+                    else if(exist_netjson    &&  exist_pb)   res = 3;    // valid train, under local evaluation => ask whether confirming | delete it | cancel
+                    return {"res":res, "path":temp_session_folder, voc:temp_voc, voc_name:temp_voc_name};
+                })
+                .then(function(resobj)
+                {
+                    switch(resobj.res)
+                    {
+                        case 0: // no temp session are present
+                            return true;        // do training
+                        case 1: // an incomplete temp session (no json, no pb) is present.
+                                // - delete it ! probably crashed the server while training
+                                // - cancel
+                            return $ionicPopup.confirm({ title: 'Attenzione', template: 'Una precedente sessione incompleta di training è stata trovata. Per cancellarla e proseguire premi OK, altrimenti annulla il nuovo training'})
+                            .then(function(res) 
+                            {                    
+                                if(res) return $scope.deleteSessionDir(resobj.path, resobj.voc.sessionid);        // return true or reject
+                                else    return false;   // stop training
+                            })
+
+                        case 2: // an incomplete temp session (yes json, no pb) is present.  
+                                // remote net is presumably present, ask whether
+                                // - downloading it
+                                // - delete the folder 
+                                // - cancel
+                            return $ionicPopup.show(
+                            {
+                                title: 'Attenzione',
+                                subTitle: 'Una precedente sessione di training sembra sia stata completata ma la rete non è stata ancora scaricata. Se vuoi scaricarla e proseguire con il training premi OK, per cancellarla premi CANCELLA, per annullare il training premi ANNULLA',
+                                buttons: [
+                                    {text: '<b>OK</b>'      , type: 'button-positive', onTap: function() { return  1; }},                            
+                                    {text: '<b>CANCELLA</b>', type: 'button-positive', onTap: function() { return  0; }},
+                                    {text: '<b>ANNULLA</b>' , type: 'button-positive', onTap: function() { return -1; }}
+                                ] 
+                            })
+                            .then(function(res) 
+                            {                    
+                                switch(res)
+                                {
+                                    case 1: // downloading it & stop
+                                        $scope.temp_sess_voc = resobj.voc;  // TODO : verify voc.sModelPath is valid
+                                        $scope.vocabulary_status.isNetAvailableRemote   = true;
+                                        $scope.modalSubmitSession.show();    
+                                        $scope.training_relpath = resobj.path;
+                                        $scope.getNet($scope.temp_sess_voc.sessionid, $scope.temp_sess_voc.sModelFileName);      // TODO : show something revealing App is downloading
+                                        return false;       // stop training
+
+                                    case 0: // delete temp train session and go on with a new training
+                                        return $scope.deleteSessionDir(resobj.path, resobj.voc.sessionid);
+                                    case -1:    // stop
+                                        return false;
+                                }
+                            });
+
+                        case 3: // local net is present, ask whether
+                                // - accepting this new net (substituting the current similar one)
+                                // - delete it
+                                // - cancel new training
+                            return $ionicPopup.show(
+                            {
+                                title: 'Attenzione',
+                                subTitle: 'Esiste una sessione di training completata che richiede di essere approvata o cancellata. In caso una rete simile esista già, quest\'ultima verra\' cancellata. Vuoi approvarla ? Per confermarla premi OK, per cancellarla premi CANCELLA, per annullare premi ANNULLA',
+                                buttons: [  {text: '<b>APPROVA</b>',    type: 'button-positive', onTap: function() { return  1; }},                            
+                                            {text: '<b>CANCELLA</b>',   type: 'button-positive', onTap: function() { return  0; }},
+                                            {text: '<b>ANNULLA</b>',    type: 'button-positive', onTap: function() { return -1; }}] 
+                            })
+                            .then(function(res) 
+                            {                    
+                                switch(res)
+                                {
+                                    case 1:
+                                        return $scope.acceptSession(resobj.path, resobj.voc);
+                                    case 0:
+                                        return $scope.deleteSessionDir(resobj.path, resobj.voc.sessionid); 
+                                    case -1:
+                                        return false;
+                                }
+                            })
+                    }
+                })
+            };        
+        });
+    };
+    
+    // write $scope.existingNets{{exist, path, voc},..,{exist, path, voc}}
+    $scope.refreshExistingNets = function(dir)
+    {    
+        $scope.existingNets = {
+            "pu":   {"exist":false, path:"", "voc":{}},
+            "pua":  {"exist":false, path:"", "voc":{}},
+            "ca":   {"exist":false, path:"", "voc":{}},
+            "pura": {"exist":false, path:"", "voc":{}},
+            "cra":  {"exist":false, path:"", "voc":{}}
+        };
+        
+        return FileSystemSrv.listFilesInDir($scope.vocabulary_relpath, ["json"], "net_")
+        .then(function(jsonnames)
+        {
+            for(var j in jsonnames)
+            {
+                var jsonname = jsonnames[j];
+                var vocpath = $scope.vocabulary_relpath + "/" + jsonname;
+
+                var modeltype = parseInt(jsonname.split("_")[1]);
+                switch(modeltype)
+                {
+                    case $scope.plugin_enum.TF_MODELTYPE_USER:
+                        $scope.existingNets.pu.exist = true;
+                        $scope.existingNets.pu.path = vocpath;
+                        break;
+
+                    case $scope.plugin_enum.TF_MODELTYPE_USER_ADAPTED:
+                        $scope.existingNets.pua.exist = true;
+                        $scope.existingNets.pua.path = vocpath;
+                        break;
+
+                    case $scope.plugin_enum.TF_MODELTYPE_COMMON_ADAPTED:
+                        $scope.existingNets.ca.exist = true;
+                        $scope.existingNets.ca.path = vocpath;
+                        break;
+
+                    case $scope.plugin_enum.TF_MODELTYPE_USER_READAPTED:
+                        $scope.existingNets.pura.exist = true;
+                        $scope.existingNets.pura.path = vocpath;
+                        break;
+
+                    case $scope.plugin_enum.TF_MODELTYPE_COMMON_READAPTED:
+                        $scope.existingNets.cra.exist = true;
+                        $scope.existingNets.cra.path = vocpath;
+                        break;
+
+                    default:
+                        var errortxt = "Errore. Il codice del modello è sconosciuto. \nIl nome del file e : " + jsonname;
+                        alert(errortxt);
+                        return $q.reject({"message":errortxt });
+
+                }
+            }
+            // Promises cycle !!    LEGGO CONTENUTO JSONS
+            var subPromises = [];
+//            for (var v=0; v<jsonnames.length; v++) 
+            for (var v in $scope.existingNets) 
+            {
+                var vocname = jsonnames[v];
+                (function(netlabel, netpath) 
+                {
+                    var subPromise  = VocabularySrv.getTrainVocabulary(netpath)
+                    .then(function(voc) 
+                    {
+                        $scope.existingNets[netlabel].voc = voc
+                        return true;
+                    })
+                    subPromises.push(subPromise);
+                })(v, $scope.existingNets[v].path);           
+            }
+            $q.all(subPromises)
+            .then(function(trues)
+            {
+                // Promises cycle !!    VERIFICO PRESENZA PBS
+                var subPromises = [];
+                for (var v in $scope.existingNets) 
+                {
+                    (function(voc) 
+                    {
+                        if(voc.sModelFilePath.length)
+                        {
+                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
+                            .then(function(exist) 
+                            {                            
+                                if(exist)
+                                {
+                                    voc.sStatus = "PRONTO";
+                                    return true;
+                                }
+                                else
+                                {
+                                    var e = {"message":"La rete " + voc.sModelFilePath + " e\' assente"};
+                                    return $q.reject(e);                                     
+                                }
+                            })
+                            .catch(function(error)
+                            {
+                               return $q.reject(error); 
+                            });                              
+                        }   
+                        subPromises.push(subPromise);
+                    })($scope.existingNets[v]);                        
+                }
+                $q.all(subPromises)
+                .then(function(trues)
+                {                
+                    if(vocs == null || !vocs.length) return 0;
+
+                    return 1;    
+                })
+                .catch(function(error)
+                {
+                   return $q.reject(error); 
+                }); 
+            })
+            .catch(function(error)
+            {
+//                alert("ERROR in VocabularySrv::getValidTrainVocabularies. " + error);
+                error.message = "ERROR in VocabularySrv::getValidTrainVocabularies. " + error.message;
+                return $q.reject(error);
+            }); 
+        })
+        .catch(function(error) 
+        {
+            alert("Error", "VocabularySrv::getValidTrainVocabularies : " + error.message);
+            return $q.reject(error);
+        });
+    };    
+
+    // ------------------------------------------------------------------------------------------------
+    // temporary training session is accepted:
+    // fix modelpath, save json in final format
+    // move pb to session folder to voc folder. replace existing net (with same type and preproc scheme)
+    $scope.acceptSession = function(trainfolder, voc)
+    {
+        $scope.temp_sess_voc = TfSrv.fixTfModel(voc);  // 2nd fix: set sModelFilePath to /vocabularies/gigi/net_274_252.pb
+        
+        $scope.final_vocabulary_json_path   = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + voc.nModelType + "_" + voc.nProcessingScheme + ".json";
+        $scope.final_vocabulary_pb_path     = $scope.vocabulary_relpath + "/" + voc.sModelFileName;
+        $scope.training_received_pb_path    = trainfolder + "/" + voc.sModelFileName;
+        
+        var message = { title: 'Attenzione', template: 'Stai sostituendo la nuova RETE. Sei sicuro?'}
+        return FileSystemSrv.createJSONFileFromObj($scope.final_vocabulary_json_path, $scope.temp_sess_voc, FileSystemSrv.ASK_OVERWRITE, message)
+        .then(function(created)
+        {
+            // it returns false if user did not confirm.
+            if(!created)    return false;
+            else            return FileSystemSrv.renameFile($scope.training_received_pb_path, $scope.final_vocabulary_pb_path, FileSystemSrv.OVERWRITE);
+        })
+        .then(function(deleteall)
+        {
+            if(deleteall)   return FileSystemSrv.deleteDir(trainfolder);
+            else            return false;
+        })     
+        .catch(function()
+        {
+            
+        });
+    };                
+    // delete local folder and remote db entry   
+    $scope.deleteSessionDir = function(relpath, sessionid)
+    {
+        return RemoteAPISrv.deleteTrainingSession(sessionid)  // TODO: presently returns promise(true)
+        .then(function()
+        {
+            return FileSystemSrv.deleteDir(relpath)
+        })
+        .catch(function(error)
+        {
+            return $q.reject(error);
+        })
+    };
+    
+            
     //==============================================================================================================================
     // ACCESSORY
     //==============================================================================================================================

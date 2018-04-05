@@ -11,7 +11,7 @@
 
             <!--FEATURES-->
             <ion-item class="item-icon-right" ng-if="(!isCalcFeatures && !vocabulary_status.haveFeatures.length)">Features<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
-            <label class="item" ng-if="vocabulary_status.haveFeatures == false">Features</label> 
+            <!--<label class="item" ng-if="vocabulary_status.haveFeatures == false">Features</label>--> 
             <label class="item" ng-if="isCalcFeatures">Features : <span class="badge">{{percFiles}} %</span></label> 
 
             <!--ZIP-->
@@ -30,8 +30,17 @@
             
             <!--DOWNLOAD RETE-->
             <ion-item class="item-icon-right" ng-if="vocabulary_status.isNetAvailableLocale">Download Rete<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
-            <label class="item" ng-if="!isDownloading && !vocabulary_status.isNetAvailableLocale">Download Rete</label> 
+            <label class="item" ng-if="!isDownloading && !vocabulary_status.isNetAvailableRemote">Download Rete</label> 
             <label class="item" ng-if="isDownloading">Download Rete : <span class="badge">{{percDownload}} %</span></label> 
+            
+            <ion-item class="item-button-right" ng-if="!isDownloading && vocabulary_status.isNetAvailableRemote">Download Rete
+                <div class="buttons">
+                    <button class="button button-assertive" ng-click="getNet();">
+                        <i class="icon ion-android-download"></i>
+                    </button>
+                </div>                
+            </ion-item>              
+            
 
     </ion-content>
     

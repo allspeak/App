@@ -12,7 +12,11 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     service.data_storage_root           = "";       // used to get the storage
     service.data_assets_folder          = "";       // "www" : root folder for the assets folder, to be added to any rel path received
     service.resolved_data_storage_root  = "";
-    service.resolved_assets_folder      = "";       
+    service.resolved_assets_folder      = "";      
+    
+    service.OVERWRITE                   = 2;
+    service.ASK_OVERWRITE               = 1;
+    service.PRESERVE_EXISTING           = 0;
 
     // =========================================================================
     service.init = function(data_storage_root, data_assets_folder)
@@ -84,6 +88,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     // 1 : overwrite not specified           => ask if can overwrite
     // 0 : overwrite explicitly set to false => doesn't ovewrite
     // textobj is {title: 'xxxxxx', template: 'yyyyyyyyyyyyyyyyyyyyy'}
+    // returns false if file was not created
     //--------------------------------------------------------------------------
     service.createFile = function(relative_path, jsonstrcontent, overwrite, textobj)
     {
@@ -114,7 +119,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
                         .then(function(res) 
                         {
                             if(res)     return service.overwriteFile(relative_path, jsonstrcontent);               
-                            else        return 1;
+                            else        return false;
                         });
                 }
             }
@@ -127,7 +132,21 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     {
         var str_obj = JSON.stringify(obj);
         return service.createFile(relative_path, str_obj, overwrite, textobj);      
-    }    
+    };    
+
+    //--------------------------------------------------------------------------
+    service.updateJSONFileWithObj = function(relative_path, obj, overwrite, textobj)
+    {
+        return service.readJSON(relative_path)
+        .then(function(content)
+        {
+            for(var item in obj)
+                content[item] = obj[item];
+            var str_obj = JSON.stringify(content);
+            
+            return service.createFile(relative_path, str_obj, overwrite, textobj);      
+        });
+    };    
     //--------------------------------------------------------------------------
     // if file exists, it gives error...so is called internally by :
     // - overwriteFile
@@ -167,32 +186,59 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     
     //--------------------------------------------------------------------------
     // delete target file if existing && force, rename source
-    service.renameFile = function(source_relative_path, target_relative_path, force)
+    service.renameFile = function(source_relative_path, target_relative_path, overwrite, textobj)
     {
-        if(force == null) force = false;
+        var _overwrite = 1; // default behaviour: ask before overwriting
+        if(overwrite != null)
+        {
+            if(overwrite)   _overwrite = 2; // overwrite without asking
+            else            _overwrite = 0; // do not overwrite
+        }
+        if(textobj == null) textobj = { title: 'Attenzione', template: 'Il File esiste già, vuoi sovrascriverlo?'}        
+        
+        //-----------------------------------------------------------------------------------------------------------------------------    
+        // already exist?
         return service.existFile(target_relative_path)
-        .then(function(exist){
-            if(exist && force)          return service.deleteFile(target_relative_path);
-            else if(!exist)             return  1;
-            else if(exist && !force)    return -1;
+        .then(function(exist)
+        {
+            if(exist)
+            { // exist...see if can overwrite
+                switch (_overwrite)
+                {
+                    case 2:
+                        // overwrite
+                        return service.deleteFile(target_relative_path);
+                        
+                    case 1:
+                        // prompt for overwrite permissions
+                        return $ionicPopup.confirm(textobj)
+                        .then(function(res) 
+                        {
+                            if(res)     return service.deleteFile(target_relative_path);               
+                            else        return false;
+                        });
+                }
+            }
+            else    return true;
         })
-        .then(function(success){
-            if(success) return $cordovaFile.moveFile(service.resolved_data_storage_root, source_relative_path, service.resolved_data_storage_root, target_relative_path);
-            else        return success;
+        .then(function(dorename){
+            if(dorename) return $cordovaFile.moveFile(service.resolved_data_storage_root, source_relative_path, service.resolved_data_storage_root, target_relative_path);
+            else        return dorename;
         })
         .catch(function(error){
-            console.log("FileSystemSrv::substituteFile" + JSON.stringify(error));            
+            console.log("FileSystemSrv::renameFile" + JSON.stringify(error));            
             return $q.reject(error);
         });        
     };
     
     //--------------------------------------------------------------------------
+    // returns 0 if did not delete anything
     service.deleteFile = function(relative_path)
     {
         return service.existFile(relative_path)
         .then(function(exist){        
             if (exist)  return $cordovaFile.removeFile(service.resolved_data_storage_root, relative_path);
-            else        return 1;
+            else        return false;
         })
         .catch(function(error){
             console.log("FileSystemSrv::deleteFile" + JSON.stringify(error));            
@@ -325,16 +371,25 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     };    
     
     //--------------------------------------------------------------------------
-    // return only folders' name
-    service.listDir = function(relative_path)
+    // return [{name:"", isDirectory:true}, ..]
+    service.listDir = function(relative_path, contains)
     {
         return $cordovaFile.listDir(service.resolved_data_storage_root, relative_path)
         .then(function(dirs)
         {
             var onlydirs = [];
             for(d=0; d<dirs.length; d++)    
+            {
                 if(dirs[d].isDirectory)
-                    onlydirs.push(dirs[d]);
+                {    
+                    if(contains != null)
+                    {
+                        if(dirs[d].name.indexOf(contains) !== -1)
+                            onlydirs.push(dirs[d].name);
+                    }
+                    else    onlydirs.push(dirs[d].name);
+                }
+            }
             return onlydirs;
         })
         .catch(function(error){
@@ -355,16 +410,16 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     
     //--------------------------------------------------------------------------
     //return the number of files contained in a folder, belonging to the [valid_extensions] formats.
-    service.countFilesInDir = function(relative_path, valid_extensions)
+    service.countFilesInDir = function(relative_path, valid_extensions, contains)
     {
-        return service.listFilesInDir(relative_path, valid_extensions)
+        return service.listFilesInDir(relative_path, valid_extensions, contains)
         .then(function(files){
             return files.length;
         })
     }
     //--------------------------------------------------------------------------
     //return all the files contained in a folder, belonging to the [valid_extensions] formats.
-    service.listFilesInDir = function(relative_path, valid_extensions)
+    service.listFilesInDir = function(relative_path, valid_extensions, contains)
     {
         var len_ext = 0;
         if(valid_extensions != null) len_ext = valid_extensions.length;
@@ -394,6 +449,11 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
                         }
                     }
                     else insert = true;
+                    
+                    if(contains != null)
+                        if(dirs[d].name.indexOf(contains) == -1)
+                            insert = false;
+                    
                     if(insert)
                     {
                         arr[cnt] = dirs[d].name;

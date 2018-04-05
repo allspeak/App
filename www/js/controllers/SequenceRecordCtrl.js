@@ -431,7 +431,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         switch($scope.mode_id)
         {
             case EnumsSrv.RECORD.MODE_SINGLE_BANK:
-                return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, true)
+                return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, 2)    // force renaming
                 .then(function()
                 {
                     if($scope.successState != "")
@@ -446,7 +446,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 
             case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:
                 
-                return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, true)
+                return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, 2)    // force renaming
                 .then(function()
                 {
                     return SequencesRecordingSrv.getNextSentenceId()
@@ -523,11 +523,8 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                     if(next_id >= 0) $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername});
                     else
                     {
-                        if($scope.successState != "")
-//                            $state.go($scope.successState, {foldername: StringSrv.getFileParentFolderName($scope.rel_filepath), sessionPath:StringSrv.getFileFolderName($scope.rel_filepath), subjId:""});
-                            $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
-                        else
-                            $ionicHistory.goBack();
+                        if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+                        else                            $ionicHistory.goBack();
                     }  
                 })
                 .catch(function(error){
@@ -565,7 +562,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND:    // rel_filepath is : original.wav
 
                 return FileSystemSrv.deleteFile($scope.rel_filepath)
-                .then(function(res) 
+                .then(function() 
                 {
                     if($scope.cancelState != "")
                         $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});

@@ -15,6 +15,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
     //--------------------------------------------------------------------
     
     $scope.foldername               = "";   // gigi
+    $scope.sessionname              = "";   // train_XXXXXX   name of the temporary training session to evaluate.
     
     $scope.vocabulary               = null;
     $scope.vocabulary_status        = null;
@@ -73,6 +74,9 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
             $state.go("vocabularies");
         }   
         else $scope.foldername = data.stateParams.foldername;
+        
+        if(data.stateParams.sessionname != null)    $scope.sessionname = "/" + data.stateParams.sessionname;
+        else                                        $scope.sessionname = "";
 
         $scope.pluginInterface                  = InitAppSrv.getPlugin();            
         $scope.vocabularies_relpath             = InitAppSrv.getVocabulariesFolder();
@@ -105,7 +109,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
         else 
             $scope.initVadParams.sDebugString       = "";
         
-        return RuntimeStatusSrv.loadVocabulary($scope.foldername)
+        return RuntimeStatusSrv.loadVocabulary($scope.foldername + $scope.sessionname)
         .then(function(status)
         {
             $scope.vocabulary_status    = status;
@@ -392,14 +396,14 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
         if($scope.loadedModel)      $scope.loadedJsonFolderName = $scope.loadedModel.sLocalFolder;
         else                        $scope.loadedJsonFolderName   = "";
 
-        return FileSystemSrv.listDir($scope.vocabularies_relpath)    // AllSpeak/vocabularies/
+        return FileSystemSrv.listDir($scope.vocabularies_relpath, "net_")    // AllSpeak/vocabularies/
         .then(function(folders)
         {
             // Promises cycle !!
             var subPromises = [];
             for (var v=0; v<folders.length; v++) 
             {
-                var foldername = folders[v].name;
+                var foldername = folders[v];
                 (function(jsonfile) 
                 {
                     var subPromise  = VocabularySrv.getTrainVocabulary(jsonfile)

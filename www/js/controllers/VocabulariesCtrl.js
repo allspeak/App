@@ -72,7 +72,7 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
             {
                 // MISTERIOSAMENTE NON FUNZIONA #ISSUE# ...codice spostato in fondo al file
                 
-                var foldername = folders[v].name;
+                var foldername = folders[v];
                 var active = (foldername == $scope.activeVocabularyName ? true : false);
                 $scope.vocabularies.push({"active": active,"inputjson":$scope.vocabularies_relpath + "/" + foldername + "/" + $scope.jsonvocfilename});
                 (function(j) 

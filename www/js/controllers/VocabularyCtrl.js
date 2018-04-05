@@ -27,7 +27,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             $state.go("vocabularies");
         }, 100); 
 
-        $scope.trainingsessions_relpath     = InitAppSrv.getAudioFolder();
+        $scope.recordings_relpath           = InitAppSrv.getAudioFolder();
         $scope.vocabularies_relpath         = InitAppSrv.getVocabulariesFolder();
         $scope.default_tv_filename          = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;        
         
@@ -51,7 +51,6 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             {
                 $scope.foldername               = data.stateParams.foldername;
                 $scope.vocabulary_relpath       = $scope.vocabularies_relpath     + "/" + data.stateParams.foldername;
-                $scope.training_relpath         = $scope.trainingsessions_relpath      + "/" + data.stateParams.foldername;
                 $scope.vocabulary_json_path      = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
             }
             else if(data.stateParams.foldername == null)
@@ -63,11 +62,10 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         $scope.plugin_enums = InitAppSrv.getPlugin().ENUM.PLUGIN;
         
         return VocabularySrv.getUpdatedStatusName($scope.foldername)
-        .then(function(vocstatus)
+        .then(function(voc)
         {
-            $scope.vocabulary           = vocstatus.vocabulary;
-            $scope.vocabulary_status    = vocstatus.vocabulary.status;
-            $scope.appStatus            = vocstatus.AppStatus;
+            $scope.vocabulary           = voc;
+            $scope.vocabulary_status    = voc.status;
             
             $scope.headerTitle          = "VOCABOLARIO:    " + $scope.vocabulary.sLabel;            
             
@@ -75,29 +73,12 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             if($scope.vocabulary.nModelType != null)
                 if($scope.vocabulary.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
                     $scope.isDefault = true;
-            
-            switch($scope.appStatus)
-            {
-                case EnumsSrv.STATUS.NEW_TV:
-                    break;
 
-                case EnumsSrv.STATUS.RECORD_TV:
-                    break;
-
-                case EnumsSrv.STATUS.TRAIN_TV:
-                    break;
-
-                case EnumsSrv.STATUS.RECORD_TVA:
-                    break;
-
-                case EnumsSrv.STATUS.CAN_RECOGNIZE:
-                    break;
-            };
             $scope.$apply(); 
         })
         .catch(function(error)
         {
-            console.log("Error in HomeCtrl::$ionicView.enter ");
+            console.log("Error in VocabularyCtrl::$ionicView.enter ");
             alert("Error in VocabularyCtrl::$ionicView.enter "+ error.toString());
             $state.go("home");
         });        
@@ -115,10 +96,6 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             if(res)
             {
                 return FileSystemSrv.deleteDir($scope.vocabulary_relpath)
-                .then(function()
-                {
-                    return FileSystemSrv.deleteDir($scope.training_relpath);
-                })
                 .then(function()
                 {
                     $state.go("vocabularies");    

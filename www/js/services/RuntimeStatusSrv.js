@@ -45,7 +45,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     isServerOn                      = false;    // indicated if the server is ON
     
     vocabularies_folder             = "";       // <= init <= InitAppSrv        AllSpeak/vocabularies
-    training_folder                 = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
+    recordings_folder               = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
     
     updateTimeout                   = null; // timer started when check for update
     waitServerTime                  = 5000;
@@ -68,7 +68,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     init = function(voc_folder, tr_folder, initappsrv)
     {    
         vocabularies_folder         = voc_folder;
-        training_folder             = tr_folder;
+        recordings_folder           = tr_folder;
         initAppSrv                  = initappsrv;
         
         _resetVoc();
@@ -96,8 +96,9 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     //==============================================================================================================================    
     getStatus = function()
     {
-        isConnected = (navigator.connection.type != "none" ? true : false);
-        calculateAppStatus();        
+        hasInternet();  // sets isConnected
+        AppStatus = calculateAppStatus();        
+        
         return  {"vocabulary"                    :vocabulary,
                  "AppStatus"                     :AppStatus,
                  "isLogged"                      :isLogged,  
@@ -105,7 +106,6 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
                  "isServerOn"                    :isServerOn  
                 };
     };
-
     // called by RemoteAPISrv::login => isLogged
     setStatus = function(statusobj)
     {
@@ -135,14 +135,14 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
             
         vocabulary.status.canRecognize    = false;
         if(!vocabulary.status.hasTrainVocabulary)                   
-                                AppStatus                       = EnumsSrv.STATUS.NEW_TV;
+            AppStatus = EnumsSrv.STATUS.NEW_TV;
         else
         {
             if(vocabulary.status.isNetLoaded && vocabulary.status.vocabularyHasVoices)
             {
-                                AppStatus                       = EnumsSrv.STATUS.CAN_RECOGNIZE;
-                                vocabulary.status.canRecognize  = true;
-                                vocabulary.status.label         = "PRONTO";
+                AppStatus                       = EnumsSrv.STATUS.CAN_RECOGNIZE;
+                vocabulary.status.canRecognize  = true;
+                vocabulary.status.label         = "PRONTO";
             }
             else
             {
@@ -151,13 +151,13 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
                     //model doesn't exist, check whether (record a new / resume an existing) TS or send it to remote training
                     if(vocabulary.status.haveValidTrainingSession)  
                     {
-                                AppStatus                       = EnumsSrv.STATUS.TRAIN_TV;
-                                vocabulary.status.label         = "ADDESTRA RETE";
+                        AppStatus               = EnumsSrv.STATUS.TRAIN_TV;
+                        vocabulary.status.label = "ADDESTRA RETE";
                     }
                     else
                     {
-                                AppStatus                       = EnumsSrv.STATUS.RECORD_TV;
-                                vocabulary.status.label         = "REGISTRA DATI";
+                        AppStatus               = EnumsSrv.STATUS.RECORD_TV;
+                        vocabulary.status.label = "REGISTRA DATI";
                     }
                 }
                 else
@@ -165,14 +165,14 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
                     // model exists
                     if(!vocabulary.status.vocabularyHasVoices)
                     {
-                                AppStatus                       = EnumsSrv.STATUS.RECORD_TVA;
-                                vocabulary.status.label         = "REGISTRA VOCI DA RIPRODURRE";
+                        AppStatus               = EnumsSrv.STATUS.RECORD_TVA;
+                        vocabulary.status.label = "REGISTRA VOCI DA RIPRODURRE";
                     }
                     else
                     {
-                                alert("Error: inconsistent state");
-                                AppStatus = 0; 
-                                vocabulary.status.label         = "ERRORE";
+                        alert("Error: inconsistent state");
+                        AppStatus               = 0;          
+                        vocabulary.status.label = "ERRORE";
                     }
                 }
             }
@@ -217,7 +217,12 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         .then(function()
         {
             return VocabularySrv.getUpdatedStatus(vocabulary);
-         })
+        })
+        .then(function(voc)
+        {
+            vocabulary = voc;
+            return getStatus();
+        })        
         .catch(function(error)
         {
             $q.reject(error);
@@ -237,7 +242,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     loadVocabulary = function(uservocabularyname, force)
     {
         var doforce = (force == null ? false : force);
-        if(userVocabularyName == uservocabularyname && !doforce)  return Promise.resolve(getStatus());
+        if(userVocabularyName == uservocabularyname && !doforce)  return Promise.resolve(getStatus(vocabulary));
         
         vocabulary_old = cloneObj(vocabulary);
         
@@ -245,7 +250,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
             return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.VOCFOLDERVARIABLE_EMPTY, message:"Error in RuntimeStatusSrv::loadVocabulary : input voc folder (" + userVocabularyName + ") is not valid"});
         
         vocabulary_relpath      = vocabularies_folder + "/" + uservocabularyname;
-        train_relpath           = training_folder     + "/" + uservocabularyname;
+        train_relpath           = recordings_folder; //     + "/" + uservocabularyname;
         vocabulary_json_path    = vocabulary_relpath  + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         
         return FileSystemSrv.existDir(vocabulary_relpath)
@@ -280,7 +285,12 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         .then(function()
         {
             return VocabularySrv.getUpdatedStatus(vocabulary);
-         })
+        })
+        .then(function(voc)
+        {
+            vocabulary = voc;
+            return getStatus();
+        })
         .catch(function(error)
         {
 //            vocabulary = vocabulary_old;
@@ -297,7 +307,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
 //                case "NO_FILE":
 //                    return getStatus();
 //                default:
-                    return $q.reject(error);
+            return $q.reject(error);
 //            }
         });    
     };

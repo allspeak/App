@@ -33,9 +33,9 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     
     // training process
     is_training         = false;    // indicate whether a training process have been started on the server
-    session_id          = 0;        // got from server (after uploadTrainingData) 
+    sessionid           = 0;        // got from server (after uploadTrainingData) 
     
-    sModelFileName      = "";       // set by the server (without extension) and returned from : /api/v1/training-sessions/<session_uid>
+//    sModelFileName      = "";       // set by the server (without extension) and returned from : /api/v1/training-sessions/<session_uid>
                                     // I add the extension the first time I receive it.
                                     
     fileTransfer        = null;     // instance of new $cordovaTransfer(); used also to abort the transfer
@@ -56,18 +56,9 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         initAppSrv      = initappserv;
         api_key         = apikey;
         
-        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://10.245.72.25:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://10.245.71.136:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.251:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.124:8095";     // OVERWRITE FOR DEBUG
+        ServerCfg.url   = "http://10.245.72.33:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.1.68:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.71:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.90:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.0.8:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.0.12:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.180:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.133:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://api.allspeak.eu";     // OVERWRITE FOR DEBUG
         Enums           = window.AppUpdate.ENUM.PLUGIN;
     };
@@ -105,7 +96,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     onCheckAppUpdateError = function(err)
     {
         console.log(err.message);
-        switch(err.type)
+        switch(err.code)
         {
             case window.AppUpdate.ENUM.PLUGIN.NETWORK_ERROR:
             case window.AppUpdate.ENUM.PLUGIN.TIMEOUT_ERROR:
@@ -150,43 +141,50 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         });
     };
     
-    uploadTrainingData = function(foldername, localfilepath, callback, errorCallback, progressCallback) 
+    uploadTrainingData = function(localfilepath, callback, errorCallback, progressCallback) 
     {
         var api_url = _getUrl("upload_training_session");
         return _uploadFile(localfilepath, api_url, api_key, progressCallback)
         .then(function(sess_id)
         {
             is_training = true;            
-            session_id  = sess_id;
+            sessionid  = sess_id;
             callback(sess_id);
         })
         .catch(function(error) 
         {
             alert(error);
             is_training = false;
-            session_id  = 0;
+            sessionid  = 0;
             errorCallback(error);
         });        
     };
 
     isNetAvailable = function(sess_id)
     {
-        if(sess_id != null)  session_id = sess_id;
+        if(sess_id != null)  sessionid = sess_id;
         else
         {
-            if(session_id == 0)         return $q.reject({"message":"Session id is not defined"});
+            if(sessionid == 0)         return $q.reject({"message":"Session id is not defined"});
         }
-        return _getApi("is_training_session_available", api_key, session_id)
+        return _getApi("is_training_session_available", api_key, sessionid)
         .then(function(result)
         {
             var respobj = result.data;  //JSON.parse(result.data);                
             var status  = respobj.status;
-            if(status == "pending") return null;
-            else
+            switch(status) 
             {
-                sModelFileName  = respobj.sModelFileName;
-                is_training     = false;
-                return respobj;
+                case "pending":
+                    return null;
+                    
+                case "error":
+                    return respobj;
+                    is_training     = false;
+                    
+                default:
+//                    sModelFileName  = respobj.sModelFileName;
+                    is_training     = false;
+                    return respobj;                    
             }
         })
         .catch(function(error) 
@@ -195,15 +193,16 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         });            
     };
 
-    getNet = function(destlocalfolder, callback, errorCallback, progressCallback) 
+    getNet = function(sessionid, destlocalfolder, modelfilename, callback, errorCallback, progressCallback) 
     {
-        if(session_id == null || !session_id.length)
+        sessionid = sessionid
+        if(sessionid == null || !sessionid.length)
         {
-            alert("ERROR: sessionid is empty");
+            alert("ERROR: received sessionid is empty");
             return;
         }
-        var url = _getUrl("get_training_session_network", session_id);
-        return _downloadZip(url, destlocalfolder, sModelFileName, progressCallback)
+        var url = _getUrl("get_training_session_network", sessionid);
+        return _downloadZip(url, destlocalfolder, modelfilename, progressCallback)
         .then(function(fileentry)
         {
             callback(fileentry);
@@ -215,12 +214,41 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         });
     };
     
+    // TODO: if not connected write this op in a file to be done later.
+    deleteTrainingSession = function(sessionid)
+    {
+        sessionid = sessionid
+        if(sessionid == null || !sessionid.length)
+        {
+            alert();
+            return Promise.reject({"message":"ERRORE: il codice di sessione è vuoto."});
+        }
+        return _getApi("delete_training_session", api_key, sessionid)
+        .then(function(result)
+        {
+            var respobj = result.data;  //JSON.parse(result.data);                
+            var status  = respobj.status;
+            return true;
+        })
+        .catch(function(error) 
+        {
+            if(alert.message) alert(error.message);
+            errorCallback(error);
+        });
+    };
+    
     // look for pending activities
     getActivities = function() 
     {
         return Promise.resolve(true);
     }; 
 
+    // retrieve sessionid of current common net, send to the server and compare it with the remote one
+    // if different, ask to download new one. 
+    checkCommonNet = function()
+    {
+        
+    };
     //-----------------------------------------------------------------------------------------------------------------------
     // exchange data with the server
     //  - userVBvocabulary
@@ -284,6 +312,11 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
             case "get_training_session_network":
                 if(param == null || !param.length) return "";   // param is session_uid
                 var url = ServerCfg.url + "/api/v1/" + ServerCfg.api[api_str] + "/" + param.toString() + "/network";
+                break;
+            
+            case "delete_training_session":
+                if(param == null || !param.length) return "";   // param is session_uid
+                var url = ServerCfg.url + "/api/v1/" + ServerCfg.api[api_str] + "/" + param.toString() + "/delete";
                 break;
             
             default:
@@ -470,6 +503,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         uploadTrainingData          : uploadTrainingData,
         isNetAvailable              : isNetAvailable,
         getNet                      : getNet,
+        deleteTrainingSession       : deleteTrainingSession,
         cancelTransfer              : cancelTransfer,
         getActivities               : getActivities,
         backupData                  : backupData,

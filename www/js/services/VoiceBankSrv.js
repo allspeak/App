@@ -200,7 +200,7 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
         vbdeepcopy.push(newsentence);
             
         return setVoiceBankUserVocabulary(vbdeepcopy, uvbdeepcopy)
-        .then(function(res)
+        .then(function()
         {
             voicebank_commands        = vbdeepcopy;
             voicebank_usercommands    = uvbdeepcopy;

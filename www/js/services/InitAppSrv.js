@@ -7,7 +7,8 @@
  *                                      - the folder containing the sentences' audio
  *                                      - the temp audio folder
  *                                      - the json folder
- * 4)   LOAD CONFIG FILE            : check if "json/config.json" exist in STORAGE ? YES: read it, NO: create it, saving the content of the default file into the json folder
+ * 4)   LOAD CONFIG FILE            : check if "json/config.json" exist in STORAGE ? YES: read the user section, NO: create it, 
+ *                                    update runtime section, copy defaults to remaining subfields
  * 5)   INIT SERVICES               : initialize SpeechDetectionSrv, TfSrv, MfccSrv, RemoteAPISrv
  * 6)   LOAD VOCABULARIES           : prepare VB & UVB voc, check if VB vocabulary items have their audio files, update json
  * 7)   COPY DEFAULT NET            : copy default NET to AllSpeak/models
@@ -141,7 +142,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         
             return FileSystemSrv.createDir(default_file_system.app_folder, false)
         .then(function(){        
-            return FileSystemSrv.createDir(default_file_system.training_folder, false);
+            return FileSystemSrv.createDir(default_file_system.recordings_folder, false);
         })
         .then(function(){        
             return FileSystemSrv.createDir(default_file_system.voicebank_folder, false);
@@ -176,7 +177,18 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         return FileSystemSrv.existFile(localConfigJson)
         .then(function(exist)
         {
-            if(exist)   return FileSystemSrv.readJSON(localConfigJson);
+            if(exist)
+            {
+                return FileSystemSrv.readJSON(localConfigJson)
+                .then(function(appconfig)
+                {
+                    service._updateAppConfig(appconfig.user)
+                    return FileSystemSrv.createJSONFileFromObj(localConfigJson, service.config.appConfig, 2);
+                })
+                .then(function(){
+                    return FileSystemSrv.readJSON(localConfigJson);
+                });
+            }
             else
             {
                 // file://.../config.json file does not exist, copy defaults subfields to appConfig subfields 
@@ -204,18 +216,18 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
     };
     
     //====================================================================================================================
-    // get App version
+    // get App version & updates config.json
     service.getVersion = function()
     {
         return $cordovaAppVersion.getVersionNumber()
         .then(function(vern)
         {
-            service.config.appConfig.system.versionnum = vern;
+            service.config.appConfig.runtime.versionnum = vern;
             return $cordovaAppVersion.getVersionCode();
         })
         .then(function(verc)
         {
-            service.config.appConfig.system.versioncode    = verc;
+            service.config.appConfig.runtime.versioncode    = verc;
             return FileSystemSrv.createJSONFileFromObj(service.config.defaults.file_system.config_filerel_path, service.config.appConfig, 2);
         });
     };
@@ -224,12 +236,17 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
     // init the main 6 data services
     service.initServices = function()
     {
-        SpeechDetectionSrv.init(service.config.defaults.capture_configurations, service.config.defaults.vad, service.plugin);
+        // merge default vad params with user ones
+        var vadCfg = service.config.defaults.vad;
+        for(var item in service.config.appConfig.user.vad)
+            vadCfg[item] = service.config.appConfig.user.vad[item];
+
+        SpeechDetectionSrv.init(service.config.defaults.capture_configurations, vadCfg, service.plugin, service);
         TfSrv.init(service.config.defaults.tf, service.config.defaults.file_system.vocabularies_folder, service.plugin);
         MfccSrv.init(service.config.defaults.mfcc, service.plugin);
-        RemoteAPISrv.init(service.config.appConfig.api_key, service.config.appConfig.remote, service.plugin, service);    // I pass the current appConfig values (not the defauls ones)
-        RuntimeStatusSrv.init(service.config.defaults.file_system.vocabularies_folder, service.config.defaults.file_system.training_folder, service);
-        VocabularySrv.init(service.config.defaults.file_system);
+        RemoteAPISrv.init(service.config.appConfig.user.api_key, service.config.appConfig.remote, service.plugin, service);    // I pass the current appConfig values (not the defauls ones)
+        RuntimeStatusSrv.init(service.config.defaults.file_system.vocabularies_folder, service.config.defaults.file_system.recordings_folder, service);
+        VocabularySrv.init(service.config.defaults.file_system, service.plugin);
     };
     
     //====================================================================================================================
@@ -281,7 +298,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
     {
         return service.plugin.getAudioDevices()// returns : {input:[{"name": , "types":  , channels: }], output:[{"name": , "types":  , channels: }]}
         .then(function(ad){
-            service.config.appConfig.audio_devices = ad;
+            service.config.appConfig.runtime.audio_devices = ad;
             return 1;
         })
         .then(function() 
@@ -304,22 +321,39 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         service.config.appConfig                            = {};
         service.config.appConfig.file_system                = service.config.defaults.file_system;
         service.config.appConfig.capture_configurations     = service.config.defaults.capture_configurations;
-        service.config.appConfig.audio_devices              = {};
         service.config.appConfig.tf                         = service.config.defaults.tf;
         service.config.appConfig.mfcc                       = service.config.defaults.mfcc;
         service.config.appConfig.vad                        = service.config.defaults.vad;
         service.config.appConfig.bluetooth                  = service.config.defaults.bluetooth;
         service.config.appConfig.remote                     = service.config.defaults.remote;
         service.config.appConfig.system                     = service.config.defaults.system;
-        service.config.appConfig.device                     = HWSrv.getDevice();
+
+        service.config.appConfig.runtime                    = {};
+        service.config.appConfig.runtime.audio_devices      = {};
+        service.config.appConfig.runtime.device             = HWSrv.getDevice();
+        service.config.appConfig.runtime.resolved_odp       = FileSystemSrv.getResolvedOutDataFolder();  // ends with '/'
         
-        service.config.appConfig.file_system.resolved_odp   = FileSystemSrv.getResolvedOutDataFolder();  // ends with '/'
+        var user = {}
+        user.isFirstUse                 = true;
+        user.appModality                = EnumsSrv.MODALITY.SOLO;
+        user.isDeviceRegistered         = false;
+        user.api_key                    = "";
+        user.userActiveVocabularyName   = "default";
         
-        service.config.appConfig.isFirstUse                 = true;
-        service.config.appConfig.appModality                = EnumsSrv.MODALITY.SOLO;
-        service.config.appConfig.isDeviceRegistered         = false;
-        service.config.appConfig.api_key                    = "";
-        service.config.appConfig.userActiveVocabularyName   = "default";
+        user.vad = {};
+        user.vad.nSpeechDetectionThreshold      = service.config.appConfig.vad.nSpeechDetectionThreshold;
+        user.vad.nSpeechDetectionAllowedDelay   = service.config.appConfig.vad.nSpeechDetectionAllowedDelay;
+        user.vad.nSpeechDetectionMaximum        = service.config.appConfig.vad.nSpeechDetectionMaximum;
+        user.vad.nSpeechDetectionMinimum        = service.config.appConfig.vad.nSpeechDetectionMinimum;
+        
+        service.config.appConfig.user   = user;
+    };
+    
+   // called when a config.json exist 
+    service._updateAppConfig =  function(user)
+    {
+        service._createFirstAppConfig()
+        service.config.appConfig.user   = user;
     };
 
     // try to connect the registered devices
@@ -346,11 +380,11 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
       
     service.getStatus = function()
     {
-        return {"isFirstUse"                : service.config.appConfig.isFirstUse,
-                "appModality"               : service.config.appConfig.appModality,
-                "userActiveVocabularyName"  : service.config.appConfig.userActiveVocabularyName,
-                "isDeviceRegistered"        : service.config.appConfig.isDeviceRegistered,
-                "api_key"                   : service.config.appConfig.api_key
+        return {"isFirstUse"                : service.config.appConfig.user.isFirstUse,
+                "appModality"               : service.config.appConfig.user.appModality,
+                "userActiveVocabularyName"  : service.config.appConfig.user.userActiveVocabularyName,
+                "isDeviceRegistered"        : service.config.appConfig.user.isDeviceRegistered,
+                "api_key"                   : service.config.appConfig.user.api_key
         };
     }; 
  
@@ -363,14 +397,14 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         var old = {};
         for(elem in statusobj)
         {
-            old[elem]                               = service.config.appConfig[elem];
-            service.config.appConfig[elem]          = statusobj[elem];
+            old[elem]                               = service.config.appConfig.user[elem];
+            service.config.appConfig.user[elem]     = statusobj[elem];
         };
         return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config.appConfig))
         .catch(function(error)
         { 
             for(elem in old)
-                service.config.appConfig[elem]          = old[elem];
+                service.config.appConfig.user[elem] = old[elem];
                 
             return $q.reject(error);              
         });        
@@ -404,6 +438,21 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
             return 1;
         })
         .catch(function(error){ 
+            return $q.reject(error);              
+        });
+    };
+
+    service.saveVadConfigField = function(obj)
+    {
+        var old_conf = service.config.appConfig.user.vad;
+        service.config.appConfig.user.vad = obj;
+        // writes data to JSON
+        return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify(service.config.appConfig))
+        .then(function(){
+            return 1;
+        })
+        .catch(function(error){ 
+            service.config.appConfig.user.vad = old_conf;
             return $q.reject(error);              
         });
     };
@@ -458,7 +507,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
     
     service.getAudioFolder = function()                                         // AllSpeak/training_sessions
     {
-        return service.config.defaults.file_system.training_folder;             
+        return service.config.defaults.file_system.recordings_folder;             
     }; 
     
     service.getAudioBackupFolder = function()                                   // AllSpeak/training_sessions/backup

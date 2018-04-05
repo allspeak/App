@@ -74,7 +74,7 @@ function MfccSrv(ErrorSrv)
     // here the 3 calls are still divided to better manage the callbacks.
 
     // PUBLIC ******************************************************************************************************
-    getMFCCFromData = function(data_array, data_type, data_dest, overwrite, filepath_noext)
+    getMFCCFromData = function(data_array, data_type, data_dest, overwrite, outputrelpath_noext)
     {
        
         if (data_array == null || !data_array.length)
@@ -90,7 +90,7 @@ function MfccSrv(ErrorSrv)
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_JSONDATA;            
             
-            return pluginInterface.getMFCC(currCfg, data_array, overwrite, filepath_noext);
+            return pluginInterface.getMFCC(currCfg, data_array, outputrelpath_noext, overwrite);
         } 
         else
         {
@@ -100,13 +100,15 @@ function MfccSrv(ErrorSrv)
     };
     // PUBLIC *****************************************************************************************************
     // caller (usually a controller) make 3 addEventListener (mfccprogressfile, mfccprogressfolder, pluginerror)
-    getMFCCFromFile = function(relpath_noext, data_type, data_dest, overwrite)
+    getMFCCFromFile = function(inputrelpath_noext, data_type, data_dest, overwrite, outputrelpath_noext)
     {
-        if(relpath_noext == null || !relpath_noext.length)
+        if(inputrelpath_noext == null || !inputrelpath_noext.length)
         {
             ErrorSrv.raiseError(_errorCB, "MfccSrv::getMFCCFromFile input relpath is null");
             return null;
         }
+        
+        if(outputrelpath_noext == null) outputrelpath_noext = inputrelpath_noext;
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
         {
@@ -115,7 +117,7 @@ function MfccSrv(ErrorSrv)
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FILE;            
             
-            return pluginInterface.getMFCC(currCfg, relpath_noext, overwrite);
+            return pluginInterface.getMFCC(currCfg, inputrelpath_noext, outputrelpath_noext, overwrite);
         } 
         else
         {
@@ -125,13 +127,15 @@ function MfccSrv(ErrorSrv)
     };
     // PUBLIC *****************************************************************************************************
     // caller (usually a controller) make 3 addEventListener (mfccprogressfile, mfccprogressfolder, pluginerror)
-    getMFCCFromFolder = function(relpath_noext, data_type, data_dest, proc_scheme, overwrite)
+    getMFCCFromFolder = function(inputrelpath_noext, data_type, data_dest, proc_scheme, overwrite, outputrelpath_noext)
     {
-        if(relpath_noext == null || !relpath_noext.length)
+        if(inputrelpath_noext == null || !inputrelpath_noext.length)
         {
             ErrorSrv.raiseError(_errorCB, "MfccSrv::getMFCCFromFolder input relpath is null");
             return null;
         }
+        
+        if(outputrelpath_noext == null) outputrelpath_noext = inputrelpath_noext;
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN)*_checkParams(proc_scheme, pluginInterface.ENUM.PLUGIN))
         {
@@ -141,7 +145,7 @@ function MfccSrv(ErrorSrv)
             currCfg.nProcessingScheme   = proc_scheme;
             currCfg.nDataOrig           = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FOLDER;            
             
-            return pluginInterface.getMFCC(currCfg, relpath_noext, overwrite);
+            return pluginInterface.getMFCC(currCfg, inputrelpath_noext, outputrelpath_noext, overwrite);
         } 
         else
         {
@@ -155,6 +159,11 @@ function MfccSrv(ErrorSrv)
         for (i in container_object) if(container_object[i] == value) return 1;
         return 0;        
     };
+    
+    getPreProcTypes = function()
+    {
+        return plugin_enum_mfcc.processingTypes;
+    };    
     //==========================================================================
     // public interface
     //==========================================================================
@@ -166,7 +175,8 @@ function MfccSrv(ErrorSrv)
         getCfg                      : getCfg, 
         getMFCCFromData             : getMFCCFromData,
         getMFCCFromFile             : getMFCCFromFile,
-        getMFCCFromFolder           : getMFCCFromFolder
+        getMFCCFromFolder           : getMFCCFromFolder,
+        getPreProcTypes             : getPreProcTypes
     };    
 }
 main_module.service('MfccSrv', MfccSrv);

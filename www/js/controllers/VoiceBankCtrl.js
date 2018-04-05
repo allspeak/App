@@ -329,7 +329,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.deleteAudio = function(filename)
     {
         FileSystemSrv.deleteFile($scope.rel_rootpath + "/" + filename)
-        .then(function(success){
+        .then(function(){
            return $scope.refreshAudioList();
         })
         .catch(function(error){

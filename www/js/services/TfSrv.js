@@ -181,18 +181,21 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv)
             if(loadnew)
             {
                  // error while testing the new net...reload current one and reject with the original error
-                return loadTFModel(mTfCfg)
-                .then(function()
+                if(mTfCfg)
                 {
-                    error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
-                    return $q.reject(error);
-                })
-                .catch(function(error2)
-                {                
-                    // should not happen !!!! #FLOWCRASH#
-                    error2.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
-                    return $q.reject(error2);
-                });
+                    return loadTFModel(mTfCfg)
+                    .then(function()
+                    {
+                        error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
+                        return $q.reject(error);
+                    })
+                    .catch(function(error2)
+                    {                
+                        // should not happen !!!! #FLOWCRASH#
+                        error2.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
+                        return $q.reject(error2);
+                    });
+                }
             }
             else
             {
@@ -213,41 +216,49 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv)
     // PRE-SUBMIT & POST-DOWNLOAD activity
     //=========================================================================
     // the crucial params are: sLabel, commands, nProcessingScheme (taken from default)
-    createSubmitDataJSON = function(label, localfolder, commandsids, procscheme, modeltype, filepath)
+    createSubmitDataJSON = function(label, localfolder, commandsids, procscheme, modeltype, initsessid, filepath)
     {
         var train_obj = {};
         train_obj.sLabel                = label;
         train_obj.sLocalFolder          = localfolder;    
         train_obj.commands              = commandsids;
         train_obj.nProcessingScheme     = procscheme;
-        train_obj.nModelType            = (modeltype == plugin_enum_tf.TF_MODELTYPE_USER_READAPTED  ?  plugin_enum_tf.TF_MODELTYPE_USER_FT :  modeltype);    
+        train_obj.nModelType            = modeltype;
+        train_obj.init_sessionid        = initsessid;    
         return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj));
     };
     
+    // set device path of the downloaded net
+    // first is in a temp session (e.g : vocabularies/gigi/train_XXXXXX)
+    // then, when accepted, it gets vocabularies/gigi
     // called by: ManageTrainingCtr::checkSession
     // all the downloaded model pass from here.
-    fixTfModel = function(voc)
+
+    fixTfModel = function(voc, tempsession)
     {
-        delete voc.status;
-        voc.sModelFilePath          = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + voc.sModelFileName;  
-        voc.nDataDest               = standardTfCfg.nDataDest;
-        voc.fRecognitionThreshold   = standardTfCfg.fRecognitionThreshold;
+        if(voc.status)  delete voc.status;
+        voc.nDataDest               = standardTfCfg.nDataDest;   
+        
+        if(tempsession)
+            voc.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + tempsession + "/" + voc.sModelFileName;  
+        else
+            voc.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + voc.sModelFileName;  
         return voc;
-    }
+    };
     
     //=========================================================================
     // returns ENUMS
     //=========================================================================
     getNetTypes = function()
     {
-        return [{"label": "NUOVA UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER}, {"label": "NUOVA MISTA", "value": plugin_enum_tf.TF_MODELTYPE_USER_FT}, {"label": "AGGIUNGI MISTA", "value": plugin_enum_tf.TF_MODELTYPE_USER_READAPTED}];
+        return [{"label": "SOLO UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER},
+                {"label": "ADATTA SOLO UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER_ADAPTED},
+                {"label": "ADATTA COMUNE", "value": plugin_enum_tf.TF_MODELTYPE_COMMON_ADAPTED}, 
+                {"label": "RI-ADATTA UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER_READAPTED},
+                {"label": "RI-ADATTA COMUNE", "value": plugin_enum_tf.TF_MODELTYPE_COMMON_READAPTED}];
     };
  
-    getPreProcTypes = function()
-    {
-        return [{"label": "Filtri spettrali", "value": plugin_enum_tf.MFCC_PROCSCHEME_F_S_CTX}, {"label": "Filtri temporali", "value": plugin_enum_tf.MFCC_PROCSCHEME_F_T_CTX}];
-    };
-    
+   
     //==========================================================================
     // PRIVATE
     //==========================================================================
@@ -268,10 +279,10 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv)
         getUpdatedStandardCfgCopy   : getUpdatedStandardCfgCopy, 
         getCfg                      : getCfg, 
         getNetTypes                 : getNetTypes,
-        getPreProcTypes             : getPreProcTypes,
         isModelLoaded               : isModelLoaded,
         loadTFModelPath             : loadTFModelPath,
         fixTfModel                  : fixTfModel,
+        testNewTFModel              : testNewTFModel,
         loadTFModel                 : loadTFModel,
         createSubmitDataJSON        : createSubmitDataJSON
     };    

@@ -43,7 +43,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
             $scope.subject      = SubjectsSrv.getSubject(subjectId);
             if ($scope.subject)
             {        
-                $scope.training_relpath                      = InitAppSrv.getAudioFolder() + "/" + $scope.subject.folder + "/" + $scope.sessionPath; 
+                $scope.training_relpath             = InitAppSrv.getAudioFolder() + "/" + $scope.subject.folder + "/" + $scope.sessionPath; 
                 $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.training_relpath;
                 $scope.sentence                     = SubjectsSrv.getSubjectSentence(subjectId, $scope.commandId);
                 $scope.titleLabel                   = $scope.subject.folder + "/" + $scope.sessionPath;
@@ -136,7 +136,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         if (!$scope.isPlaying)
         {        
             FileSystemSrv.deleteFile($scope.training_relpath + "/" + filename_noext + ".wav")
-            .then(function(success){
+            .then(function(){
                $scope.refreshAudioList();
             })
             .catch(function(error){

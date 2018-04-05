@@ -1,0 +1,18 @@
+
+
+    <!--<div class="item">Trovati {{nFiles}} files</div>--> 
+
+    <ion-item>
+        <select ng-model="selectedProcScheme" ng-change="updateProcScheme(selectedProcScheme)" ng-options="item.label for item in aProcScheme track by item.value"></select>            
+    </ion-item>
+
+    <!--</label>--> 
+        <!--<ion-item class="item item-divider">---</ion-item>-->
+
+<!--    <ion-toggle
+        ng-checked="overwrite_existing_files.do"
+        ng-model="overwrite_existing_files.do"
+        class="toggle-tall toggle-positive item item-text-wrap">
+        Sovrascrivi i file
+    </ion-toggle> -->
+

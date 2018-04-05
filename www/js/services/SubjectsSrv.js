@@ -13,13 +13,13 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv, Command
     var tempsubjects            = null;     // used to store subjects while performing ops on it.
     // values taken by defaults.json
     var subjects_filerel_path   = "";   // AllSpeak/json/subjects.json
-    var training_folder   = "";            // AllSpeak/audiofiles
+    var recordings_relpath   = "";            // AllSpeak/audiofiles
     
     //-----------------------------------------------------------------------------------------------------------------
     init = function(default_paths)
     {
         subjects_filerel_path   = default_paths.subjects_filerel_path;
-        training_folder         = default_paths.training_folder;
+        recordings_relpath         = default_paths.recordings_relpath;
         
         return FileSystemSrv.existFile(subjects_filerel_path)
         .then(function(exist){
@@ -49,12 +49,12 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv, Command
     updateSubjects = function () 
     {
         subjects = [];
-        return FileSystemSrv.listDir(training_folder)
+        return FileSystemSrv.listDir(recordings_relpath)
         .then(function(folders)
         {
             for(var f=0; f<folders.length; f++)
                 if(folders[f].name != "temp")   
-                    insertSubject({"label":folders[f].name})
+                    insertSubject({"label":folders[f]})
             return subjects;
         })
         .catch(function(error)
@@ -68,12 +68,12 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv, Command
     updateSubjects = function () 
     {
         subjects = [];
-        return FileSystemSrv.listDir(training_folder)
+        return FileSystemSrv.listDir(recordings_relpath)
         .then(function(folders)
         {
             for(var f=0; f<folders.length; f++)
                 if(folders[f].name != "temp")   
-                    insertSubject({"label":folders[f].name})
+                    insertSubject({"label":folders[f]})
             return subjects;
         })
         .catch(function(error)
@@ -87,12 +87,12 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv, Command
     updateSubjects = function () 
     {
         subjects = [];
-        return FileSystemSrv.listDir(training_folder)
+        return FileSystemSrv.listDir(recordings_relpath)
         .then(function(folders)
         {
             for(var f=0; f<folders.length; f++)
                 if(folders[f].name != "temp")   
-                    insertSubject({"label":folders[f].name})
+                    insertSubject({"label":folders[f]})
             return subjects;
         })
         .catch(function(error)
@@ -202,7 +202,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv, Command
      * returns  : updated subjects array
      * called by: subjectCtrl
      */
-    deleteSubject = function(subject_id, training_folder){
+    deleteSubject = function(subject_id, recordings_relpath){
 
         var len_subjs   = subjects.length;
         var id          = -1;
@@ -217,7 +217,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv, Command
             subjects.splice(id, 1);
             return setSubjects(subjects)
             .then(function(){
-                return FileSystemSrv.deleteDir(training_folder + "/" + dir2delete); /// mettere anche audiofolder......non trova la cartella ma non dice niente...malissimo
+                return FileSystemSrv.deleteDir(recordings_relpath + "/" + dir2delete); /// mettere anche audiofolder......non trova la cartella ma non dice niente...malissimo
             })
             .then(function(){
                 return subjects;
@@ -234,7 +234,7 @@ function SubjectsSrv($http, $q, FileSystemSrv, StringSrv, VocabularySrv, Command
     {
         subject.commands  = [];
         subject.folder      = StringSrv.format2filesystem(subject.label);
-        subject.path        = training_folder + "/" + subject.folder;
+        subject.path        = recordings_relpath + "/" + subject.folder;
         
         return getHighestID()
         .then(function(id){
