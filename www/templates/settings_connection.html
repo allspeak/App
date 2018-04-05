@@ -4,10 +4,14 @@
  <button class="button button-clear" ui-sref="home"><i class="icon ion-arrow-left-c" ></i>Home</button>
 </ion-nav-buttons>
     
-  <ion-content>
-    <h1>Username</h1>
-    <h1>Clinical Center</h1>
-    <h1>Medical Doctor</h1>
-    
-  </ion-content>
+    <ion-content>
+<!--        <h1>Username</h1>
+        <h1>Clinical Center</h1>
+        <h1>Medical Doctor</h1>-->
+        <button class="button button-block button button-balanced icon icon-only ion-play" ng-if="!isRegistered" ng-click="registerDevice()"/>
+
+        <button class="button button-block button-large button-assertive icon icon-left ion-mic-a" ng-if="isRegistered" ng-click="startRecording()">{{recButtonLabel}}</button>       
+        <button class="button button-block button-large button-assertive icon icon-left ion-mic-a" ng-if="isRegistered" ng-click="startRecording()">{{recButtonLabel}}</button>       
+            
+    </ion-content>
 </ion-view>

@@ -3,27 +3,68 @@
  */
 
 
-function MfccSrv(ErrorSrv, InitAppSrv)
+function MfccSrv(ErrorSrv)
 {
     // Management of default values:
     // each time I call : init (mfccCfg)
     // 1) take the values defined in InitAppSrv (according to config.json)
     // 2) overwrite with possible controllers defaults (which are usually tests)              
-    Cfg                     = {};
-    Cfg.mfccCfg             = null;
+    mMfccCfg            = null;
+    standardMfccCfg     = null;   // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
+    oldCfg              = null;   // copied while loading a new model, restored if something fails
+    pluginInterface     = null;
+    plugin_enum_mfcc    = null;
     
-    // PUBLIC ********************************************************************************************************
-    init = function(mfccCfg)
+     // PUBLIC ********************************************************************************************************
+    init = function(jsonCfg, plugin)
     {  
-        pluginInterface         = InitAppSrv.getPlugin();
-        Cfg.mfccCfg             = InitAppSrv.getMfccCfg(mfccCfg);
-        return Cfg;
+        mMfccCfg        = jsonCfg;
+        standardMfccCfg = jsonCfg;
+        oldCfg          = jsonCfg;
+        pluginInterface = plugin;
+        
+        plugin_enum_mfcc     = pluginInterface.ENUM.mfcc;
+    };//
+    // PUBLIC ********************************************************************************************************
+    setCfg = function(cfg)
+    {  
+        mMfccCfg = getUpdateCfg(cfg);
+        return mMfccCfg;
     };
+    //--------------------------------------------------------------------------
      // PUBLIC *************************************************************************************************
-   getCfg = function()
+    getCfg = function()
     {
-        return Cfg.mfccCfg;
+        return mMfccCfg;
+    };     
+
+    // called by any controller pretending to get an overriden copy of the standard model params
+    getUpdatedStandardCfgCopy = function (ctrlcfg)
+    {
+        var cfg = cloneObj(standardMfccCfg);
+        
+        if (ctrlcfg != null)
+            for (item in ctrlcfg)
+                cfg[item] = ctrlcfg[item];
+        return cfg;
     };    
+  
+    // called by any controller pretending to get an overriden copy of the currently loaded model
+    getUpdatedCfgCopy = function (ctrlcfg)
+    {
+        if(mMfccCfg == null)
+        {
+            console.log("warning in MfccSrv::getUpdatedStandardCfgCopy...mMfccCfg is null")
+            return null;
+        }
+        
+        var cfg = cloneObj(mMfccCfg);
+        
+        if (ctrlcfg != null)
+            for (item in ctrlcfg)
+                cfg[item] = ctrlcfg[item];
+        return cfg;
+    };
     
     //==========================================================================
     // M F C C
@@ -33,7 +74,7 @@ function MfccSrv(ErrorSrv, InitAppSrv)
     // here the 3 calls are still divided to better manage the callbacks.
 
     // PUBLIC ******************************************************************************************************
-    getMFCCFromData = function(data_array, data_type, data_dest, overwrite, filepath_noext)
+    getMFCCFromData = function(data_array, data_type, data_dest, overwrite, outputrelpath_noext)
     {
        
         if (data_array == null || !data_array.length)
@@ -44,37 +85,39 @@ function MfccSrv(ErrorSrv, InitAppSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = Cfg.mfccCfg;
+            var currCfg         = cloneObj(mMfccCfg);
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_JSONDATA;            
             
-            return pluginInterface.getMFCC(currCfg, data_array, overwrite, filepath_noext);
+            return pluginInterface.getMFCC(currCfg, data_array, outputrelpath_noext, overwrite);
         } 
         else
         {
-            ErrorSrv.raiseError(null, "ERROR in MfccSrv::getMFCCFromData. one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong")
+            ErrorSrv.raiseError(null, "ERROR in MfccSrv::getMFCCFromData. one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong");
             return false;
         }
     };
     // PUBLIC *****************************************************************************************************
     // caller (usually a controller) make 3 addEventListener (mfccprogressfile, mfccprogressfolder, pluginerror)
-    getMFCCFromFile = function(relpath_noext, data_type, data_dest, overwrite)
+    getMFCCFromFile = function(inputrelpath_noext, data_type, data_dest, overwrite, outputrelpath_noext)
     {
-        if(relpath_noext == null || !relpath_noext.length)
+        if(inputrelpath_noext == null || !inputrelpath_noext.length)
         {
             ErrorSrv.raiseError(_errorCB, "MfccSrv::getMFCCFromFile input relpath is null");
             return null;
         }
         
+        if(outputrelpath_noext == null) outputrelpath_noext = inputrelpath_noext;
+        
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = Cfg.mfccCfg;
+            var currCfg         = cloneObj(mMfccCfg);
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FILE;            
             
-            return pluginInterface.getMFCC(currCfg, relpath_noext, overwrite);
+            return pluginInterface.getMFCC(currCfg, inputrelpath_noext, outputrelpath_noext, overwrite);
         } 
         else
         {
@@ -84,47 +127,56 @@ function MfccSrv(ErrorSrv, InitAppSrv)
     };
     // PUBLIC *****************************************************************************************************
     // caller (usually a controller) make 3 addEventListener (mfccprogressfile, mfccprogressfolder, pluginerror)
-    getMFCCFromFolder = function(relpath_noext, data_type, data_dest, overwrite)
+    getMFCCFromFolder = function(inputrelpath_noext, data_type, data_dest, proc_scheme, overwrite, outputrelpath_noext)
     {
-        if(relpath_noext == null || !relpath_noext.length)
+        if(inputrelpath_noext == null || !inputrelpath_noext.length)
         {
             ErrorSrv.raiseError(_errorCB, "MfccSrv::getMFCCFromFolder input relpath is null");
             return null;
         }
         
-        if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
+        if(outputrelpath_noext == null) outputrelpath_noext = inputrelpath_noext;
+        
+        if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN)*_checkParams(proc_scheme, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = Cfg.mfccCfg;
-            currCfg.nDataType   = data_type;
-            currCfg.nDataDest   = data_dest;
-            currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FOLDER;            
+            var currCfg                 = cloneObj(mMfccCfg);
+            currCfg.nDataType           = data_type;
+            currCfg.nDataDest           = data_dest;
+            currCfg.nProcessingScheme   = proc_scheme;
+            currCfg.nDataOrig           = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_FOLDER;            
             
-            return pluginInterface.getMFCC(currCfg, relpath_noext, overwrite);
+            return pluginInterface.getMFCC(currCfg, inputrelpath_noext, outputrelpath_noext, overwrite);
         } 
         else
         {
-            ErrorSrv.raiseError(null, "ERROR in MfccSrv::getMFCCFromFolder. one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong")
+            ErrorSrv.raiseError(null, "ERROR in MfccSrv::getMFCCFromFolder. one of the input params (" +  data_type.toString() + "|" + data_dest.toString() + ") is wrong");
             return false;
         }
     };
     //==========================================================================
     _checkParams = function(value, container_object)
     {
-        for (i in container_object) {
-            if (container_object[i] == value) return 1;
-        }
+        for (i in container_object) if(container_object[i] == value) return 1;
         return 0;        
     };
+    
+    getPreProcTypes = function()
+    {
+        return plugin_enum_mfcc.processingTypes;
+    };    
     //==========================================================================
     // public interface
     //==========================================================================
     return {
-        init                : init,
-        getCfg              : getCfg, 
-        getMFCCFromData     : getMFCCFromData,
-        getMFCCFromFile     : getMFCCFromFile,
-        getMFCCFromFolder   : getMFCCFromFolder
+        init                        : init,
+        setCfg                      : setCfg, 
+        getUpdatedCfgCopy           : getUpdatedCfgCopy, 
+        getUpdatedStandardCfgCopy   : getUpdatedStandardCfgCopy, 
+        getCfg                      : getCfg, 
+        getMFCCFromData             : getMFCCFromData,
+        getMFCCFromFile             : getMFCCFromFile,
+        getMFCCFromFolder           : getMFCCFromFolder,
+        getPreProcTypes             : getPreProcTypes
     };    
 }
-
 main_module.service('MfccSrv', MfccSrv);

@@ -1,9 +1,9 @@
 /* 
 manage the following object
-sentence = { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename":"", "readablefilename": "ho_sete.wav", "existwav": 0 }
+sentence = { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename":"", "readablefilename": "ho_sete.wav", "nrepetitions": 0 }
 filename is by default empty. is here initialized as "$scope.audiofileprefix_ID.wav"
 */
-function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state, $ionicHistory, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, EnumsSrv, VocabularySrv, SequencesRecordingSrv)  
+function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state, $ionicHistory, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, EnumsSrv, VocabularySrv, VoiceBankSrv, SequencesRecordingSrv)  
 {
     $scope.audiofileprefix      = "vb"; // PREFIX of all saved file  ($scope.audiofileprefix + "_" + sentence.id + ".wav"
     $scope.subject              = null;
@@ -22,6 +22,10 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.cancelState          = "voicebank";    
     
     $scope.selCategory          = {};
+    
+    $scope.vocabulary           = null;
+    $scope.modalRecordNewCommand  = null;
+    $scope.newSentenceObj       = null; // used to 
     //==================================================================================================================
     //==================================================================================================================
     $scope.$on("$ionicView.enter", function(event, data)
@@ -29,22 +33,65 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         $ionicHistory.clearHistory();
         $scope.deregisterFunc       = $ionicPlatform.registerBackButtonAction(function(event)
         {
-            if(!$scope.isInsertingNewSent)  $state.go("home");
-            else                            $scope.closeModal();
+            if(!$scope.isInsertingNewSent)
+            {
+                if($scope.backState == "vocabulary")
+                    $state.go($scope.backState, {"foldername":$scope.foldername});                 
+                else
+                    $state.go($scope.backState);
+            }
+            else    $scope.closeModal();
         }, 100);   
         
-        $scope.showOnlyTrained      = true;        
-        $scope.rel_rootpath         = InitAppSrv.getVoiceBankFolder(); 
-        $scope.resolved_rootpath    = FileSystemSrv.getResolvedOutDataFolder() + $scope.rel_rootpath;
-        $scope.sentencesCategories  = VocabularySrv.getVocabularyCategories();
+        //---------------------------------------------------------------------------------------------------------------------
+        // manage input params
+        //---------------------------------------------------------------------------------------------------------------------
+        $scope.backState        = "home";
+        $scope.elems2display    = EnumsSrv.VOICEBANK.SHOW_ALL;
+        $scope.appStatus        = InitAppSrv.getStatus();
+
+        // when called with elems2display = SHOW_TRAINED and backState = vocabulary. it contains the vocabulary folder name
+        // otherwise consider userActiveVocabularyName
+        $scope.foldername       = $scope.appStatus.userActiveVocabularyName;       
         
-        return VocabularySrv.hasVoicesTrainVocabulary()
-        .then(function(res)
+        if(data.stateParams != null)
         {
-            if(res) $scope.refreshAudioList();          // all training commands has their voice, display all VB items
-            else    $scope.refreshTrainingAudioList();  // some training commands doesn't have a recorded wav, display only commands belonging to the training list
-        })
+            if(data.stateParams.elems2display != null && data.stateParams.elems2display != "")  $scope.elems2display    = parseInt(data.stateParams.elems2display);
+            if(data.stateParams.backState != null && data.stateParams.backState != "")          $scope.backState        = data.stateParams.backState;
+            if($scope.backState == "vocabulary")
+            {
+                if(data.stateParams.foldername != null)  $scope.foldername = data.stateParams.foldername;
+                else
+                {
+                    alert("Error in VoicebankCtrl::$ionicView.enter : backstate = vocabulary but voc folder was not specified");
+                    $scope.backState = "home";
+                }
+            }   
+        }
+        //---------------------------------------------------------------------------------------------------------------------
+        $scope.rel_rootpath         = InitAppSrv.getVoiceBankFolder(); 
+//        $scope.rel_vocpath          = InitAppSrv.getVoiceBankFolder(); 
+        $scope.resolved_rootpath    = FileSystemSrv.getResolvedOutDataFolder() + $scope.rel_rootpath;
+        $scope.sentencesCategories  = VoiceBankSrv.getVocabularyCategories();
         
+        return $scope.loadVoc($scope.foldername)
+        .then(function(voc)
+        {
+            $scope.vocabulary   = voc;   
+            if($scope.elems2display == EnumsSrv.VOICEBANK.SHOW_ALL) return $scope.refreshAudioList();
+            else                                                    return $scope.refreshTrainingAudioList();
+        })
+        .then(function()
+        {
+            if($scope.modalRecordNewCommand == null)
+            {
+                $ionicModal.fromTemplateUrl('templates/modal/modal2QuestionsBigButtons.html', {
+                    scope: $scope, animation: 'slide-in-up'}).then(function(modal) {$scope.modalRecordNewCommand = modal;});                
+            }        
+        })
+        .catch(function(error){
+            alert(error.message);
+        });        
    });
 
     // ask user's confirm after pressing back (thus trying to exit from the App)
@@ -52,14 +99,20 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
  
     //==================================================================================================================
     //==================================================================================================================    
+    $scope.loadVoc = function(foldername)
+    {
+        if(foldername != "")    return VocabularySrv.getTrainVocabularyName($scope.foldername);
+        else                    return Promise.resolve([]);
+    };
+    //==================================================================================================================    
     // get ALL VB voc elements from service, thus updates UI, return 1 or 0 if failure
     $scope.refreshAudioList = function()
     {
         $scope.isBusy    = 1;
-        return VocabularySrv.checkVoiceBankAudioPresence()
-        .then(function(voc)
+        return VoiceBankSrv.updateVoiceBankAudioPresence()
+        .then(function(cmds)
         {
-            $scope.voicebankSentences   = voc;
+            $scope.voicebankSentences   = cmds;
             $scope.isBusy               = 0;
             $scope.showOnlyTrained      = false; 
             $scope.subHeaderTitle       = $scope.subheaderAll;
@@ -78,10 +131,10 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.refreshTrainingAudioList = function()
     {
         $scope.isBusy    = 1;
-        return VocabularySrv.checkTrainVocabularyAudioPresence()
+        return VocabularySrv.updateTrainVocabularyAudioPresence($scope.rel_rootpath, $scope.vocabulary)
         .then(function(voc)
         {
-            $scope.voicebankSentences   = voc;
+            $scope.voicebankSentences   = voc.commands;
             $scope.isBusy               = 0;
             $scope.showOnlyTrained      = true; 
             $scope.subHeaderTitle       = $scope.subheaderTrained;
@@ -110,7 +163,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         .then(function(res) 
         {    
             $scope.isBusy    = 1;
-            VocabularySrv.removeUserVoiceBankSentence(sentence)
+            return VoiceBankSrv.removeUserVoiceBankCommand(sentence)
             .then(function()
             {
                 var filename = $scope.rel_rootpath + "/" + $scope.audiofileprefix + "_" + sentence.id;
@@ -146,11 +199,35 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
 
     $scope.saveNewSentence = function(sentencelabel)
     {
-        return VocabularySrv.addUserVoiceBankSentence(sentencelabel, $scope.selCategory.data, $scope.audiofileprefix)
-        .then(function(res)
+        if(!sentencelabel.length)   // should not be necessary as the modal enables the button only if sentencelabel is not empty
         {
-            if(res == 0)    alert("Il comando esiste gia! cambialo");  // new sentence is already present
-            else            return $scope.refreshAudioList().then(function(){ $scope.closeModal(); })
+            alert("Attenzione. Il domando inserito è vuoto, correggilo!");
+            return;
+        };
+        
+        return VoiceBankSrv.addUserVoiceBankCommand(sentencelabel, $scope.selCategory.data, $scope.audiofileprefix)
+        .then(function(newsentence)
+        {
+            if(newsentence == null)    alert("Il comando esiste gia! cambialo");  // new sentence is already present
+            else            
+            {
+                $scope.newSentenceObj= newsentence;
+            
+                return $scope.refreshAudioList()
+                .then(function()
+                {
+                    $scope.closeModal(); 
+                    $scope.modalText = "VUOI REGISTRARE LA TUA VOCE MENTRE PRONUNCI QUESTO NUOVO COMANDO ?"
+                    $scope.labelActionA = "REGISTRA"
+                    $scope.labelActionB = "RITORNA"
+                    $scope.modalRecordNewCommand.show();
+//                    return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi registrare la tua voce mentre pronunci questo nuovo comando ?'})
+                })
+            }
+//                .then(function(dorecordvoice) 
+//                {                
+//                    if(dorecordvoice)   $scope.recordAudio(newsentence.id)
+//                })
         })
         .catch(function(error){
             alert(error.message);
@@ -159,7 +236,13 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         });        
     };
     
-    $ionicModal.fromTemplateUrl('templates/popNewSentence.html', 
+    $scope.TwoQuestionsAction = function(bool)
+    {
+        $scope.modalRecordNewCommand.hide()
+        if(bool)        $scope.recordAudio($scope.newSentenceObj.id)
+    };
+    
+    $ionicModal.fromTemplateUrl('templates/modal/modalNewSentence.html', 
     {
         scope: $scope,
         animation: 'slide-in-up'            
@@ -184,7 +267,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         {
             var volume       = 1; //$scope.volume/100;
             $scope.isBusy    = 1;
-            IonicNativeMediaSrv.playAudio($scope.resolved_rootpath + "/" + filename + ".wav", volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
+            IonicNativeMediaSrv.playAudio($scope.resolved_rootpath + "/" + filename, volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
         }
     };
     
@@ -212,16 +295,16 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     
     $scope.recordAudio = function(sentence_id)
     {
-        var sentence = VocabularySrv.getVoiceBankSentence(sentence_id);
+        var sentence = VoiceBankSrv.getVoiceBankCommand(sentence_id);
         if(sentence.filename == "")
         {
             sentence.filename = $scope.getFileName(sentence_id);
-            return VocabularySrv.setVoiceBankSentenceFilename(sentence_id, sentence.filename)
+            return VoiceBankSrv.setVoiceBankCommandFilename(sentence_id, sentence.filename)
             .then(function(){
-                $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, sentenceId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
+                $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, commandId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
             })
         }
-        else    $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, sentenceId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
+        else    $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, commandId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
     };
 
     $scope.recordAudioSequence = function()
@@ -238,7 +321,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
             $scope.record_sequence = sequence;
             if($scope.record_sequence)
             {
-                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, sentenceId:0, successState:$scope.successState, cancelState:$scope.cancelState});
+                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, commandId:0, successState:$scope.successState, cancelState:$scope.cancelState});
             }
         });
     };
@@ -246,7 +329,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     $scope.deleteAudio = function(filename)
     {
         FileSystemSrv.deleteFile($scope.rel_rootpath + "/" + filename)
-        .then(function(success){
+        .then(function(){
            return $scope.refreshAudioList();
         })
         .catch(function(error){

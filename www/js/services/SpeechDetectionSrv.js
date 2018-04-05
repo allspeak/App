@@ -3,7 +3,7 @@
  */
 
 
-function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
+function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
 {
     LOCK_TYPES = {
         FREE    : 0,
@@ -20,10 +20,20 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     // each time I call : init (captureCfg, captureProfile, output_chunks, vadCfg, mfccCfg)
     // 1) take the values defined in InitAppSrv (according to config.json)
     // 2) overwrite with possible controllers defaults (which are usually tests)
-    Cfg                     = {};
-    Cfg.captureCfg          = null;
-    Cfg.vadCfg              = null;
-    Cfg.captureProfile      = null;
+    mCfg                = {};
+    standardCfg         = null;   // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
+    oldCfg              = null;   // copied while loading a new model, restored if something fails
+    pluginInterface     = null;
+    plugin_enum         = null;    
+    
+    initAppSrv          = null;
+
+    captureProfile          = "recognition";
+    captureConfigurations   = [];
+    
+    mCfg.captureCfg     = {};
+    mCfg.vadCfg         = {};
+    mCfg.captureProfile = "";
     
     lockMode                = LOCK_TYPES.FREE; //determine if the service is already involved in a task (e.g capturing, waiting for callbacks)
     
@@ -38,8 +48,9 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     subsamplingFactor       = 8;
     isSpeechStarted         = false;
     
-    speechChunksFolderRoot  = "";
-    speechChunksFilenameRoot= "";
+    speechChunksFolderRoot      = "audio_sentences/temp";
+    speechChunksFilenameRoot    = "chunk_";     
+    
     speechChunksDestination = "";
     saveFullSpeech          = false;
 
@@ -75,12 +86,48 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
      * 
      * TODO call it before displaying a page....and prevent the state change
      */
-    init = function(captureCfg, captureProfile, output_chunks, vadCfg)
+    init = function(jsonArrayCaptureCfg, jsonVadCfg, plugin, initappserv)
     {   
-        pluginInterface = InitAppSrv.getPlugin();
+        // stores the three capture configurations (record, playback, recognition)
+        captureConfigurations   = cloneObjs(jsonArrayCaptureCfg);
         
+        standardCfg             = {"captureCfg":cloneObj(captureConfigurations[captureProfile]), "vadCfg": cloneObj(jsonVadCfg)};
+        mCfg                    = {"captureCfg":cloneObj(captureConfigurations[captureProfile]), "vadCfg": cloneObj(jsonVadCfg)};
+        oldCfg                  = {"captureCfg":cloneObj(captureConfigurations[captureProfile]), "vadCfg": cloneObj(jsonVadCfg)};
+        pluginInterface         = plugin;
+        
+        initAppSrv              = initappserv;
+        plugin_enum             = {};        
+        plugin_enum.capture     = pluginInterface.ENUM.capture;        
+        plugin_enum.vad         = pluginInterface.ENUM.vad;        
+    };
+    //--------------------------------------------------------------------------
+     // PUBLIC *************************************************************************************************
+    getCfg = function()
+    {
+        return mCfg;
+    };    
+    // PUBLIC ********************************************************************************************************
+    setCfg = function(cfg, captureProfile, output_chunks)
+    {  
+        mCfg = getUpdateCfg(cfg, captureProfile, output_chunks);
+        return mCfg;
+    };
+    
+    setVadCfg = function(vaduserobj)
+    {  
+        for(var item in vaduserobj) mCfg.vadCfg[item] = vaduserobj[item];
+        return initAppSrv.saveVadConfigField(vaduserobj);
+    };
+    
+     // PUBLIC *************************************************************************************************
+    // called by any controller pretending to override some default properties 
+    // ctrlcfg = {captureCfg: {nSampleRate, nBufferSize, } , vafCfg: }
+    // standardCfg = {capture_configurations[{nSampleRate, nBufferSize, }, {nSampleRate, nBufferSize, }, ...] , vafCfg: }
+    getUpdatedCfgCopy = function (ctrlcfg, captureProfile, output_chunks)
+    {
         if(lockMode == LOCK_TYPES.FREE)
-        {
+        {        
             if (output_chunks != null)
             {
                 speechChunksFolderRoot      = output_chunks.output_relpath;
@@ -90,25 +137,31 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
             {
                 speechChunksFolderRoot      = "audio_sentences/temp";
                 speechChunksFilenameRoot    = "chunk_";          
-            }
-            Cfg.captureCfg  = InitAppSrv.getCaptureCfg(captureCfg, captureProfile);
-            Cfg.vadCfg      = InitAppSrv.getVadCfg(vadCfg);
+            }             
+            standardCfg.captureCfg          = cloneObj(captureConfigurations[captureProfile]);
             
-            return Cfg;
+            var cfg = {};
+            cfg.captureCfg  = cloneObj(mCfg.captureCfg);
+            cfg.vadCfg      = cloneObj(mCfg.vadCfg);        // TODO: verify this !
+
+            if (ctrlcfg != null)
+            {
+                if (ctrlcfg.captureCfg != null)
+                    for (item in ctrlcfg.captureCfg)
+                        cfg.captureCfg[item] = ctrlcfg.captureCfg[item];
+
+                if (ctrlcfg.vadCfg != null)
+                    for (item in ctrlcfg.vadCfg)
+                        cfg.vadCfg[item] = ctrlcfg.vadCfg[item];
+            }
+            return cfg;
         }
         else
         {
             ErrorSrv.raiseWarning("SpeechDetectionSrv::init service is locked !");
             return null;
-        }
+        }            
     };
-    //==========================================================================
-     // PUBLIC *************************************************************************************************
-    getCfg = function()
-    {
-        return Cfg;
-    };    
-    //  end DEFAULT VALUES MANAGEMENT
 
     //==========================================================================
     // COMMANDS
@@ -135,7 +188,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                 }   
                 _errorCB                            = errorCB;      
                 
-                if (captureCfg == null) captureCfg  = _getStandardCaptureCfg();
+                if (captureCfg == null) captureCfg  = mCfg.captureCfg;
 
                 window.addEventListener('audioinput'    , _onAudioRawInputCapture);
                 window.addEventListener('pluginError'   , _onAudioInputError);
@@ -188,7 +241,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
                     
                 _errorCB                    = errorCB;     
 
-                if (captureCfg == null) captureCfg = _getStandardCaptureCfg();
+                if (captureCfg == null) captureCfg  = mCfg.captureCfg;
                 
                 window.addEventListener('audioinput'    , _onAudioRawInputCapture);
                 window.addEventListener('pluginError'   , _onAudioInputError);
@@ -390,7 +443,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
             
             if(saveFullSpeech)
             {
-                var wavblob     = _dataArray2BlobWav(Cfg.captureCfg, audioRawDataQueue);
+                var wavblob     = _dataArray2BlobWav(mCfg.captureCfg, audioRawDataQueue);
                 var filename    = speechChunksFolderRoot + "/full_speech.wav";
                 return saveBlobWav(wavblob, filename, 1)     
                 .then(function(){
@@ -422,7 +475,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         {
 //            var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + "_" + totalNoOfSpeechCaptured.toString() + ".wav";
             var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + ".wav";
-            wavblob         = _dataArray2BlobWav(Cfg.captureCfg, sentenceData);
+            wavblob         = _dataArray2BlobWav(mCfg.captureCfg, sentenceData);
 
             return FileSystemSrv.createFile(filename, wavblob, true)
             .then(function(){
@@ -468,7 +521,7 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     {
         if (data == null)  data = audioRawDataQueue;
 
-        var blob = _dataArray2BlobWav(Cfg.captureCfg, data);
+        var blob = _dataArray2BlobWav(mCfg.captureCfg, data);
         return FileSystemSrv.createFile(filename, blob, overwrite)
         .then(function(){
             return true;
@@ -550,8 +603,8 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     calcRecConstants = function()
     {
         min_acl_ms              = pluginInterface.ENUM.vad.MIN_ACL_MS;
-        sr                      = Cfg.captureCfg.nSampleRate;
-        bs                      = Cfg.captureCfg.nBufferSize;
+        sr                      = mCfg.captureCfg.nSampleRate;
+        bs                      = mCfg.captureCfg.nBufferSize;
         
         fInputBufferSizeInMs    = 1000 * bs / sr;            // 64 msec
         
@@ -568,6 +621,31 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
         for (item in obj)
             arr.push({label: item, value:obj[item]});
         return arr; 
+    };
+    
+    cloneObj = function(obj)
+    {
+        var clone = {};
+        for(var field in obj)
+            clone[field] = obj[field];
+        return clone;
+    };
+    
+    // valid for {"a":{}, "b":{}, "c":{}}
+    cloneObjs = function(obj)
+    {
+        var clone = {};
+        for(var field in obj)
+            clone[field] = cloneObj(obj[field]);
+        return clone;
+    };
+    
+    cloneObjArray = function(objarr)
+    {
+        var clone = [];
+        for(var e=0; e<objarr.length; e++)
+            clone[e] = cloneObj(objarr[e]);
+        return clone;
     };
     // =========================================================================
     // ==  G E T   A U D I O I N P U T     C O N S T A N T S ===================
@@ -590,6 +668,8 @@ function SpeechDetectionSrv(FileSystemSrv, InitAppSrv, ErrorSrv, $q)
     //==========================================================================
     return {
         init                    : init,
+        setCfg                  : setCfg, 
+        getUpdatedCfgCopy       : getUpdatedCfgCopy, 
         getCfg                  : getCfg, 
         startMicPlayback        : startMicPlayback,
         startRawCapture         : startRawCapture, 

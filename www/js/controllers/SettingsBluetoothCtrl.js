@@ -14,8 +14,7 @@ connected:
 
  */
 
-//function SettingsBluetoothCtrl($scope, $cordovaBLE)
-function SettingsBluetoothCtrl($scope, $cordovaBLE, $ionicPopup, $ionicPlatform, InitAppSrv)
+function SettingsBluetoothCtrl($scope, $state, $cordovaBLE, $ionicPopup, $ionicPlatform, InitAppSrv)
 {
     $scope.bluetoothEnabled = false;
     $scope.BTOFF    = "Bluetooth spento, premi per attivare";
@@ -32,6 +31,12 @@ function SettingsBluetoothCtrl($scope, $cordovaBLE, $ionicPopup, $ionicPlatform,
 
     $scope.$on("$ionicView.enter", function(event, data)
     {
+        // take control of BACK buttons
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
+        {
+            $state.go("home");
+        }, 100);  
+        
         return $scope.isBTEnabled()
         .then(function(enabled)
         {
@@ -48,7 +53,10 @@ function SettingsBluetoothCtrl($scope, $cordovaBLE, $ionicPopup, $ionicPlatform,
             }
         });
     });    
-    
+
+    $scope.$on('$ionicView.leave', function(){
+        if($scope.deregisterFunc)   $scope.deregisterFunc();
+    }); 
     
     $scope.isBTEnabled = function()
     {
@@ -89,9 +97,9 @@ function SettingsBluetoothCtrl($scope, $cordovaBLE, $ionicPopup, $ionicPlatform,
         $scope.refreshDevices();
     };
     
-    $scope.isConnected = function(device)
+    $scope.isLogged = function(device)
     {
-        return $cordovaBLE.isConnected(device.id)
+        return $cordovaBLE.isLogged(device.id)
     };
     
     $scope.resetDevices = function()

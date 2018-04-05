@@ -1,0 +1,54 @@
+<ion-modal-view>
+    
+<!--    <ion-header-bar class="bar bar-header bar-positive">
+        <h1 class="title">Addestra il vocabolario</h1>
+        <button class="button button-clear button-primary" ng-click="closeModalSubmit()">Cancel</button>
+    </ion-header-bar>    -->
+    
+    <ion-content>
+
+            <div class="item item-divider">STATUS</div>
+
+            <!--FEATURES-->
+            <ion-item class="item-icon-right" ng-if="(!isCalcFeatures && !vocabulary_status.haveFeatures.length)">Features<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
+            <!--<label class="item" ng-if="vocabulary_status.haveFeatures == false">Features</label>--> 
+            <label class="item" ng-if="isCalcFeatures">Features : <span class="badge">{{percFiles}} %</span></label> 
+
+            <!--ZIP-->
+            <ion-item class="item-icon-right" ng-if="vocabulary_status.haveZip">ZIP features<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
+            <ion-item class="item-icon-right" ng-if="!vocabulary_status.haveZip">ZIP features</ion-item>    
+
+            <!--UPLOAD RETE-->
+            <ion-item class="item-icon-right" ng-if="(!isUploading && isTraining)">Upload Dati<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
+            <label class="item" ng-if="(!isUploading && !isTraining)">Upload Dati</label> 
+            <label class="item" ng-if="isUploading">Upload Dati : <span class="badge">{{percUpload}} %</span></label> 
+            
+            <!--CHIEDI RETE-->
+            <ion-item class="item-icon-right" ng-if="vocabulary_status.isNetAvailableRemote">Controllo Rete<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
+            <label class="item" ng-if="!isChecking && !vocabulary_status.isNetAvailableRemote">Controllo Rete</label> 
+            <label class="item-icon-right" ng-if="isChecking">Controllo Rete<span><i class="icon ion-loop"></i></span></label>   
+            
+            <!--DOWNLOAD RETE-->
+            <ion-item class="item-icon-right" ng-if="vocabulary_status.isNetAvailableLocale">Download Rete<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
+            <label class="item" ng-if="!isDownloading && !vocabulary_status.isNetAvailableRemote">Download Rete</label> 
+            <label class="item" ng-if="isDownloading">Download Rete : <span class="badge">{{percDownload}} %</span></label> 
+            
+            <ion-item class="item-button-right" ng-if="!isDownloading && vocabulary_status.isNetAvailableRemote">Download Rete
+                <div class="buttons">
+                    <button class="button button-assertive" ng-click="getNet();">
+                        <i class="icon ion-android-download"></i>
+                    </button>
+                </div>                
+            </ion-item>              
+            
+
+    </ion-content>
+    
+    <ion-footer-bar class="bar-positive">
+        <div class="button-bar">        
+            <button class="bu button button-custom button-block button-positive" ng-click="closeModalSubmit()">CANCELLA</button>
+            <!--<button class="button button-full button-positive" ng-disabled="!vocabulary_status.isNetAvailableLocale" ng-click="startNewSession()">{{labelSubmit}}</button>-->        
+        </div>          
+    </ion-footer-bar>  
+    
+</ion-modal-view>

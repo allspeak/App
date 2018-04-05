@@ -1,0 +1,47 @@
+<ion-view view-title="GESTISCI COMANDI">
+
+    <ion-nav-bar class="bar-positive">    
+        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button>    
+    </ion-nav-bar>  
+    
+    <ion-header-bar class='bar-assertive bar-subheader bar-dark'>
+        <ion-toggle class="item item-dark" ng-model="toogleSelectAll" ng-if="editTrainVocabulary" ng-click="selectAll(toogleSelectAll)">
+            {{labelToggleSentences}}
+        </ion-toggle>    
+    </ion-header-bar>  
+    
+    <ion-footer-bar class="bar-positive">
+        <div class="button-bar" ng-if="editTrainVocabulary">        
+            <button class="bu button button-custom button-block button-positive" ng-click="cancel()">RITORNA</button>
+            <button class="button button-custom button-block button-positive" ng-click="saveTrainVocabulary()">SALVA</button>
+        </div> 
+        
+        <div class="button-bar" ng-if="showTrainVocabulary">        
+            <button class="bu button button-custom button-block button-positive" ng-click="cancel()">RITORNA</button>
+            <button class="button button-custom button-block button-positive" ng-disabled="isDefault" ng-click="doEditTrainVocabulary()">{{labelEditTrainVocabulary}}</button>        
+        </div>          
+    </ion-footer-bar>    
+    
+    <ion-content>
+
+        <button class="button button-full button-positive" ng-if="selectList" ng-click="selectSentences()">{{labelSelectSentences}}</button>  
+
+        <ion-list ng-if="editTrainVocabulary">
+            <ion-toggle
+                    ng-repeat="sentence in commands"
+                    ng-checked="sentence.checked"
+                    ng-model="sentence.checked"
+                    class="item item-text-wrap">
+                    {{sentence.title}}
+            </ion-toggle>            
+        </ion-list>     
+        
+        <ion-list ng-if="showTrainVocabulary">
+            <ion-item ng-repeat="cmd in commands track by cmd.id">{{cmd.title}}</ion-item>
+        </ion-list>     
+        
+    </ion-content>
+</ion-view>
+

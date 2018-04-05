@@ -1,0 +1,28 @@
+<ion-view view-title="Sentence">
+    
+<!--    <ion-nav-buttons side="right">
+        <button class="button" ng-click="addAudio()">
+            <i class="icon ion-plus-round"></i>
+        </button>
+    </ion-nav-buttons>      -->
+    
+    <ion-content>
+        <ion-item >Vocabolario : <span class="badge"> {{titleLabel}} </span></ion-item>    
+        <ion-item >Comando : <span class="badge"> {{sentence.title}} </span></ion-item>          
+        <ion-item> Ripetizioni Esistenti</ion-item>        
+        <ion-list>
+            <ion-item class="item-button-right" ng-repeat="file in sentence.files"> {{file.label}}
+                <div class="buttons">
+                    <button class="button button-clear button-balanced" ng-click="playAudio(file.label)">
+                        <i class="icon ion-play"></i>
+                       <!--<i class="icon ion-play" on-icon="ion-play" off-icon="ion-stop" icon-switcher />-->
+                        <!--<i ng-class="{'icon ion-play': !playing, 'icon ion-stop': playing}" ng-click="playing=!playing"></i>-->
+                    </button>
+                    <button class="button button-clear button-assertive" ng-click="deleteAudio(file.label)">
+                        <i class="icon ion-trash-a"></i>
+                    </button>
+                </div>                
+            </ion-item>
+        </ion-list>
+    </ion-content>
+</ion-view>

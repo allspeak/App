@@ -1,0 +1,30 @@
+{
+    "vocabulary":
+    [
+        { "title": "Ho fame", "id": 1, "label": "ho_fame", "filename": "ho_fame.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Ho sete", "id": 2, "label": "ho_sete", "filename": "ho_sete.wav", "existwav": 0, "firstValidId": 0 },
+        { "title": "Ho sonno", "id": 3, "label": "ho_sonno", "filename" : "ho_sonno.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Ho caldo", "id": 4, "label": "ho_caldo", "filename" : "ho_caldo.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Ho freddo", "id": 5, "label": "ho_freddo", "filename" : "ho_freddo.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Devo andare in bagno", "id": 6, "label": "devo_andare_in_bagno", "filename" : "devo_andare_in_bagno.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Voglio cambiare posizione", "id": 7, "label": "voglio_cambiare_posizione", "filename" : "voglio_cambiare_posizione.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Ho dolore", "id": 8, "label": "ho_dolore", "filename" : "ho_dolore.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Ciao", "id": 9, "label": "ciao", "filename" : "ciao.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Come stai?", "id": 10, "label": "come_stai", "filename" : "come_stai.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "no", "id": 11, "label": "no", "filename" : "no.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Ci vediamo domani", "id": 12, "label": "ci_vediamo_domani", "filename" : "ci_vediamo_domani.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Chiama ...", "id": 13, "label": "chiama", "filename" : "chiama.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Salutami ...", "id": 14, "label": "salutami", "filename" : "salutami.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Ti voglio bene", "id": 15, "label": "ti_voglio_bene", "filename" : "ti_voglio_bene.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Ho troppa saliva", "id": 16, "label": "ho_troppa_saliva", "filename" : "ho_troppa_saliva.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Ho bisogno di lavarmi", "id": 17, "label": "ho_bisogno_di_lavarmi", "filename" : "ho_bisogno_di_lavarmi.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Grazie", "id": 18, "label": "grazie", "filename" : "grazie.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Prego", "id": 19, "label": "prego", "filename" : "prego.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Sono arrabbiato", "id": 20, "label": "sono_arrabbiato", "filename" : "sono_arrabbiato.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Sono triste", "id": 21, "label": "sono_triste", "filename" : "sono_triste.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Tutto bene!", "id": 22, "label": "tutto_bene", "filename" : "tutto_bene.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Passami il telefono", "id": 23, "label": "passami_il_telefono", "filename" : "passami_il_telefono.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "Voglio stare solo", "id": 24, "label": "voglio_star_solo", "filename" : "voglio_star_solo.wav", "existwav": 0, "firstValidId": 0},
+        { "title": "si", "id": 25, "label": "si", "filename" : "si.wav", "existwav": 0, "firstValidId": 0}
+    ]
+}

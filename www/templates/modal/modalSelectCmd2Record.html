@@ -1,0 +1,40 @@
+<ion-modal-view>
+    <ion-header-bar class="bar bar-header bar-positive">
+        <h1 class="title">Select Sentences to be trained</h1>
+        <button class="button button-clear button-primary" ng-click="modalRecordSequence.hide()">Cancel</button>
+    </ion-header-bar>
+    
+    <ion-footer-bar class="bar-positive">
+        <button class="button button-full button-positive" ng-disabled="!isValidTrainingList" ng-click="doCompleteSession()">INIZIA REGISTRAZIONI</button>        
+    </ion-footer-bar>        
+ 
+    <ion-content class="padding">
+        
+<!--        <label class="item item-input item-select">
+            <div class="input-label">Modalita</div>
+            <select ng-model="selectedTrainingModality" ng-change="updateCaptureModality(selectedTrainingModality)" ng-options="item.label for item in training_modalities track by item.value"></select>            
+        </label>        -->
+        
+        <ion-item class="item-button-right">Numero di ripetizioni: {{repetitionsCount}}
+            <div class="buttons">
+                <button class="button button-large" ng-click="decrementRepCount();">-</button>
+                <button class="button button-large" ng-click="incrementRepCount();">+</button>
+            </div>                
+        </ion-item>        
+
+        <ion-toggle class="item item-dark" ng-model="toogleSelectAll" ng-click="selectAll(toogleSelectAll)">{{labelToggleSentences}}</ion-toggle>
+        
+        <ion-list>
+            <ion-toggle
+                ng-repeat="sentence in commands"
+                ng-checked="sentence.checked"
+                ng-model="sentence.checked"
+                ng-click="onChangeToogle()"
+                class="item item-text-wrap">
+                <!--<span class="badge">  </span>-->
+                {{sentence.nrepetitions}} : {{sentence.title}}
+            </ion-toggle>            
+        </ion-list>   
+        
+    </ion-content>
+</ion-modal-view>

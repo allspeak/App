@@ -1,29 +1,24 @@
-<ion-view view-title="ALLSPEAK HOME" align-title="center">  
+  <ion-view view-title="ALLSPEAK HOME" align-title="center">  
         
     <ion-nav-buttons side="right">
-    <!--<button class="button button-icon icon ion-settings" ui-sref="settings.device">  </button>-->
+    <button class="button button-icon icon ion-settings" ui-sref="settings.device">  </button>
     </ion-nav-buttons>       
        
     <ion-footer-bar class="bar-positive">
-        <button class="button button-block button-positive" ng-click="exit()">Exit</button>        
+        <button class="button button-full button-block button-large button-positive" ng-click="exit()">Exit</button>        
     </ion-footer-bar>   
     
     <ion-content class="padding">
-<!--        <h1 style="text-align: center;"></h1><br/>-->
-        <button class="button button-block button-large button-positive" ui-sref="amplifier">Amplifica</button>
         
-        <button class="button button-block button-large button-positive" ng-if="canRecognize" ng-click="goRecognition()">Riconosci</button>
-        <button class="button button-block button-large button-assertive" ng-if="!canRecognize" ng-click="goRecognition()">Riconosci</button>
+        <button class="button button-maxi button-block button-large button-positive" ui-sref="amplifier">AMPLIFICA</button>
         
-        <button class="button button-block button-large button-positive" ng-if="modelLoaded" ui-sref="training">Addestra</button>
-        <button class="button button-block button-large button-assertive" ng-if="!modelLoaded" ui-sref="training">Addestra</button>
-
-        <button class="button button-block button-large button-positive" ng-if="vocabularyHasVoices"ui-sref="voicebank">Registra la voce</button>        
-        <button class="button button-block button-large button-assertive" ng-if="!vocabularyHasVoices"ui-sref="voicebank">Registra la voce</button
-        >        
-        <button class="button button-block button-large button-positive" ui-sref="settings.device">Settings</button>        
-        <br/><br/> 
-        <br/><br/> 
+        <button class="button button-maxi button-block button-large button-positive" ng-click="action()" style="text-transform:uppercase">{{labelActionButton}} VOCABOLARIO:<br>{{appStatus.userActiveVocabularyName}} </button>
+ 
+        <div class="button-bar">        
+            <button class="button button-block button-maxi button-dark" ui-sref="vocabularies">TUTTI I<br>VOCABOLARI</button>
+            <button class="button button-block button-maxi button-calm" ui-sref="voicebank({elems2display:enum_recordsession,backState:'home'})">VOICE<br> BANK</button>
+            <!--<button class="button button-block button-0 button-royal" ui-sref="settings.device">SETTINGS</button>-->
+        </div>         
 
     </ion-content>
 </ion-view>

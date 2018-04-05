@@ -1,5 +1,15 @@
 <ion-view view-title="REGISTRA" hide-back-button="true">
     
+    
+    <ion-footer-bar class="bar-positive">
+        <div class="button-bar">        
+            <button class="button button-block button-large button-balanced icon icon-left ion-android-archive" ng-disabled="!existNewFile" ng-click="confirm()">{{nextButtonLabel}}</button>       
+            <button class="button button-block button-large button-energized icon icon-left ion-arrow-left-a" ng-if="isSequence" ng-click="skip()">{{skipButtonLabel}}</button>       
+            <button class="button button-block button-large button-assertive icon icon-left ion-arrow-left-a" ng-click="cancel()">{{exitButtonLabel}}</button>       
+        </div>        
+    </ion-footer-bar>       
+    
+    
     <ion-content>
 
         
@@ -32,10 +42,10 @@
             <i class="icon ion-volume-high"></i>
         </div>
         
-        <div class="button-bar">        
+<!--        <div class="button-bar">        
             <button class="button button-block button-large button-balanced icon icon-left ion-android-archive" ng-disabled="!existNewFile" ng-click="confirm()">{{nextButtonLabel}}</button>       
             <button class="button button-block button-large button-energized icon icon-left ion-arrow-left-a" ng-if="isSequence" ng-click="skip()">{{skipButtonLabel}}</button>       
             <button class="button button-block button-large button-assertive icon icon-left ion-arrow-left-a" ng-click="cancel()">{{exitButtonLabel}}</button>       
-        </div>         
+        </div>         -->
   </ion-content>
 </ion-view>

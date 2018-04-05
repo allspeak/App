@@ -1,0 +1,23 @@
+<ion-view view-title="Vocabulary">
+    <ion-content>
+        <ion-list>
+            <!--href="#/app/vocabulary/{{sentence.id}}"-->
+            <ion-item ng-repeat="sentence in vocabulary">
+                <div class="item item-button-right"> {{sentence.title}}
+                    <div class="buttons">
+                        <button class="button button-clear button-balanced" ng-click="play($index, {{sentence.id}})">
+                            <i class="icon ion-play"></i>
+                        </button>
+                        <button class="button button-clear button-assertive" ng-click="recordSentence($index, {{sentence.id}})">
+                            <i class="icon ion-mic-a"></i>
+                        </button>
+                        <!--ui-sref="#/app/vocabulary/{{sentence.id}}"-->
+                        <button class="button button-clear button-royal" ng-click="trainSentence({{sentence.id}})">   
+                            <i class="icon ion-levels"></i>
+                        </button>                        
+                    </div>
+                </div>           
+            </ion-item>
+        </ion-list>
+    </ion-content>
+</ion-view>

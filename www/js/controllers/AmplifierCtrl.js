@@ -5,9 +5,9 @@ function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
                                 "nAudioSourceType": 6, //android voice recognition
                                 "nBufferSize": 256};
 
-    $scope.Cfg              = null;
-    $scope.captureCfg       = null;
-    $scope.vadCfg           = null;    
+    $scope.Cfg              = {};
+    $scope.Cfg.captureCfg   = {};
+    $scope.Cfg.vadCfg       = null;    
     
     $scope.volume           = 50;
     $scope.bLabelStart      = "AVVIA";
@@ -19,17 +19,17 @@ function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
     //==================================================================================
     $scope.$on("$ionicView.enter", function(event, data)
     {
-        pluginInterface                 = InitAppSrv.getPlugin();            
-        
-        $scope.captureParams.nDataDest  = pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_DB;        
+        pluginInterface                     = InitAppSrv.getPlugin();            
+        $scope.Cfg.captureCfg               = $scope.captureParams;
+        $scope.Cfg.captureCfg.nDataDest     = pluginInterface.ENUM.PLUGIN.CAPTURE_DATADEST_JS_DB;        
+
         // get standard capture params + overwrite some selected
-        $scope.Cfg                      = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
-        $scope.captureCfg               = $scope.Cfg.captureCfg;
+        $scope.Cfg                          = SpeechDetectionSrv.getUpdatedCfgCopy($scope.Cfg, $scope.captureProfile, $scope.chunkSaveParams);
     });        
 
     $scope.start = function()
     {
-        if (!$scope.isRunning)  SpeechDetectionSrv.startMicPlayback($scope.captureCfg, $scope.onStartCapture, $scope.onStopCapture, $scope.onCaptureError);
+        if (!$scope.isRunning)  SpeechDetectionSrv.startMicPlayback($scope.Cfg.captureCfg, $scope.onStartCapture, $scope.onStopCapture, $scope.onCaptureError);
         else                    SpeechDetectionSrv.stopCapture();
     };
   
@@ -75,6 +75,8 @@ function AmplifierCtrl($scope, SpeechDetectionSrv, InitAppSrv)
    //==================================================================================
 };
 
-controllers_module = angular.module('controllers_module')
-.controller('AmplifierCtrl', AmplifierCtrl);
+controllers_module = angular.module('controllers_module', []).controller('AmplifierCtrl', AmplifierCtrl);
+
+//controllers_module.controller('AmplifierCtrl', AmplifierCtrl);
+ 
  

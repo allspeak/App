@@ -1,23 +1,48 @@
-<ion-view view-title="Vocabulary">
-    <ion-content>
-        <ion-list>
-            <!--href="#/app/vocabulary/{{sentence.id}}"-->
-            <ion-item ng-repeat="sentence in vocabulary">
-                <div class="item item-button-right"> {{sentence.title}}
-                    <div class="buttons">
-                        <button class="button button-clear button-balanced" ng-click="play($index, {{sentence.id}})">
-                            <i class="icon ion-play"></i>
-                        </button>
-                        <button class="button button-clear button-assertive" ng-click="recordSentence($index, {{sentence.id}})">
-                            <i class="icon ion-mic-a"></i>
-                        </button>
-                        <!--ui-sref="#/app/vocabulary/{{sentence.id}}"-->
-                        <button class="button button-clear button-royal" ng-click="trainSentence({{sentence.id}})">   
-                            <i class="icon ion-levels"></i>
-                        </button>                        
-                    </div>
-                </div>           
-            </ion-item>
-        </ion-list>
+<ion-view view-title="VOCABOLARIO" align-title="center">  
+        
+    <ion-header-bar class='bar-assertive bar-subheader bar-dark'>
+        {{headerTitle}}
+    </ion-header-bar>      
+    
+<!--    <ion-nav-title> {{ pageTitle }} </ion-nav-title>-->
+    
+    <ion-nav-bar class="bar-positive">    
+       <ion-nav-back-button class="button-clear" ui-sref="home">
+           <i class="ion-arrow-left-c"></i>Home
+       </ion-nav-back-button>    
+     </ion-nav-bar>    
+       
+    <ion-nav-buttons side="right">
+        <button class="button" ng-click="deleteVocabulary()">
+            <i class="icon ion-trash-a"></i>
+        </button>
+    </ion-nav-buttons>  
+    
+    <ion-content class="padding">
+<!--        <h1 style="text-align: center;"></h1><br/>-->
+        
+        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_commands({modeId:enum_showvoccommands, foldername:foldername, backState:'vocabulary'})" >{{labelEditTrainVocabulary}}</button>
+        
+        <button class="button button-outline button-tall button-block button-large button-positive" ng-disabled="isDefault" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
+        
+        <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="voicebank({elems2display:enum_show_vb_voc, foldername:foldername, backState:'vocabulary'})" >{{labelRecordVoice}}</button>
+        
+        <button class="button button-outline button-tall button-block button-large button-positive" ng-disabled="isDefault" ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
+        
+        <ion-toggle
+            ng-disabled="!status.modelExist"
+            ng-checked="status.modelLoaded"
+            ng-click="loadModel(status.modelLoaded)"
+            ng-model="status.modelLoaded"
+            class="toggle-tall toggle-positive item item-text-wrap">
+            {{labelLoadVocabulary}}
+        </ion-toggle>  
+        
+        <!--<button class="button button-block button-large button-positive" ng-if="modelLoaded" ui-sref="training">{{}}</button>-->
+        
+        <br/><br/> 
+        <br/><br/> 
+
     </ion-content>
+  
 </ion-view>

@@ -1,10 +1,9 @@
-main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native', 'checklist-model']);
+main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native']);
 
-main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootScope) 
+main_module.run(function($ionicPlatform, $ionicPopup, $cordovaSplashscreen, InitAppSrv, $state, $rootScope) //, $cordovaSplashscreen) 
 {
     $ionicPlatform.ready(function() 
     {
-//                    $cordovaSplashscreen.show();
         if(window.cordova && window.cordova.plugins.Keyboard) 
         {
             // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard for form inputs)
@@ -24,24 +23,20 @@ main_module.run(function($ionicPlatform, $ionicPopup, InitAppSrv, $state, $rootS
             InitAppSrv.initApp()
             .then(function(success)
             {
-                //$cordovaSplashscreen.hide();   
-                $state.go('home');
+//                $cordovaSplashscreen.hide();   
+                $state.go('initCheck');
             })
             .catch(function(error)
             {
                 var str;
-                if(error.message)
-                    str = error.message;
-                else
-                    str = error;
-                $ionicPopup.alert({
-                    title: 'Errore',
-                    template: "L\'applicazione verra chiusa per il seguente errore:\n" + str
-                })
+                if(error.message)  str = error.message;
+                else               str = error;
+                $ionicPopup.alert({ title: 'Errore', template: "L\'applicazione verra chiusa per il seguente errore:\n" + str })
                 .then(function() {
-//                    ionic.Platform.exitApp(); // to uncomment in production
+                    $cordovaSplashscreen.hide();
+                    console.log(error.message);
+                    //ionic.Platform.exitApp(); // to uncomment in production
                 });                
-                console.log(error.message);
             });
         }
         else
@@ -59,18 +54,17 @@ main_module.config(function($stateProvider, $urlRouterProvider)
 {
     $stateProvider
     .state('init', {
-        url: '/',
+        url: '/'
+    })
+    .state('initCheck', {
+        url: '/check',
         templateUrl: 'templates/init.html',
-        controller: 'InitCtrl'
+        controller: 'InitCheckCtrl'
     })
     .state('home', {
-        url: '/home',
+        url: '/home/:isUpdated',
         templateUrl: 'templates/home.html',
         controller: 'HomeCtrl'
-    })
-    .state('login', {
-        url: '/login',
-        templateUrl: 'templates/login.html'
     })
     .state('amplifier', {
         url: '/amplifier',
@@ -78,29 +72,49 @@ main_module.config(function($stateProvider, $urlRouterProvider)
         controller: 'AmplifierCtrl'
     })    
     .state('recognition', {
-        url: '/recognition',
-        templateUrl: 'templates/recognition_debug.html',
+        url: '/recognition/:foldername/:sessionname',
+        templateUrl: 'templates/recognition.html',
         controller: 'RecognitionCtrl'
     })
     .state('voicebank', {
-        url: '/voicebank',
+        url: '/voicebank/:elems2display/:foldername/:backState',
         templateUrl: 'templates/voicebank.html',
         controller: 'VoiceBankCtrl'
     })
+    .state('vocabularies', {
+        url: '/vocabularies',
+        templateUrl: 'templates/vocabularies.html',
+        controller: 'VocabulariesCtrl'
+    })
+    .state('vocabulary', {
+        url: '/vocabulary/:foldername',
+        templateUrl: 'templates/vocabulary.html',
+        controller: 'VocabularyCtrl'
+    })
+    .state('manage_commands', {
+        url: '/manage_commands/:modeId/:foldername/:backState',
+        templateUrl: 'templates/manage_commands.html',
+        controller: 'ManageCommandsCtrl'
+    })
+    .state('manage_recordings', {
+        url: '/manage_recordings/:foldername/:backState/:sessionPath/:subjId',
+        templateUrl: 'templates/manage_recordings.html',
+        controller: 'ManageRecordingsCtrl'
+    }) 
+    .state('manage_training', {
+        url: '/manage_training/:foldername/:backState/:sessionPath',
+        templateUrl: 'templates/manage_training.html',
+        controller: 'ManageTrainingCtrl'
+    }) 
+    .state('sentence', {
+        url: '/sentence/:foldername/:sessionPath/:commandId/:subjId',
+        templateUrl: 'templates/sentence.html',
+        controller: 'SessionSentenceCtrl'
+    })    
     .state('record_sequence', {
-        url: '/record/:modeId/:sentenceId/:subjId/:successState/:cancelState',
+        url: '/record/:modeId/:commandId/:subjId/:successState/:cancelState/:foldername',
         templateUrl: 'templates/record_sequence.html',
         controller: 'SequenceRecordCtrl'
-    })    
-    .state('training', {
-        url: '/training',
-        templateUrl: 'templates/training.html',
-        controller: 'TrainingCtrl'
-    })
-    .state('show_session', {
-        url: '/show_session/:sessionPath/:subjId',
-        templateUrl: 'templates/show_recording_session.html',
-        controller: 'ShowRecordingSessionCtrl'
     })    
     .state('settings', {
         url: '/settings',
@@ -151,104 +165,5 @@ main_module.config(function($stateProvider, $urlRouterProvider)
             }
         }
     });
-  
-  $urlRouterProvider.otherwise("/");
-  
+    $urlRouterProvider.otherwise("/");
 });
-
-
-    
-    
-    
-    
-    
-    
-//    .state('vocabulary', {
-//        url: '/vocabulary',
-//        abstract: 'true',
-//        templateUrl: 'templates/vocabulary_tabs.html'
-//    })
-//    .state('vocabulary.show_sessions', {
-//        url: '/show_sessions',
-//        views: 
-//        {
-//            'show_sessions-vocabulary' : 
-//            {
-//                templateUrl: 'templates/vocabulary_show_sessions.html',
-//                controller: ''
-//            }
-//        }
-//    })
-//    .state('vocabulary.edit', {
-//        url: '/edit/:modeId',
-//        views: 
-//        {
-//        'edit-vocabulary' : 
-//            {
-//                templateUrl: 'templates/vocabulary_edit.html',  
-//                controller: 'SettingsRecognitionCtrl'                               
-//            }
-//        }
-//    })
-//    .state('vocabulary.train', {
-//        url: '/train/:modeId',
-//        views: 
-//        {
-//        'train-vocabulary' : 
-//            {
-//                templateUrl: 'templates/vocabulary_train.html',
-//                controller: 'SettingsBluetoothCtrl'
-//            }
-//        }
-//    })
-//    .state('vocabulary.show_session', {
-//        url: '/show_session',
-//        views: 
-//        {
-//        'show_session-vocabulary' : 
-//            {
-//                templateUrl: 'templates/vocabulary_show_session.html',
-//                controller: 'ShowRecordingSessionCtrl'
-//            }
-//        }
-//    })
-//    .state('vocabulary', {
-//        url: '/vocabulary',
-//        templateUrl: 'templates/vocabulary.html',
-//        controller: 'VocabularyCtrl',
-//        resolve:{
-//                    'MyServiceData':function(VocabularySrv)
-//                    {
-//                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
-//                        return VocabularySrv.promise; 
-//                    }
-//                    vocabulary :function(VocabularySrv)
-//                    {
-//                        // MyServiceData will also be injectable in your controller, if you don't want this you could create a new promise with the $q service
-//                        return VocabularySrv.getVocabulary(); 
-//                    }//                    
-//                    
-//                    
-//                }
-//    })
-//    .state('settings.setup_input', {
-//        url: '/setup_input',
-//        views: 
-//        {
-//        'setupinput-settings' : 
-//            {
-//                templateUrl: 'templates/settings_setup_audioinput_debug.html',  // templateUrl: 'templates/settings_setup_audioinput_chartcmp.html',
-//                controller: 'SetupAudioInputCtrl'                               // controller: 'SetupAudioInputCompCtrl'
-//            }
-//        }
-//    })
-//    .state('sentence_train', {
-//        url: '/train/:sentenceId',
-//        templateUrl: 'templates/sentence_train.html',
-//        controller: 'SentenceTrainCtrl'
-//    })      
-//    .state('sentence_record', {
-//        url: '/record/:sentenceId',
-//        templateUrl: 'templates/sentence_rec.html',
-//        controller: 'SentenceRecordCtrl'
-//    }) 

@@ -1,0 +1,50 @@
+<!--<ion-view view-title="Recording Session">-->
+<ion-view>
+    <ion-nav-title> {{ pageTitle }} </ion-nav-title>
+    
+    <ion-nav-bar class="bar-positive">    
+        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button>    
+    </ion-nav-bar>     
+
+    <ion-header-bar class='bar-assertive bar-subheader bar-dark item-button-right'>
+        {{headerTitle}}
+        <div class="button buttons-right button-positive" ng-click="deleteSession()">        
+            <i class="icon ion-trash-a"></i>
+        </div>          
+    </ion-header-bar>  
+    
+    <ion-footer-bar class="bar-positive">
+        <div class="button-bar">        
+            <button class="bu button button-custom button-block button-positive" ng-click="cancel()">RITORNA</button>
+            <button class="button button-full button-positive" ng-click="completeSession()">{{labelResumeTrainSession}}</button>    
+        </div>          
+    </ion-footer-bar>     
+    
+<!--    <ion-nav-buttons side="right">
+        <button class="button" ng-click="deleteSession()">
+            <i class="icon ion-trash-a"></i>
+        </button>
+    </ion-nav-buttons>     -->
+    
+    <ion-content>
+<!--        <ion-item >Subject Name : <span class="badge"> {{subject.label}} </span></ion-item>    -->
+        <!--<ion-item >Session Name : <span class="badge"> {{sessionName}} </span></ion-item>-->    
+
+<!--        <ion-item class="item-button-right">Recorded Sentences
+            <div class="buttons">
+                <button class="button button-balanced" ng-click="askExtractFeatures();">
+                    <i class="icon ion-stats-bars"></i>
+                </button>
+            </div>                
+        </ion-item>    -->
+
+        <ion-list>
+            <!--<ion-item ng-repeat="sentence in commands track by sentence.id" ng-show="sentence.nrepetitions>0" href="#/sentence/{{foldername}}/{{sessionPath}}/{{sentence.id}}/{{subject.id}}">-->
+            <ion-item ng-repeat="sentence in commands track by sentence.id" href="#/sentence/{{foldername}}/{{sessionPath}}/{{sentence.id}}/{{subject.id}}">
+                {{sentence.title}} <span class="badge"> {{sentence.nrepetitions}} </span>
+            </ion-item>
+        </ion-list>
+    </ion-content>    
+</ion-view>

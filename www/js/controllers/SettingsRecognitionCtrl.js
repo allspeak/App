@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function SettingsRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSrv, $ionicPopup, $ionicHistory)
+function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, $ionicPopup, SpeechDetectionSrv, InitAppSrv, ErrorSrv)
 {
     $scope.captureProfile   = "recognition";
     $scope.captureParams    = null;
@@ -24,13 +24,16 @@ function SettingsRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSr
     $scope.$on("$ionicView.enter", function(event, data)
     {
         // take control of BACK buttons
-        
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
+        {
+            $state.go("home");
+        }, 100);    
         
         
         pluginInterface             = InitAppSrv.getPlugin();            
         
         // get standard capture params + overwrite some selected
-        $scope.Cfg                  = SpeechDetectionSrv.init($scope.captureParams, $scope.captureProfile, $scope.chunkSaveParams, $scope.initVadParams);
+        $scope.Cfg                  = SpeechDetectionSrv.getUpdatedCfgCopy($scope.Cfg, $scope.captureProfile, $scope.chunkSaveParams);
         $scope.captureCfg           = $scope.Cfg.captureCfg;
         $scope.vadCfg               = $scope.Cfg.vadCfg;
 
@@ -51,16 +54,16 @@ function SettingsRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSr
         $scope.countMIL             = $scope.vadCfg.nSpeechDetectionMinimum;
         $scope.countMXL             = $scope.vadCfg.nSpeechDetectionMaximum;
         $scope.countAD              = $scope.vadCfg.nSpeechDetectionAllowedDelay;
+        $scope.threshold            = $scope.vadCfg.nSpeechDetectionThreshold;      // TODO: set limits !
+        
 
         $scope.$apply();
     });      
-    
-    
-    $scope.$on('$ionicView.beforeLeave', function()
-    {
-      // here I will restore the normal back button functions
-    });    
 
+    $scope.$on('$ionicView.leave', function(){
+        if($scope.deregisterFunc)   $scope.deregisterFunc();
+    });     
+    
     $scope.captureCfg = null;
     
     $scope.selectObjByValue = function(value, objarray)
@@ -149,13 +152,26 @@ function SettingsRecognitionCtrl($scope, SpeechDetectionSrv, InitAppSrv, ErrorSr
 //        $scope.calculateAllowedRanges();
     };  
 
+    $scope.onChangeThreshold = function(thresh)
+    {
+        $scope.threshold = thresh;
+    };
     
+    // updates local object and send only the user params to InitAppSrv
     $scope.save = function(doexit)
     {
-            return InitAppSrv.saveAudioConfigField('vad', $scope.vadCfg)
-        .then(function(){
-            return InitAppSrv.saveAudioConfigField('recognition', $scope.captureCfg);
-        })
+    
+        $scope.vadCfg.nSpeechDetectionMinimum       = $scope.countMIL;
+        $scope.vadCfg.nSpeechDetectionMaximum       = $scope.countMXL;
+        $scope.vadCfg.nSpeechDetectionAllowedDelay  = $scope.countAD;
+        $scope.vadCfg.nSpeechDetectionThreshold     = $scope.threshold;
+        
+        var obj2pass2configuser = {"nSpeechDetectionMinimum":       $scope.vadCfg.nSpeechDetectionMinimum,
+                                   "nSpeechDetectionMaximum":       $scope.vadCfg.nSpeechDetectionMaximum,
+                                   "nSpeechDetectionAllowedDelay":  $scope.vadCfg.nSpeechDetectionAllowedDelay,
+                                   "nSpeechDetectionThreshold":     $scope.vadCfg.nSpeechDetectionThreshold}
+        
+        return SpeechDetectionSrv.setVadCfg(obj2pass2configuser)
         .then(function(){        
             if(doexit)  $ionicHistory.goBack(); // back ! 
         })
