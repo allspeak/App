@@ -258,38 +258,60 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         return VoiceBankSrv.init(service.config.defaults.file_system)
     }; 
     
-    // copy (if not existent) the default model from assets to AllSpeak/vocabularies/default
-    // overwrite the sModelFilePath params to file:///storage/emulated/0/AllSpeak/vocabularies/default/controls_fsc.pb
+    // list all the json and pb contained in www/models/default
+    // copy all these files (if not existent) from assets to AllSpeak/vocabularies/default
+    // overwrite the sModelFilePath param of each file adding file:///storage/emulated/0/AllSpeak/vocabularies/default/controls_fsc.pb
     service.manageTFModels = function()
     {
         var default_file_system     = service.config.defaults.file_system;
+     
+        var src_asset_folder        = "models" + "/" + default_file_system.default_vocabulary_name;
+        var dest_dataroot_folder    = default_file_system.vocabularies_folder + "/" + default_file_system.default_vocabulary_name;
         
-        // AllSpeak/vocabularies/default/vocabulary.json
-        var storageDefaultModelJson = default_file_system.vocabularies_folder + "/" + default_file_system.default_vocabulary_name + "/" + default_file_system.universalJsonFileName;       
-        // AllSpeak/vocabularies/default/controls_fsc.pb
-        var storageDefaultModelPB   = default_file_system.vocabularies_folder + "/" + default_file_system.default_vocabulary_name + "/"  + default_file_system.defaultModelName;
+        var jsonfiles               = "";
         
-        var assetsDefaultModelJson = "models" + "/" + default_file_system.default_vocabulary_name + "/" + default_file_system.universalJsonFileName; 
-        var assetsDefaultModelPB   = "models" + "/" + default_file_system.default_vocabulary_name + "/" + default_file_system.defaultModelName;
-        
-            return FileSystemSrv.copyFromAssets(assetsDefaultModelJson, storageDefaultModelJson, 0)        
+        // copy www/models/default content ==> AllSpeak/vocabularies/default
+        return FileSystemSrv.copyFilesFromAssetsSubFolder(src_asset_folder, dest_dataroot_folder, ["json", "pb"], false)
         .then(function()
         {
-            return FileSystemSrv.copyFromAssets(assetsDefaultModelPB, storageDefaultModelPB, 0)        
+            return FileSystemSrv.listFilesInDir(dest_dataroot_folder, ["json"])     // retrieve jsons list
         })
-        .then(function()
+        .then(function(files)
         {
-            return FileSystemSrv.readJSON(storageDefaultModelJson)
+            jsonfiles = files;
+            var subPromises = [];
+            for (var f=0; f<jsonfiles.length; f++) 
+            {
+                (function(relpath) 
+                {
+                    var subPromise = FileSystemSrv.readJSON(relpath)
+                    subPromises.push(subPromise);
+                })(dest_dataroot_folder + "/" + jsonfiles[f]);
+            }
+            return $q.all(subPromises);     // load all json files
         })
-        .then(function(jsondefvoc)
+        .then(function(vocs)
         {
-            jsondefvoc.sModelFilePath =  FileSystemSrv.getResolvedOutDataFolder() + storageDefaultModelPB;
-            return FileSystemSrv.createJSONFileFromObj(storageDefaultModelJson, jsondefvoc, 2);
-        })           
+            var subPromises = [];
+            for (var f=0; f<vocs.length; f++) 
+            {
+                vocs[f].sModelFilePath = FileSystemSrv.getResolvedOutDataFolder() + dest_dataroot_folder + "/" +  vocs[f].sModelFileName;
+                (function(relpath, obj) 
+                {
+                    var subPromise = FileSystemSrv.createJSONFileFromObj(relpath, obj, FileSystemSrv.OVERWRITE)
+                    subPromises.push(subPromise);
+                })(dest_dataroot_folder + "/" + jsonfiles[f], vocs[f]);
+            }
+            return $q.all(subPromises);     // update sModelFilePath within each json file
+        })
+        .then(function(vocs)
+        {            
+            return $q.defer().resolve(1);
+        })            
         .catch(function(error)
         { 
             return $q.reject(error);              
-        });        
+        });         
     };
     //====================================================================================================================
     // get audiodevice list. find BTHS & BT SPEAKER, if found .. ready to be connected

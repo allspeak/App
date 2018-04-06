@@ -29,9 +29,17 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         
         return service.resolved_data_storage_root;        
     };
-    // =========================================================================
-    // FILES
-    // =========================================================================    
+    
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    //  FILES
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    // 
     // invoke the then, returning 1 or 0, instead of invoking the success or error callbacks
     service.existFile = function(relative_path)
     {
@@ -52,7 +60,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     
     // invoke the success callback (then) returning 1 or 0 instead of invoking the success or error callbacks
     // assume a src path relative to =>      /.../assets/www
-    service.existWWWAssetFile = function(relative_path)
+    service.existAssetFile = function(relative_path)
     {
         return $cordovaFile.checkFile(service.resolved_assets_folder, service.data_assets_folder + "/" + relative_path)
         .then(function (success){
@@ -62,6 +70,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
             return $q.resolve(0);
         });        
     };
+    
     //--------------------------------------------------------------------------
     service.readJSON = function(relative_path)
     {
@@ -230,7 +239,59 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
             return $q.reject(error);
         });        
     };
-    
+
+        
+    service.renameFilesInFolder = function(source_relative_folder_path, target_relative_folder_path, valid_extensions, overwrite, textobj)
+    {
+        return service.listFilesInDir(source_relative_folder_path, valid_extensions)
+        .then(function(files)
+        {
+            var subPromises = [];
+            for (var f=0; f<files.length; f++) 
+            {
+                (function(src_fpath, dest_fpath, ow, to) 
+                {
+                    var subPromise  = service.renameFile(src_fpath, dest_fpath, ow, to)
+                    subPromises.push(subPromise);
+                })(source_relative_folder_path + "/" + files[f], target_relative_folder_path + "/" + files[f], overwrite, textobj);
+            }
+            return $q.all(subPromises);
+        })
+        .then(function()
+        {
+            return $q.defer().resolve(1);
+        })
+        .catch(function(error)
+        {
+            $q.reject(error);
+        });
+    };    
+        
+    service.copyFilesFromAssetsSubFolder = function(source_wwwrelative_folder_path, target_datarootrelative_folder_path, valid_extensions, overwrite)
+    {
+        return service.listFilesInAssetsSubDir(source_wwwrelative_folder_path, valid_extensions)
+        .then(function(files)
+        {
+            var subPromises = [];
+            for (var f=0; f<files.length; f++) 
+            {
+                (function(src_fpath, dest_fpath, ow, to) 
+                {
+                    var subPromise  = service.copyFromAssets(src_fpath, dest_fpath, 1)
+                    subPromises.push(subPromise);
+                })(source_wwwrelative_folder_path + "/" + files[f], target_datarootrelative_folder_path + "/" + files[f], overwrite);
+            }
+            return $q.all(subPromises);
+        })
+        .then(function()
+        {
+            return $q.defer().resolve(1);
+        })
+        .catch(function(error)
+        {
+            $q.reject(error);
+        });
+    };    
     //--------------------------------------------------------------------------
     // returns 0 if did not delete anything
     service.deleteFile = function(relative_path)
@@ -282,7 +343,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         var do_overwrite                                    = (overwrite == null ? true : overwrite);
         var relative_src_path                               = service.data_assets_folder + "/" + wwwrelative_src_path;
         
-        return service.existWWWAssetFile(wwwrelative_src_path)     // exists source file ?
+        return service.existAssetFile(wwwrelative_src_path)     // exists source file ?
         .then(function(exist){        
             if (exist)  return 1;
             else        return $q.reject({"message":"ERROR: Source file (" + wwwrelative_src_path + ") does not exist"});
@@ -312,9 +373,15 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         });
     };
  
-    // =========================================================================
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    // =================================================================================================================================================
     // DIRECTORIES
-    // =========================================================================    
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    // =================================================================================================================================================
+    // =================================================================================================================================================
     // invoke the success callback (then) returning 1 or 0 instead of invoking the success or error callbacks
     service.existDir = function(relative_path)
     {
@@ -372,25 +439,27 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     
     //--------------------------------------------------------------------------
     // return [{name:"", isDirectory:true}, ..]
-    service.listDir = function(relative_path, contains)
+    service.listDir = function(relative_path, foldercontains)
     {
         return $cordovaFile.listDir(service.resolved_data_storage_root, relative_path)
         .then(function(dirs)
         {
-            var onlydirs = [];
-            for(d=0; d<dirs.length; d++)    
-            {
-                if(dirs[d].isDirectory)
-                {    
-                    if(contains != null)
-                    {
-                        if(dirs[d].name.indexOf(contains) !== -1)
-                            onlydirs.push(dirs[d].name);
-                    }
-                    else    onlydirs.push(dirs[d].name);
-                }
-            }
-            return onlydirs;
+            return service._filterFolders(dirs, foldercontains);
+        })
+        .catch(function(error){
+            console.log("FileSystemSrv::listDir" + JSON.stringify(error));            
+            return $q.reject(error);
+        });
+    };
+    
+    //--------------------------------------------------------------------------
+    // return [{name:"", isDirectory:true}, ..]
+    service.listAssetsSubDir = function(relative_path, foldercontains)
+    {
+        return $cordovaFile.listDir(service.resolved_assets_folder, service.data_assets_folder + "/" + relative_path)
+        .then(function(dirs)
+        {
+            return service._filterFolders(dirs, foldercontains);
         })
         .catch(function(error){
             console.log("FileSystemSrv::listDir" + JSON.stringify(error));            
@@ -400,9 +469,9 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     
     //--------------------------------------------------------------------------
     //return if a folder is empty
-    service.isDirEmpty = function(relative_path, valid_extensions)
+    service.isDirEmpty = function(relative_path, valid_extensions, filecontains)
     {
-        return service.countFilesInDir(relative_path, valid_extensions)
+        return service.countFilesInDir(relative_path, valid_extensions, filecontains)
         .then(function(files){
             return (files.length ? true : false);
         })
@@ -410,65 +479,42 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     
     //--------------------------------------------------------------------------
     //return the number of files contained in a folder, belonging to the [valid_extensions] formats.
-    service.countFilesInDir = function(relative_path, valid_extensions, contains)
+    service.countFilesInDir = function(relative_path, valid_extensions, filecontains)
     {
-        return service.listFilesInDir(relative_path, valid_extensions, contains)
+        return service.listFilesInDir(relative_path, valid_extensions, filecontains)
         .then(function(files){
             return files.length;
         })
     }
     //--------------------------------------------------------------------------
     //return all the files contained in a folder, belonging to the [valid_extensions] formats.
-    service.listFilesInDir = function(relative_path, valid_extensions, contains)
+    service.listFilesInDir = function(relative_path, valid_extensions, filecontains)
     {
-        var len_ext = 0;
-        if(valid_extensions != null) len_ext = valid_extensions.length;
-        
         return $cordovaFile.listDir(service.resolved_data_storage_root, relative_path)
-        .then(function(dirs)
+        .then(function(entries)
         {
-            var len = dirs.length;
-            var arr = [];
-            var cnt = 0;
-            for (d=0; d<len; d++)
-            {
-                if (!dirs[d].isDirectory)
-                {
-                    var insert = false;
-                    if(len_ext)
-                    {
-                        // filter input files: show only some extensions
-                        var ext = StringSrv.getExtension(dirs[d].name);
-                        for (e=0; e<valid_extensions.length; e++)
-                        {    
-                            if( ext == valid_extensions[e])
-                            {
-                                insert = true; 
-                                break;
-                            }
-                        }
-                    }
-                    else insert = true;
-                    
-                    if(contains != null)
-                        if(dirs[d].name.indexOf(contains) == -1)
-                            insert = false;
-                    
-                    if(insert)
-                    {
-                        arr[cnt] = dirs[d].name;
-                        cnt++;
-                    }
-                }
-            }
-            return arr;            
+            return service._filterFiles(entries, valid_extensions, filecontains);
         })
         .catch(function(error){
             console.log(error.message);
             return $q.reject(error);
         });
     };
-    
+    //--------------------------------------------------------------------------
+    //return all the files contained in a folder, belonging to the [valid_extensions] formats.
+    service.listFilesInAssetsSubDir = function(relative_path, valid_extensions, filecontains)
+    {
+        return $cordovaFile.listDir(service.resolved_assets_folder, service.data_assets_folder + "/" + relative_path)
+        .then(function(dirs)
+        {
+            return service._filterFiles(dirs, valid_extensions, filecontains);
+        })
+        .catch(function(error){
+            console.log(error.message);
+            return $q.reject(error);
+        });
+    };
+
     //--------------------------------------------------------------------------
     service.deleteDir = function(relative_path)
     {
@@ -509,6 +555,70 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     {
         return service.resolved_data_storage_root;
     };    
+    
+   
+    // dirs = [{"isDirectory", "name"}, ..., {}] as returned from $cordovaFile.listDir
+    service._filterFolders = function(dirs, contains)
+    {
+        var onlydirs = [];
+        for(var d=0; d<dirs.length; d++)    
+        {
+            if(dirs[d].isDirectory)
+            {    
+                if(contains != null)
+                {
+                    if(dirs[d].name.indexOf(contains) !== -1)
+                        onlydirs.push(dirs[d].name);
+                }
+                else    onlydirs.push(dirs[d].name);
+            }
+        }
+        return onlydirs;        
+    };
+    
+    // dirs = [{"isDirectory", "name"}, ..., {}] as returned from $cordovaFile.listDir
+    service._filterFiles = function(dirs, valid_extensions, contains)
+    {
+        var len_ext = 0;
+        if(valid_extensions != null) len_ext = valid_extensions.length;
+        
+        var len = dirs.length;
+        var arr = [];
+        var cnt = 0;
+        for (d=0; d<len; d++)
+        {
+            if (!dirs[d].isDirectory)
+            {
+                var insert = false;
+                if(len_ext)
+                {
+                    // filter input files: show only some extensions
+                    var ext = StringSrv.getExtension(dirs[d].name);
+                    for (e=0; e<valid_extensions.length; e++)
+                    {    
+                        if( ext == valid_extensions[e])
+                        {
+                            insert = true; 
+                            break;
+                        }
+                    }
+                }
+                else insert = true;
+
+                if(contains != null)
+                    if(dirs[d].name.indexOf(contains) == -1)
+                        insert = false;
+
+                if(insert)
+                {
+                    arr[cnt] = dirs[d].name;
+                    cnt++;
+                }
+            }
+        }
+        return arr;            
+    };
+    
     // =========================================================================
     return service;
 }
