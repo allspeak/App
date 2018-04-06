@@ -274,7 +274,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         return FileSystemSrv.copyFilesFromAssetsSubFolder(src_asset_folder, dest_dataroot_folder, ["json", "pb"], false)
         .then(function()
         {
-            return FileSystemSrv.listFilesInDir(dest_dataroot_folder, ["json"])     // retrieve jsons list
+            return FileSystemSrv.listFilesInDir(dest_dataroot_folder, ["json"], "net_");     // retrieve nets' jsons list
         })
         .then(function(files)
         {
