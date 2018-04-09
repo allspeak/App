@@ -29,14 +29,19 @@
         
         <button class="button button-outline button-tall button-block button-large button-positive" ng-disabled="isDefault" ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
         
-        <ion-toggle
+        <label class="item item-input item-select">
+            <div class="input-label">RETE SELEZIONATA</div>
+            <select ng-model="selectedNet" ng-change="updateSelectedNet(selectedNet)" ng-options="item.label for item in existingNets track by item.value"></select>            
+        </label>   
+        
+<!--        <ion-toggle
             ng-disabled="!status.modelExist"
             ng-checked="status.modelLoaded"
             ng-click="loadModel(status.modelLoaded)"
             ng-model="status.modelLoaded"
             class="toggle-tall toggle-positive item item-text-wrap">
             {{labelLoadVocabulary}}
-        </ion-toggle>  
+        </ion-toggle>  -->
         
         <!--<button class="button button-block button-large button-positive" ng-if="modelLoaded" ui-sref="training">{{}}</button>-->
         

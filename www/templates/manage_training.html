@@ -42,7 +42,6 @@
         <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pua.exist && !existingNets.pura.exist" ng-click="startNewSession(aNetType[3].value, false, existingNets.pua.voc.sessionid)">READATTA UTENTE</button>
         <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pua.exist &&  existingNets.pura.exist" ng-click="startNewSession(aNetType[3].value, true, existingNets.pura.voc.sessionid)">READATTA UTENTE</button>
         
-        
         <div class="item item-divider"></div>
         
         <!--NEW CA-->
@@ -57,13 +56,10 @@
             <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[2].value, true)">SOSTITUISCI<br>ADATTA COMUNE</button>
             <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[4].value, true, existingNets.cra.voc.sessionid)">RIADATTA<br>COMUNE</button>
         </div> 
-
-        
         <!--CREATE CRA or READAPT CRA (incremental readapting from common side)-->
         <button class="button button-big button-block button-large button-positive" ng-if="existingNets.ca.exist && !existingNets.cra.exist" ng-click="startNewSession(aNetType[4].value, false, existingNets.ca.voc.sessionid)">READATTA COMUNE</button>
         <button class="button button-big button-block button-large button-positive" ng-if="existingNets.ca.exist &&  existingNets.cra.exist" ng-click="startNewSession(aNetType[4].value, true, existingNets.cra.voc.sessionid)">READATTA COMUNE</button>
 
-        
     </ion-content>    
 </ion-view>
 

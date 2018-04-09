@@ -111,7 +111,7 @@
             "nContextFrames":5,
             "nItems2Recognize":23,
             "sModelFilePath":"",
-            "sModelFileName":"controls_fsc.pb",
+            "sModelFileName":"net_273_252",
             "sInputNodeName":"inputs/I",
             "sOutputNodeName":"SMO",
             "fRecognitionThreshold":0,

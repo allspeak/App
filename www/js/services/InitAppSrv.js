@@ -295,7 +295,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
             var subPromises = [];
             for (var f=0; f<vocs.length; f++) 
             {
-                vocs[f].sModelFilePath = FileSystemSrv.getResolvedOutDataFolder() + dest_dataroot_folder + "/" +  vocs[f].sModelFileName;
+                vocs[f].sModelFilePath = FileSystemSrv.getResolvedOutDataFolder() + dest_dataroot_folder + "/" +  vocs[f].sModelFileName + ".pb";
                 (function(relpath, obj) 
                 {
                     var subPromise = FileSystemSrv.createJSONFileFromObj(relpath, obj, FileSystemSrv.OVERWRITE)

@@ -355,6 +355,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         var voc_folder                  = vocabularies_folder + "/" + voc.sLocalFolder;
         var train_folder                = recordings_folder; // + "/" + voc.sLocalFolder;
         var zip_file                    = train_folder + "/" + "data.zip";
+        var selmodelpath                = "";
         
         return hasVoicesTrainVocabulary(voc)                  // ? vocabularyHasVoices
         .then(function(res)
@@ -384,12 +385,21 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                 .then(function(existzip)
                 {
                     voc.status.haveZip = (existzip ? true : false);
-                    var relmodelpath = "";
                     if(voc.sModelFileName != null)
                         if(voc.sModelFileName.length)
-                            relmodelpath = vocabularies_folder + "/" + voc.sLocalFolder  + "/" + voc.sModelFileName;
+                            selmodelpath = vocabularies_folder + "/" + voc.sLocalFolder  + "/" + voc.sModelFileName + ".json";
 
-                    if(relmodelpath != "")  return FileSystemSrv.existFile(relmodelpath)
+                    if(selmodelpath != "")  return getTrainVocabulary(selmodelpath) 
+                    else                    return null;
+                    
+                })
+                .then(function(voc_or_null)
+                {  
+                    if(voc_or_null)
+                    {
+                        var selnetpath = vocabularies_folder + "/" + voc.sLocalFolder  + "/" + voc.sModelFileName + ".pb";
+                        return FileSystemSrv.existFile(selnetpath)
+                    }
                     else                    return false;
                 })
                 .then(function(existmodel)
@@ -525,6 +535,161 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             return missingfeatures;
         });
     };    
+    
+    
+    // returns existingNets{{exist, path, voc},..,{exist, path, voc}}
+    getExistingNets = function(uservocabularyname)
+    {    
+        var voc_relpath = vocabularies_folder + "/" + uservocabularyname
+        var existingNets = {
+            "pu":   {"exist":false, path:"", "voc":{}},
+            "pua":  {"exist":false, path:"", "voc":{}},
+            "ca":   {"exist":false, path:"", "voc":{}},
+            "pura": {"exist":false, path:"", "voc":{}},
+            "cra":  {"exist":false, path:"", "voc":{}}
+        };
+        
+        return FileSystemSrv.listFilesInDir(voc_relpath , ["json"], "net_")
+        .then(function(jsonnames)
+        {
+            for(var j in jsonnames)
+            {
+                var jsonname    = jsonnames[j];
+                var vocpath     = voc_relpath + "/" + jsonname;
+
+                var modeltype = parseInt(jsonname.split("_")[1]);
+                switch(modeltype)
+                {
+                    case plugin_enum.TF_MODELTYPE_USER:
+                        existingNets.pu.exist = true;
+                        existingNets.pu.path = vocpath;
+                        break;
+
+                    case plugin_enum.TF_MODELTYPE_USER_ADAPTED:
+                        existingNets.pua.exist = true;
+                        existingNets.pua.path = vocpath;
+                        break;
+
+                    case plugin_enum.TF_MODELTYPE_COMMON_ADAPTED:
+                        existingNets.ca.exist = true;
+                        existingNets.ca.path = vocpath;
+                        break;
+
+                    case plugin_enum.TF_MODELTYPE_USER_READAPTED:
+                        existingNets.pura.exist = true;
+                        existingNets.pura.path = vocpath;
+                        break;
+
+                    case plugin_enum.TF_MODELTYPE_COMMON_READAPTED:
+                        existingNets.cra.exist = true;
+                        existingNets.cra.path = vocpath;
+                        break;
+
+                    default:
+                        var errortxt = "Errore. Il codice del modello è sconosciuto. \nIl nome del file e : " + jsonname;
+                        return $q.reject({"message":errortxt });
+                }
+            }
+            // Promises cycle !!    LEGGO CONTENUTO JSONS
+            var subPromises = [];
+//            for (var v=0; v<jsonnames.length; v++) 
+            for (var v in existingNets) 
+            {
+                if(existingNets[v].exist)
+                {
+                    (function(netpath) 
+                    {
+                        subPromises.push(getTrainVocabulary(netpath));
+                    })(existingNets[v].path);           
+                }
+                else
+                    subPromises.push(Promise.resolve(true));
+            }
+            return $q.all(subPromises)
+        })
+        .then(function(vocs)
+        {
+            var subPromises = [];            
+            var id = 0;
+            for (var v in existingNets) 
+            {           
+                if(existingNets[v].exist)
+                {
+                    existingNets[v].voc = vocs[id];
+                    (function(voc) 
+                    {
+                        if(voc.sModelFilePath.length)
+                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
+                        subPromises.push(subPromise);
+                    })(existingNets[v].voc);                       
+                    
+                }
+                else subPromises.push(Promise.resolve(true));
+                id++;
+            }
+            return $q.all(subPromises); // Promises cycle !!    VERIFICO PRESENZA PBS
+        })
+        .then(function(netexists)
+        {   
+            var id = 0;            
+            for (var v in existingNets) 
+            {           
+                if(existingNets[v].exist)
+                {
+                    if(netexists[id])
+                        existingNets[v].voc.sStatus = "PRONTO";
+                    else
+                    {
+                        var e = {"message":"La rete " + existingNets[v].voc.sModelFilePath + " e\' assente"};
+                        return $q.reject(e);                                     
+                    }
+                }  
+                id++;
+            }
+            return existingNets;
+        })
+        .catch(function(error)
+        {
+           return $q.reject(error); 
+        }); 
+    };      
+    
+    
+    getTempSessions = function(temp_session_folder)
+    {
+        var temp_voc        = null;
+        var temp_voc_name   = "";
+        var exist_netjson   = false;
+        var exist_pb        = false;
+        var res             = 0;
+        
+        return FileSystemSrv.listFilesInDir(temp_session_folder, ["json"], "net_")
+        .then(function(jsonnameslist)
+        {
+            if(jsonnameslist.length)
+            {
+                temp_voc_name = jsonnameslist[0];    // at least one net_*json is present : TODO verify only one is present...manage exception
+                exist_netjson = true;
+                return FileSystemSrv.readJSON(temp_session_folder + "/" + temp_voc_name);
+            }
+            else return FileSystemSrv.readJSON(temp_session_folder + "/" + universalJsonFileName);       // no "net_****.json" is present ==> read "vocabulary.json"
+        })
+        .then(function(voc) // can be like upload json + sessionid, or valid if net is to be downloaded
+        {
+            temp_voc = voc;
+            return FileSystemSrv.countFilesInDir(temp_session_folder, ["pb"]); // check pb presence
+        })
+        .then(function(npb)
+        {
+            if(npb)  exist_pb = true;      // pb is present
+                                                            // presumably is:
+            if(!exist_netjson        && !exist_pb)   res = 1;    // crashed/aborted training => delete it !
+            else if(exist_netjson    && !exist_pb)   res = 2;    // valid train, still to be download => ask to download | delete it | cancel
+            else if(exist_netjson    &&  exist_pb)   res = 3;    // valid train, under local evaluation => ask whether confirming | delete it | cancel
+            return {"res":res, "path":temp_session_folder, voc:temp_voc, voc_name:temp_voc_name};
+        })        
+    };
+    
     //====================================================================================================================================================
     // public methods      
     //====================================================================================================================================================  
@@ -541,7 +706,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         getTrainVocabularyIDs               : getTrainVocabularyIDs,                // returns [ids] of commands within the train_vocabulary
         getTrainVocabularyIDLabels          : getTrainVocabularyIDLabels,           // returns [labels] of commands within the train_vocabulary
         getTrainCommandsByArrIDs            : getTrainCommandsByArrIDs,             // get array of commands with given IDs
-        getTrainVocabularyJsonPath          : getTrainVocabularyJsonPath,           // get the voc.json path given a sLocalFolder or "" if input param is empty
+        getTrainVocabularyJsonPath          : getTrainVocabularyJsonPath,           // get the vocabulary.json path given a sLocalFolder or "" if input param is empty
         getExistingTrainVocabularyJsonPath  : getExistingTrainVocabularyJsonPath,   // get the voc.json path given a sLocalFolder or "" if not existent
         
         getUpdatedStatus                    : getUpdatedStatus,                     // {status_obj}:  set 7 flags regarding the availability of the following training components :
@@ -551,6 +716,9 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         updateTrainVocabularyAudioPresence  : updateTrainVocabularyAudioPresence,   // list wav files in vb folder and updates train_vocabulary[:].nrepetitions
         existCompleteRecordedTrainSession   : existCompleteRecordedTrainSession,    // check if the given train session has at least 5 repetitions of each command
         existFeaturesTrainSession           : existFeaturesTrainSession,            // check if in the given folder, exist one dat file for each wav one
-        getTrainVocabularyVoicesPaths       : getTrainVocabularyVoicesPaths         // get the rel paths of the to-be-recognized wav files 
+        getTrainVocabularyVoicesPaths       : getTrainVocabularyVoicesPaths,        // get the rel paths of the to-be-recognized wav files 
+        
+        getExistingNets                     : getExistingNets,                      // get the available nets within a vocabulary folder
+        getTempSessions                     : getTempSessions                       // get the temp sessions list (shoulb be ONE at max) and returns it
     };
 });

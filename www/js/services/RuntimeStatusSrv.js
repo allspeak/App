@@ -267,7 +267,18 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         .then(function(voc)
         {
             vocabulary        = voc;
-            return TfSrv.loadTFModel(vocabulary);
+            
+            if(vocabulary.sModelFileName != null && vocabulary.sModelFileName != "")
+            {
+                selected_net_relpath = vocabulary_relpath + "/" + vocabulary.sModelFileName + ".json";
+                return VocabularySrv.getTrainVocabulary(selected_net_relpath);
+            }
+            else return null;
+        })
+        .then(function(selvoc)
+        {
+            if(selvoc == null)  return false;
+            else                return TfSrv.loadTFModel(selvoc);
         })
         .catch(function(error)
         {
@@ -279,7 +290,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         })        
         .then(function()
         {
-            userVocabularyName              = uservocabularyname;
+            userVocabularyName = uservocabularyname;
             return initAppSrv.setStatus({"userActiveVocabularyName":userVocabularyName});
         })
         .then(function()
@@ -290,26 +301,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         {
             vocabulary = voc;
             return getStatus();
-        })
-        .catch(function(error)
-        {
-//            vocabulary = vocabulary_old;
-//            VocabularySrv.getUpdatedStatus(vocabulary);
-//            return $q.reject(error);
-//            
-//            if(error.mycode)    return getStatus();
-//            else                return $q.reject(error);
-//            
-//            isNetLoaded = false;
-//            switch(error)
-//            {
-//                case "NO_FOLDER":
-//                case "NO_FILE":
-//                    return getStatus();
-//                default:
-            return $q.reject(error);
-//            }
-        });    
+        });
     };
     //
     //--------------------------------------------------------------------------

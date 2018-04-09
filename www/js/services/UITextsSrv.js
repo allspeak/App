@@ -10,6 +10,8 @@ function UITextsSrv()
     service.TRAINING = {};
     service.REMOTE = {};
     
+    service.TRAINING.models = {};
+    
     service.RECORD.BTN_NEXT_SINGLE    = "salva";
     service.RECORD.BTN_NEXT_SEQUENCE  = "prossimo";
     service.RECORD.BTN_EXIT_SINGLE    = "cancella";
@@ -33,6 +35,12 @@ function UITextsSrv()
     service.TRAINING.labelToggleSentencesEditTrainSequence      = "ADDESTRA I SEGUENTI COMANDI";
     service.TRAINING.labelToggleSentencesShowTrainVocabulary    = "VISUALIZZA I COMANDI";
     service.TRAINING.labelToggleSentencesEditTrainVocabulary    = "MODIFICA I COMANDI";    
+    
+    service.TRAINING.models.labelPU                             = "utente pura"
+    service.TRAINING.models.labelPUA                            = "utente pura adattata"
+    service.TRAINING.models.labelCA                             = "comune adattata"
+    service.TRAINING.models.labelCRA                            = "comune riadattata"
+    service.TRAINING.models.labelPURA                           = "utente pura riadattata"
     
     
     service.TRAINING.labelToggleSentencesEditTrainVocabulary    = "MODIFICA LA LISTA DEI COMANDI";    

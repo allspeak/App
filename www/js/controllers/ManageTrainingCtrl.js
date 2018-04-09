@@ -174,8 +174,12 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         })
         .then(function()
         {
-            return $scope.refreshExistingNets();
+            return VocabularySrv.getExistingNets($scope.foldername);
         })
+        .then(function(existing_net_sobj)
+        {
+            $scope.overallNets = existing_net_sobj;
+        })     
         .catch(function(error)
         {     
             var title = "ERRORE: in ManageTrainingCtrl::checkSession"
@@ -569,8 +573,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                     $scope.temp_sess_voc                            = TfSrv.fixTfModel(train_obj, $scope.temp_session_name);  // remove status + add sModelFilePath & nDataDest
                     $scope.vocabulary_status.isNetAvailableRemote   = true;
                     
-                    $scope.training_received_pb_path                = $scope.training_relpath + "/" + $scope.temp_sess_voc.sModelFileName;
-                    $scope.final_vocabulary_pb_path                 = $scope.vocabulary_relpath + "/" + $scope.temp_sess_voc.sModelFileName;
+                    $scope.training_received_pb_path                = $scope.training_relpath + "/" + $scope.temp_sess_voc.sModelFileName + ".pb";
+                    $scope.final_vocabulary_pb_path                 = $scope.vocabulary_relpath + "/" + $scope.temp_sess_voc.sModelFileName + ".pb";
 
 
                     // save "net_modeltype_procscheme.json" and delete vocabulary.json
@@ -587,7 +591,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                             return $ionicPopup.confirm({ title: 'Attenzione', template: 'Il vocabolario è stato addestrato. Vuoi scaricarlo ora ? \nE possibile farlo in seguito'})
                             .then(function(res) 
                             {
-                                if(res) $scope.getNet($scope.temp_sess_voc.sessionid, $scope.temp_sess_voc.sModelFileName);
+                                if(res) $scope.getNet($scope.temp_sess_voc.sessionid, $scope.temp_sess_voc.sModelFileName + ".pb");
                                 return true;
                             });   
                         }
@@ -714,11 +718,6 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.checkTempSessions = function()
     {
         var temp_session_folder = "";   // folder name of the temp session
-        var temp_voc            = null; // content of the training json
-        var temp_voc_name       = "";   // name of the training json
-        var exist_pb            = false;
-        var exist_netjson       = false;
-        var res                 = 0;    // res values returned
         
         return FileSystemSrv.listDir($scope.vocabulary_relpath, "train_")
         .then(function(dirs)
@@ -726,36 +725,10 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             if(!dirs.length) return {"res":0};  // no temp sessions are present
             else
             {
-                temp_voc = null;
-                exist_netjson = false;
-                // check  net_*json & vocabulary.json (where I wrote the sessionid after data upload)
                 temp_session_folder = $scope.vocabulary_relpath + "/" + dirs[0];  // TODO verify only one is present...manage exception
                 
-                return FileSystemSrv.listFilesInDir(temp_session_folder, ["json"], "net_")
-                .then(function(jsonnameslist)
-                {
-                    if(jsonnameslist.length)
-                    {
-                        temp_voc_name = jsonnameslist[0];    // at least one net_*json is present : TODO verify only one is present...manage exception
-                        exist_netjson = true;
-                        return FileSystemSrv.readJSON(temp_session_folder + "/" + temp_voc_name);
-                    }
-                    else return FileSystemSrv.readJSON(temp_session_folder + "/" + $scope.vocabulary_json_prefix + ".json");       // no net_ json is present, read  vocabulary
-                })
-                .then(function(voc) // can be like upload json + sessionid, or valid if net is to be downloaded
-                {
-                    temp_voc = voc;
-                    return FileSystemSrv.countFilesInDir(temp_session_folder, ["pb"]); // check pb presence
-                })
-                .then(function(npb)
-                {
-                    if(npb)  exist_pb = true;      // pb is present
-                                                                    // presumably is:
-                    if(!exist_netjson        && !exist_pb)   res = 1;    // crashed/aborted training => delete it !
-                    else if(exist_netjson    && !exist_pb)   res = 2;    // valid train, still to be download => ask to download | delete it | cancel
-                    else if(exist_netjson    &&  exist_pb)   res = 3;    // valid train, under local evaluation => ask whether confirming | delete it | cancel
-                    return {"res":res, "path":temp_session_folder, voc:temp_voc, voc_name:temp_voc_name};
-                })
+                // return {"res":res, "path":temp_session_folder, voc:temp_voc, voc_name:temp_voc_name};              
+                return VocabularySrv.getTempSessions(temp_session_folder)   
                 .then(function(resobj)
                 {
                     switch(resobj.res)
@@ -796,7 +769,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                                         $scope.vocabulary_status.isNetAvailableRemote   = true;
                                         $scope.modalSubmitSession.show();    
                                         $scope.training_relpath = resobj.path;
-                                        $scope.getNet($scope.temp_sess_voc.sessionid, $scope.temp_sess_voc.sModelFileName);      // TODO : show something revealing App is downloading
+                                        $scope.getNet($scope.temp_sess_voc.sessionid, $scope.temp_sess_voc.sModelFileName + ".pb");      // TODO : show something revealing App is downloading
                                         return false;       // stop training
 
                                     case 0: // delete temp train session and go on with a new training
@@ -835,136 +808,6 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             };        
         });
     };
-    
-    // write $scope.existingNets{{exist, path, voc},..,{exist, path, voc}}
-    $scope.refreshExistingNets = function(dir)
-    {    
-        $scope.existingNets = {
-            "pu":   {"exist":false, path:"", "voc":{}},
-            "pua":  {"exist":false, path:"", "voc":{}},
-            "ca":   {"exist":false, path:"", "voc":{}},
-            "pura": {"exist":false, path:"", "voc":{}},
-            "cra":  {"exist":false, path:"", "voc":{}}
-        };
-        
-        return FileSystemSrv.listFilesInDir($scope.vocabulary_relpath, ["json"], "net_")
-        .then(function(jsonnames)
-        {
-            for(var j in jsonnames)
-            {
-                var jsonname = jsonnames[j];
-                var vocpath = $scope.vocabulary_relpath + "/" + jsonname;
-
-                var modeltype = parseInt(jsonname.split("_")[1]);
-                switch(modeltype)
-                {
-                    case $scope.plugin_enum.TF_MODELTYPE_USER:
-                        $scope.existingNets.pu.exist = true;
-                        $scope.existingNets.pu.path = vocpath;
-                        break;
-
-                    case $scope.plugin_enum.TF_MODELTYPE_USER_ADAPTED:
-                        $scope.existingNets.pua.exist = true;
-                        $scope.existingNets.pua.path = vocpath;
-                        break;
-
-                    case $scope.plugin_enum.TF_MODELTYPE_COMMON_ADAPTED:
-                        $scope.existingNets.ca.exist = true;
-                        $scope.existingNets.ca.path = vocpath;
-                        break;
-
-                    case $scope.plugin_enum.TF_MODELTYPE_USER_READAPTED:
-                        $scope.existingNets.pura.exist = true;
-                        $scope.existingNets.pura.path = vocpath;
-                        break;
-
-                    case $scope.plugin_enum.TF_MODELTYPE_COMMON_READAPTED:
-                        $scope.existingNets.cra.exist = true;
-                        $scope.existingNets.cra.path = vocpath;
-                        break;
-
-                    default:
-                        var errortxt = "Errore. Il codice del modello è sconosciuto. \nIl nome del file e : " + jsonname;
-                        alert(errortxt);
-                        return $q.reject({"message":errortxt });
-
-                }
-            }
-            // Promises cycle !!    LEGGO CONTENUTO JSONS
-            var subPromises = [];
-//            for (var v=0; v<jsonnames.length; v++) 
-            for (var v in $scope.existingNets) 
-            {
-                var vocname = jsonnames[v];
-                (function(netlabel, netpath) 
-                {
-                    var subPromise  = VocabularySrv.getTrainVocabulary(netpath)
-                    .then(function(voc) 
-                    {
-                        $scope.existingNets[netlabel].voc = voc
-                        return true;
-                    })
-                    subPromises.push(subPromise);
-                })(v, $scope.existingNets[v].path);           
-            }
-            $q.all(subPromises)
-            .then(function(trues)
-            {
-                // Promises cycle !!    VERIFICO PRESENZA PBS
-                var subPromises = [];
-                for (var v in $scope.existingNets) 
-                {
-                    (function(voc) 
-                    {
-                        if(voc.sModelFilePath.length)
-                        {
-                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
-                            .then(function(exist) 
-                            {                            
-                                if(exist)
-                                {
-                                    voc.sStatus = "PRONTO";
-                                    return true;
-                                }
-                                else
-                                {
-                                    var e = {"message":"La rete " + voc.sModelFilePath + " e\' assente"};
-                                    return $q.reject(e);                                     
-                                }
-                            })
-                            .catch(function(error)
-                            {
-                               return $q.reject(error); 
-                            });                              
-                        }   
-                        subPromises.push(subPromise);
-                    })($scope.existingNets[v]);                        
-                }
-                $q.all(subPromises)
-                .then(function(trues)
-                {                
-                    if(vocs == null || !vocs.length) return 0;
-
-                    return 1;    
-                })
-                .catch(function(error)
-                {
-                   return $q.reject(error); 
-                }); 
-            })
-            .catch(function(error)
-            {
-//                alert("ERROR in VocabularySrv::getValidTrainVocabularies. " + error);
-                error.message = "ERROR in VocabularySrv::getValidTrainVocabularies. " + error.message;
-                return $q.reject(error);
-            }); 
-        })
-        .catch(function(error) 
-        {
-            alert("Error", "VocabularySrv::getValidTrainVocabularies : " + error.message);
-            return $q.reject(error);
-        });
-    };    
 
     // ------------------------------------------------------------------------------------------------
     // temporary training session is accepted:
@@ -975,8 +818,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.temp_sess_voc = TfSrv.fixTfModel(voc);  // 2nd fix: set sModelFilePath to /vocabularies/gigi/net_274_252.pb
         
         $scope.final_vocabulary_json_path   = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + voc.nModelType + "_" + voc.nProcessingScheme + ".json";
-        $scope.final_vocabulary_pb_path     = $scope.vocabulary_relpath + "/" + voc.sModelFileName;
-        $scope.training_received_pb_path    = trainfolder + "/" + voc.sModelFileName;
+        $scope.final_vocabulary_pb_path     = $scope.vocabulary_relpath + "/" + voc.sModelFileName + ".pb";
+        $scope.training_received_pb_path    = trainfolder + "/" + voc.sModelFileName + ".pb";
         
         var message = { title: 'Attenzione', template: 'Stai sostituendo la nuova RETE. Sei sicuro?'}
         return FileSystemSrv.createJSONFileFromObj($scope.final_vocabulary_json_path, $scope.temp_sess_voc, FileSystemSrv.ASK_OVERWRITE, message)
@@ -990,12 +833,23 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         {
             if(deleteall)   return FileSystemSrv.deleteDir(trainfolder);
             else            return false;
-        })     
+        })    
+        .then(function()
+        {
+            return VocabularySrv.getExistingNets($scope.foldername);
+        })
+        .then(function(existing_net_sobj)
+        {
+            $scope.overallNets = existing_net_sobj;
+            $scope.updateExistingNets();
+            $ionicPopup.alert({ title: 'Attenzione', template: 'La nuova rete è stata accettata'})
+        })          
         .catch(function()
         {
             
         });
-    };                
+    }; 
+
     // delete local folder and remote db entry   
     $scope.deleteSessionDir = function(relpath, sessionid)
     {
@@ -1010,7 +864,6 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         })
     };
     
-            
     //==============================================================================================================================
     // ACCESSORY
     //==============================================================================================================================

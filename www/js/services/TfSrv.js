@@ -9,7 +9,7 @@
  * 
  */
 
-function TfSrv(FileSystemSrv, $q, ErrorSrv)
+function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
 {
     mTfCfg              = null;     // hold current configuration (got from json file)
     standardTfCfg       = null;     // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
@@ -218,8 +218,9 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv)
     // the crucial params are: sLabel, commands, nProcessingScheme (taken from default)
     createSubmitDataJSON = function(label, localfolder, commandsids, procscheme, modeltype, initsessid, filepath)
     {
+        
         var train_obj = {};
-        train_obj.sLabel                = label;
+        train_obj.sLabel                = label + " " + getNetLabelByType(modeltype);
         train_obj.sLocalFolder          = localfolder;    
         train_obj.commands              = commandsids;
         train_obj.nProcessingScheme     = procscheme;
@@ -240,10 +241,30 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv)
         voc.nDataDest               = standardTfCfg.nDataDest;   
         
         if(tempsession)
-            voc.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + tempsession + "/" + voc.sModelFileName;  
+            voc.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + tempsession + "/" + voc.sModelFileName + ".pb";  
         else
-            voc.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + voc.sModelFileName;  
+            voc.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + voc.sModelFileName + ".pb";  
         return voc;
+    };
+ 
+    getNetLabelByType = function(modeltype)
+    {
+        switch(modeltype)
+        {
+            case plugin_enum_tf.TF_MODELTYPE_USER:
+                return UITextsSrv.TRAINING.models.labelPU;
+            case plugin_enum_tf.TF_MODELTYPE_USER_ADAPTED:
+                return UITextsSrv.TRAINING.models.labelPUA;
+            case plugin_enum_tf.TF_MODELTYPE_COMMON_ADAPTED:
+                return UITextsSrv.TRAINING.models.labelCA;
+            case plugin_enum_tf.TF_MODELTYPE_USER_READAPTED:
+                return UITextsSrv.TRAINING.models.labelPURA;
+            case plugin_enum_tf.TF_MODELTYPE_COMMON_READAPTED:
+                return UITextsSrv.TRAINING.models.labelCRA;
+            default:
+                alert("ERROR: unexpected modeltype in TfSrv::getNetLabelByType");
+                return "UNSPECIFIED";
+        }
     };
     
     //=========================================================================
@@ -257,7 +278,6 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv)
                 {"label": "RI-ADATTA UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER_READAPTED},
                 {"label": "RI-ADATTA COMUNE", "value": plugin_enum_tf.TF_MODELTYPE_COMMON_READAPTED}];
     };
- 
    
     //==========================================================================
     // PRIVATE

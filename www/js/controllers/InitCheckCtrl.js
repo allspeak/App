@@ -267,4 +267,3 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     //-----------------------------------------------------------------------
 };
 controllers_module.controller('InitCheckCtrl', InitCheckCtrl);
-
