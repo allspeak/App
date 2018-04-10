@@ -251,6 +251,8 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
     {
         switch(modeltype)
         {
+            case plugin_enum_tf.TF_MODELTYPE_COMMON:
+                return UITextsSrv.TRAINING.models.labelC;
             case plugin_enum_tf.TF_MODELTYPE_USER:
                 return UITextsSrv.TRAINING.models.labelPU;
             case plugin_enum_tf.TF_MODELTYPE_USER_ADAPTED:

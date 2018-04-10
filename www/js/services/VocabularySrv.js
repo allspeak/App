@@ -560,6 +560,9 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                 var modeltype = parseInt(jsonname.split("_")[1]);
                 switch(modeltype)
                 {
+                    case plugin_enum.TF_MODELTYPE_COMMON:
+                        break;
+                        
                     case plugin_enum.TF_MODELTYPE_USER:
                         existingNets.pu.exist = true;
                         existingNets.pu.path = vocpath;

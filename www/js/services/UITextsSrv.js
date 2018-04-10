@@ -36,6 +36,7 @@ function UITextsSrv()
     service.TRAINING.labelToggleSentencesShowTrainVocabulary    = "VISUALIZZA I COMANDI";
     service.TRAINING.labelToggleSentencesEditTrainVocabulary    = "MODIFICA I COMANDI";    
     
+    service.TRAINING.models.labelC                              = "comune"
     service.TRAINING.models.labelPU                             = "utente pura"
     service.TRAINING.models.labelPUA                            = "utente pura adattata"
     service.TRAINING.models.labelCA                             = "comune adattata"

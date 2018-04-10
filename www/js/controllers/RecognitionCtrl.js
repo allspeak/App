@@ -111,7 +111,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
         else 
             $scope.initVadParams.sDebugString       = "";
         
-        return RuntimeStatusSrv.loadVocabulary($scope.foldername)
+        return RuntimeStatusSrv.loadVocabulary($scope.foldername, true)
         .then(function(status)
         {
             $scope.vocabulary_status    = status;
@@ -374,7 +374,6 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
         for(s=0; s<$scope.modelsJson.length; s++)
             if(s != index)
                 $scope.modelsJson[s].checked = false;
-//        return TfSrv.loadTFModelPath($scope.modelsJson[index].jsonpath)
         var net_name = $scope.modelsJson[index].net_name;
         
         return FileSystemSrv.updateJSONFileWithObj($scope.vocabulary_json, {"sModelFileName":net_name})

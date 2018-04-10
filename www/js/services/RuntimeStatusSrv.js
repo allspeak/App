@@ -241,7 +241,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     //
     loadVocabulary = function(uservocabularyname, force)
     {
-        var doforce = (force == null ? false : force);
+        var doforce = (force == null ? true : force);
         if(userVocabularyName == uservocabularyname && !doforce)  return Promise.resolve(getStatus(vocabulary));
         
         vocabulary_old = cloneObj(vocabulary);

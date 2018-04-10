@@ -79,15 +79,21 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             $scope.isDefault            = false;
             if($scope.vocabulary.nModelType != null)
                 if($scope.vocabulary.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
+                {
                     $scope.isDefault = true;
+                    return null;
+                }
             
             return VocabularySrv.getExistingNets($scope.foldername)
         })
         .then(function(existing_nets)
         {
-            $scope.overallNets = existing_nets;
-            $scope.updateExistingNets($scope.vocabulary.sModelFileName);
-            $scope.$apply(); 
+            if(existing_nets)
+            {
+                $scope.overallNets = existing_nets;
+                $scope.updateExistingNets($scope.vocabulary.sModelFileName);
+            }
+            $scope.$apply();             
         })
         .catch(function(error)
         {
