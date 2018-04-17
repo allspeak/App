@@ -15,6 +15,12 @@
        KIND, either express or implied.  See the License for the
        specific language governing permissions and limitations
        under the License.
+       
+       17/4/2018
+       ADDED:   java 1.8 support
+                compile 'org.tensorflow:tensorflow-android:1.7.0'
+                jackOptions
+       
 */
 
 apply plugin: 'com.android.application'
@@ -40,6 +46,10 @@ allprojects {
         mavenCentral();
         jcenter()
     }
+}
+
+dependencies {
+    compile 'org.tensorflow:tensorflow-android:1.7.0'
 }
 
 task wrapper(type: Wrapper) {
@@ -170,8 +180,20 @@ android {
         if (cdvMinSdkVersion != null) {
             minSdkVersion cdvMinSdkVersion
         }
+        
+        jackOptions {
+            enabled true
+        }        
+        
     }
 
+    /*
+    buildTypes{
+        debug{
+            buildConfigField "boolean", "DEBUG", "true"
+        }        
+    } */   
+    
     lintOptions {
       abortOnError false;
     }
@@ -218,8 +240,8 @@ android {
     */
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     if (cdvReleaseSigningPropertiesFile) {
@@ -249,6 +271,7 @@ dependencies {
     // SUB-PROJECT DEPENDENCIES START
     debugCompile(project(path: "CordovaLib", configuration: "debug"))
     releaseCompile(project(path: "CordovaLib", configuration: "release"))
+    compile "com.android.support:support-v4:24.1.1+"
     // SUB-PROJECT DEPENDENCIES END
 }
 

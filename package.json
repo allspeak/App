@@ -54,8 +54,8 @@
       "cordova-plugin-network-information": {},
       "cordova-plugin-device": {},
       "cordova-plugin-app-version": {},
-      "cordova-plugin-speechrecognition": {},
-      "cordova-plugin-app-update": {}
+      "cordova-plugin-app-update": {},
+      "cordova-plugin-speechrecognition": {}
     }
   }
 }
