@@ -3,7 +3,7 @@
  * its a static service. It doesn't store any variable, just expose methods that manipulate the input VOC.
  * 
  * commands are a subset of VB voc
- * each commands list (a trained vocabulary) have its own folders under : AllSpeak/vocabulary & AllSpeak/training_sessions.
+ * each commands list (a trained vocabulary) have its own folders under : AllSpeak/vocabulary & AllSpeak/recordings.
  * The former folder contains: vocabulary.json & XXXXXX.pb
  *
  * ID is defined as following: TCXX
@@ -18,7 +18,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
 {
     universalJsonFileName                   = "";               // training.json
     vocabularies_folder                     = "";               // AllSpeak/vocabularies
-    recordings_folder                       = "";               // AllSpeak/training_sessions
+    recordings_folder                       = "";               // AllSpeak/recordings
     voicebank_folder                        = "";               // AllSpeak/voicebank
     
     pluginInterface                         = null;
@@ -366,7 +366,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             {
                 // the default voc cannot be modified or retrained
                 voc.status.isNetLoaded  = TfSrv.isModelLoaded(voc.sLocalFolder);
-                return voc;     // ==> NO training_sessions folder                
+                return voc;     // ==> NO recordings folder                
             }
             else
             {

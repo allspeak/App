@@ -45,7 +45,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     isServerOn                      = false;    // indicated if the server is ON
     
     vocabularies_folder             = "";       // <= init <= InitAppSrv        AllSpeak/vocabularies
-    recordings_folder               = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
+    recordings_folder               = "";       // <= init <= InitAppSrv        AllSpeak/recordings
     
     updateTimeout                   = null; // timer started when check for update
     waitServerTime                  = 5000;
@@ -59,7 +59,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         userVocabularyName              = "";
 
         vocabulary_relpath              = "";       // defined in loadVocabulary    AllSpeak/vocabularies/gigi
-        train_relpath                   = "";       // defined in loadVocabulary    AllSpeak/training_sessions/gigi        
+        train_relpath                   = "";       // defined in loadVocabulary    AllSpeak/recordings/gigi        
         vocabulary_json_path            = "";       //  AllSpeak/vocabularies/gigi/vocabulary.json
     };
     //==============================================================================================================================

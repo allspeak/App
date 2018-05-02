@@ -202,10 +202,10 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
                 return $scope.emptyFolder()
                 .then(function(success)
                 {
-                    SpeechDetectionSrv.startSpeechRecognition($scope.Cfg.captureCfg, $scope.Cfg.vadCfg, $scope.Cfg.mfccCfg, $scope.vocabulary, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
+                    SpeechDetectionSrv.startSpeechRecognition($scope.Cfg.captureCfg, $scope.Cfg.vadCfg, $scope.Cfg.mfccCfg, $scope.loadedModel, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
                 })
             }
-            else    SpeechDetectionSrv.startSpeechRecognition($scope.Cfg.captureCfg, $scope.Cfg.vadCfg, $scope.Cfg.mfccCfg, $scope.vocabulary, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
+            else    SpeechDetectionSrv.startSpeechRecognition($scope.Cfg.captureCfg, $scope.Cfg.vadCfg, $scope.Cfg.mfccCfg, $scope.loadedModel, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
         }
         else SpeechDetectionSrv.stopSpeechRecognition();
     };
@@ -404,7 +404,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
     $scope.refreshModelsList = function(dir)
     {    
         $scope.loadedModel          = TfSrv.getCfg();
-        if($scope.loadedModel)      $scope.loadedJsonFolderName = $scope.loadedModel.sModelFileName;        // net_27X_25X
+        if($scope.loadedModel)      $scope.loadedJsonFolderName = $scope.loadedModel.sModelFileName;        // net_27X_25X_28X
         else                        $scope.loadedJsonFolderName   = "";
         
         var existing_vocs           = [];

@@ -51,8 +51,12 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
         })
         .catch(function(error)
         {
-            console.log("Error in HomeCtrl::$ionicView.enter ");
-            alert("Error in HomeCtrl::$ionicView.enter "+ error.toString());
+            var msg = "Error in HomeCtrl::$ionicView.enter";
+            if(error.message)
+                msg = msg + " " + error.message;
+                
+            console.log(msg);
+            alert(msg);
         });
     });
     

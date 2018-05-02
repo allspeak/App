@@ -5,8 +5,8 @@ there are 3  modalities:
     EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING   = 12;
 
 BANK            : save in AllSpeak/voicebank folder, the selected sentences contained in the global_vocabulary.json
-TRAIN APPEND    : save in AllSpeak/training_sessions/                   XXX all (or the selected in case of partial retraining) the sentences contained in the vocabulary.json file
-TRAIN REPLACE   : save in AllSpeak/training_sessions/temp_XXXXXXXX      if append mode  XXX all (or the selected in case of partial retraining) the sentences contained in the vocabulary.json file
+TRAIN APPEND    : save in AllSpeak/recordings/                   XXX all (or the selected in case of partial retraining) the sentences contained in the vocabulary.json file
+TRAIN REPLACE   : save in AllSpeak/recordings/temp_XXXXXXXX      if append mode  XXX all (or the selected in case of partial retraining) the sentences contained in the vocabulary.json file
 
 According to the modality, there are 3 possibly END events:
 
@@ -30,7 +30,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
 
     // over-ride params
     $scope.captureProfile       = "record";
-    $scope.initCaptureParams    = {};
+    $scope.initCaptureParams    = {nDataDest:204};
     $scope.initMfccParams       = {nDataType: 251, nDataDest: 235};     // calculate MFFILTERS and use them internally
     
     $scope.Cfg                  = {};
@@ -192,13 +192,13 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 $scope.labelSeqOrder        = ($scope.sentence_id+1) + " di " + SequencesRecordingSrv.getSequenceLength();
                 
                 // sentence.filename is a rel path (AllSpeak/voicebank/filename.wav or AllSpeakVoiceRecorder/audio_files/SUBJ_LABEL/training_XXXX/filename.wav
-                //                               or(AllSpeak/training_sessions/temp_XXXXX/filename.wav or AllSpeak/training_sessions/filename.wav
+                //                               or(AllSpeak/recordings/temp_XXXXX/filename.wav or AllSpeak/recordings/filename.wav
                 $scope.sentence             = SequencesRecordingSrv.getSentenceBySequenceId($scope.sentence_id);
                 if ($scope.sentence)
                 {
                     $scope.rel_filepath     = $scope.sentence.rel_filepath;
                     $scope.filename         = StringSrv.getFileNameExt($scope.rel_filepath);
-                    $scope.audioFolder      = InitAppSrv.getAudioFolder();          // AllSpeak/training_sessions/ or AllSpeakRecorder/audio_files/
+                    $scope.audioFolder      = InitAppSrv.getAudioFolder();          // AllSpeak/recordings/ or AllSpeakRecorder/audio_files/
                 }
                 else                        alert("SequenceRecordCtrl::$ionicView.enter error : sentence is empty");                          
                 break;

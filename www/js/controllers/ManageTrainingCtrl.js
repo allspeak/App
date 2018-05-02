@@ -32,7 +32,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     // loaded vocabulary
     $scope.vocabulary           = null;
     $scope.vocabulary_relpath   = "";   // AllSpeak/vocabularies/gigi
-    $scope.recordings_relpath   = "";   // AllSpeak/training_sessions
+    $scope.recordings_folder   = "";   // AllSpeak/recordings
     
     $scope.vocabulary_status    = null;
                                         //    haveValidTrainingSession  // according to the selected modelType, indicates if we have enough recordings
@@ -44,8 +44,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
 
     $scope.training_relpath             = "";       // AllSpeak/vocabularies/gigi/netA ...temporary session
     $scope.training_submitted_json_path = "";       // $scope.training_relpath + "/" + $scope.vocabulary_json_prefix + ".json";
-    $scope.training_received_json_path  = "";       // $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + nModelType + "_" + nProcessingScheme + ".json";
-    $scope.final_vocabulary_json_path   = "";       // $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + nModelType + "_" + nProcessingScheme + ".json";
+    $scope.training_received_json_path  = "";       // $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + nModelType + "_" + nProcessingScheme + "_" + nModelClass + ".json";
+    $scope.final_vocabulary_json_path   = "";       // $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + nModelType + "_" + nProcessingScheme + "_" + nModelClass + ".json";
     $scope.session_zip                  = "";       // $scope.training_relpath + "/" + "data.zip"
 
     $scope.temp_sess_voc        = null; // session temporary voc returned by server
@@ -136,12 +136,12 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         // MFCC
         $scope.initMfccParams           = { "nDataDest": $scope.plugin_enum.MFCC_DATADEST_FILE,
                                             "nDataType": $scope.plugin_enum.MFCC_DATATYPE_MFFILTERS,  //write FILTERS to FILE        
-                                            "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX};  //    
+                                            "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S};  //    
         $scope.mfccCfg                  = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
         
         //------------------------------------------------------------------------------------------
         // TF
-        $scope.initTfParams             = { "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX,
+        $scope.initTfParams             = { "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S,
                                             "nModelType":$scope.plugin_enum.TF_MODELTYPE_USER_FT};
         $scope.tfCfg                    = TfSrv.getUpdatedStandardCfgCopy($scope.initTfParams);  
         
@@ -151,7 +151,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.vocabulary_relpath       = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername;
         $scope.vocabulary_json_path     = $scope.vocabulary_relpath + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
 
-        $scope.recordings_relpath       = InitAppSrv.getAudioFolder();
+        $scope.recordings_folder       = InitAppSrv.getAudioFolder();
         
         $ionicModal.fromTemplateUrl('templates/modal/popupSubmitSession.html', 
         {
@@ -199,7 +199,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             $scope.vocabulary           = voc;
             $scope.vocabulary_status    = voc.status;
             
-            $scope.updateProcScheme($scope.selectObjByValue($scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX, $scope.aProcScheme));
+            $scope.updateProcScheme($scope.selectObjByValue($scope.plugin_enum.MFCC_PROCSCHEME_F_S, $scope.aProcScheme));
             $scope.updateModelType($scope.selectObjByValue($scope.plugin_enum.TF_MODELTYPE_USER, $scope.aNetType));
         
             $scope.$apply();
@@ -230,7 +230,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         else
         {
             // TODO : check if the recorded set allows creating a USER_ONLY net 
-            return VocabularySrv.existCompleteRecordedTrainSession($scope.recordings_relpath, $scope.vocabulary)
+            return VocabularySrv.existCompleteRecordedTrainSession($scope.recordings_folder, $scope.vocabulary)
             .then(function(isvalid)
             {
                 $scope.vocabulary_status.haveValidTrainingSession = isvalid;
@@ -254,8 +254,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         // DEBUG CODE (given folder contains data_274/275/276/277.zip files)
         $scope.training_relpath                 = $scope.vocabulary_relpath + "/" + "test_23032018_005341";    
         $scope.session_zip                      = $scope.training_relpath + "/" + "data_" + net_type.toString() + ".zip";      
-        $scope.training_received_json_path      = $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme + ".json";        
-        $scope.final_vocabulary_json_path       = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme + ".json";
+        $scope.training_received_json_path      = $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme.toString() + "_" + $scope.tfCfg.nModelClass.toString() + ".json";        
+        $scope.final_vocabulary_json_path       = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme.toString() + "_" + $scope.tfCfg.nModelClass.toString() + ".json";
         $scope.vocabulary_status.haveZip        = true;
         $scope.vocabulary_status.haveFeatures   = [];
         $scope.isSubmitting                     = true;        
@@ -305,9 +305,9 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                         $scope.training_relpath             = $scope.vocabulary_relpath + "/" + $scope.temp_session_name;  // AllSpeak/vocabularies/gigi/train_XXXXXX
                         $scope.session_zip                  = $scope.training_relpath + "/" + "data.zip";
                         $scope.training_submitted_json_path = $scope.training_relpath + "/" + $scope.vocabulary_json_prefix + ".json";
-                        $scope.training_received_json_path  = $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + $scope.tfCfg.nModelType.toString() + "_" + $scope.tfCfg.nProcessingScheme + ".json";
+                        $scope.training_received_json_path  = $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + $scope.tfCfg.nModelType.toString() + "_" + $scope.tfCfg.nProcessingScheme.toString() + "_" + $scope.tfCfg.nModelClass.toString() + ".json";
                         
-                        $scope.final_vocabulary_json_path   = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + $scope.tfCfg.nModelType.toString() + "_" + $scope.tfCfg.nProcessingScheme + ".json";
+                        $scope.final_vocabulary_json_path   = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + $scope.tfCfg.nModelType.toString() + "_" + $scope.tfCfg.nProcessingScheme.toString() + "_" + $scope.tfCfg.nModelClass.toString() + ".json";
 
                         return FileSystemSrv.createDir($scope.training_relpath)
                         .then(function(){
@@ -402,7 +402,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
         window.addEventListener('pluginError'       , $scope.onMFCCError);
         
-        return FileSystemSrv.countFilesInDir($scope.recordings_relpath, ["wav"])
+        return FileSystemSrv.countFilesInDir($scope.recordings_folder, ["wav"])
         .then(function(cnt)
         {
             $scope.nFiles           = cnt;
@@ -410,7 +410,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             $scope.isCalcFeatures   = true;
             $scope.percFiles        = 0;
             
-            MfccSrv.getMFCCFromFolder($scope.recordings_relpath, 
+            MfccSrv.getMFCCFromFolder($scope.recordings_folder, 
                                       $scope.mfccCfg.nDataType,
                                       $scope.plugin_enum.MFCC_DATADEST_FILE,
                                       $scope.mfccCfg.nProcessingScheme,
@@ -817,7 +817,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     {
         $scope.temp_sess_voc = TfSrv.fixTfModel(voc);  // 2nd fix: set sModelFilePath to /vocabularies/gigi/net_274_252.pb
         
-        $scope.final_vocabulary_json_path   = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + voc.nModelType + "_" + voc.nProcessingScheme + ".json";
+        $scope.final_vocabulary_json_path   = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + voc.nModelType.toString() + "_" + voc.nProcessingScheme.toString() + "_" + voc.nModelClass.toString() + ".json";
         $scope.final_vocabulary_pb_path     = $scope.vocabulary_relpath + "/" + voc.sModelFileName + ".pb";
         $scope.training_received_pb_path    = trainfolder + "/" + voc.sModelFileName + ".pb";
         

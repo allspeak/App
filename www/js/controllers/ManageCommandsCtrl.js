@@ -20,7 +20,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     $scope.training_sequence        = []; 
 
     $scope.vocabularies_relpath     = "";
-    $scope.recordings_relpath       = "";               // AllSpeak/training_sessions
+    $scope.recordings_folder       = "";               // AllSpeak/recordings
         
     $scope.default_tv_filename      = "";               // "vocabulary.json"              <= UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME
     $scope.default_voc_folder       = "";               // "default"                    <= UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME
@@ -75,7 +75,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         }, 100);   
         
         $scope.vocabularies_relpath     = InitAppSrv.getVocabulariesFolder();       // AllSpeak/vocabularies
-        $scope.recordings_relpath = InitAppSrv.getAudioFolder();              // AllSpeak/training_sessions        
+        $scope.recordings_folder = InitAppSrv.getAudioFolder();              // AllSpeak/recordings        
         $scope.default_tv_filename      = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         
         //---------------------------------------------------------------------------------------------------------------------

@@ -32,7 +32,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
             $state.go("vocabularies");
         }, 100); 
 
-        $scope.recordings_relpath           = InitAppSrv.getAudioFolder();
+        $scope.recordings_folder           = InitAppSrv.getAudioFolder();
         $scope.vocabularies_relpath         = InitAppSrv.getVocabulariesFolder();
         $scope.default_tv_filename          = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;        
         
@@ -127,7 +127,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
                 {
                     if($scope.netsTypes[m].value == modeltype)
                     {
-                        $scope.existingNets.push({"label":$scope.netsTypes[m].label, "value":"net_" + modeltype.toString() + "_" + $scope.overallNets[item].voc.nProcessingScheme})
+                        $scope.existingNets.push({"label":$scope.netsTypes[m].label, "value":"net_" + modeltype.toString() + "_" + $scope.overallNets[item].voc.nProcessingScheme.toString() + "_" + $scope.overallNets[item].voc.nModelClass.toString()})
                         break;
                     }
                 }

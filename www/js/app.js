@@ -28,12 +28,13 @@ main_module.run(function($ionicPlatform, $ionicPopup, $cordovaSplashscreen, Init
             })
             .catch(function(error)
             {
+                $cordovaSplashscreen.hide();
+                
                 var str;
                 if(error.message)  str = error.message;
                 else               str = error;
                 $ionicPopup.alert({ title: 'Errore', template: "L\'applicazione verra chiusa per il seguente errore:\n" + str })
                 .then(function() {
-                    $cordovaSplashscreen.hide();
                     console.log(error.message);
                     //ionic.Platform.exitApp(); // to uncomment in production
                 });                

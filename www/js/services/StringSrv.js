@@ -16,7 +16,7 @@ function StringSrv()
         return str;
     };
     
-    //  AllSpeak/training_sessions/default/training_vocabulary.json => AllSpeak/training_sessions/default/training_vocabulary
+    //  AllSpeak/recordings/default/training_vocabulary.json => AllSpeak/recordings/default/training_vocabulary
     service.removeExtension = function(fullname)
     {
         var str;
@@ -30,28 +30,28 @@ function StringSrv()
         return str;
     };    
     
-    //  AllSpeak/training_sessions/default/training_vocabulary.json => json
+    //  AllSpeak/recordings/default/training_vocabulary.json => json
     service.getExtension = function(fullname)
     {
         var arr = fullname.split(".");
         return arr[arr.length-1];
     };    
     
-    //  AllSpeak/training_sessions/default/training_vocabulary.json => training_vocabulary.json
+    //  AllSpeak/recordings/default/training_vocabulary.json => training_vocabulary.json
     service.getFileNameExt = function(fullname)
     {
         var arr = fullname.split("/");
         return arr[arr.length-1];
     };    
 
-    //  AllSpeak/training_sessions/default/training_vocabulary.json => training_vocabulary
+    //  AllSpeak/recordings/default/training_vocabulary.json => training_vocabulary
     service.getFileNameNoExt = function(fullname)
     {
         var arr = fullname.split("/");
         return service.removeExtension(arr[arr.length-1]);
     };    
 
-    //  AllSpeak/training_sessions/default/training_vocabulary.json => AllSpeak/training_sessions/default
+    //  AllSpeak/recordings/default/training_vocabulary.json => AllSpeak/recordings/default
     service.getFileFolder = function(fullname)
     {
         var arr = fullname.split("/");
@@ -59,7 +59,7 @@ function StringSrv()
         return arr.join("/");
     };    
 
-    //  AllSpeak/training_sessions/default/training_vocabulary.json => default
+    //  AllSpeak/recordings/default/training_vocabulary.json => default
     service.getFileFolderName = function(fullname)
     {
         var folder  = service.getFileFolder(fullname);
@@ -67,7 +67,7 @@ function StringSrv()
         return arr[arr.length-1];
     };    
 
-    //  AllSpeak/training_sessions/default/training_vocabulary.json => AllSpeak/training_sessions
+    //  AllSpeak/recordings/default/training_vocabulary.json => AllSpeak/recordings
     service.getFileParentFolder = function(fullname)
     {
         var filefolder  = service.getFileFolder(fullname);
@@ -76,7 +76,7 @@ function StringSrv()
         return arr.join("/");
     };    
     
-    //  AllSpeak/training_sessions/default/training_vocabulary.json => training_sessions
+    //  AllSpeak/recordings/default/training_vocabulary.json => recordings
     service.getFileParentFolderName = function(fullname)
     {
         var parentfolder    = service.getFileParentFolder(fullname);

@@ -16,7 +16,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
     var repetitions         = EnumsSrv.RECORD.SESSION_MIN_REPETITIONS;
     var curr_sequence_id    = 0;
     
-    var destDir             = "";       // final folder to store recorded repetitions == training_sessions
+    var destDir             = "";       // final folder to store recorded repetitions == recordings
     
     var separator_filename_rep = "_";
     
@@ -25,7 +25,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
 
     // replace mode vars
     var backupDir           = "";   // folder to store replaced repetitions
-    var sourceDir           = "";   // coincides with training_sessions (append) or training_sessions/temp/temp_XXXXXX (replace)
+    var sourceDir           = "";   // coincides with recordings (append) or recordings/temp/temp_XXXXXX (replace)
     
     // sentences            : [{nrepetitions:int, files:["filename.wav", ""], firstAvailableId:int, id:int, title:String}] 
     // mode                 : RECORD.BY_REPETITIONS | RECORD.BY_SENTENCE
@@ -43,7 +43,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
 
         var new_folder  = false;
         var nsentences  = sentences.length;
-        destDir         = rel_folder_root;      // AllSpeak/training_sessions
+        destDir         = rel_folder_root;      // AllSpeak/recordings
         repetitionOrder = rep_mode;
                 
         if(seq_mode == null)            sequenceMode        = EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND;
@@ -68,9 +68,9 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
             }
             var date = StringSrv.formatDate();
             
-            backupDir = InitAppSrv.getAudioBackupFolder() + "/backup_" + date;  // AllSpeak/training_sessions/backup/backup_XXXXXX
-            sourceDir = InitAppSrv.getAudioTempFolder() + "/temp_" + date;      // AllSpeak/training_sessions/temp/temp_XXXXXX
-            // destDir is AllSpeak/training_sessions
+            backupDir = InitAppSrv.getAudioBackupFolder() + "/backup_" + date;  // AllSpeak/recordings/backup/backup_XXXXXX
+            sourceDir = InitAppSrv.getAudioTempFolder() + "/temp_" + date;      // AllSpeak/recordings/temp/temp_XXXXXX
+            // destDir is AllSpeak/recordings
         }
         else  sourceDir = destDir;  
             
@@ -153,7 +153,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
             if(sequenceMode == EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE)
             {
                 // merge this temp session with the current one
-                // I get a training_sessions/temp/temp_XXXXXX, I must backup to training_sessions/backup/backup_XXXXXX
+                // I get a recordings/temp/temp_XXXXXX, I must backup to recordings/backup/backup_XXXXXX
                 return mergeDirs()
                 .then(function()
                 {

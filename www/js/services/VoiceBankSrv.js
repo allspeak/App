@@ -100,7 +100,7 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
         .catch(function(error)
         {
             console.log(error.message)
-            return 0;
+            return $q.reject(error);
         });
     };
     //====================================================================================================================================================

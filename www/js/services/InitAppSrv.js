@@ -517,7 +517,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         return service.config.defaults.file_system.voicebank_folder;            
     };  
     
-    service.getAudioTempFolder = function()                                     // AllSpeak/training_sessions/temp
+    service.getAudioTempFolder = function()                                     // AllSpeak/recordings/temp
     {
         return service.config.defaults.file_system.audio_temp_folder;           
     }; 
@@ -527,12 +527,12 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         return service.config.defaults.file_system.temp_folder;                 
     }; 
     
-    service.getAudioFolder = function()                                         // AllSpeak/training_sessions
+    service.getAudioFolder = function()                                         // AllSpeak/recordings
     {
         return service.config.defaults.file_system.recordings_folder;             
     }; 
     
-    service.getAudioBackupFolder = function()                                   // AllSpeak/training_sessions/backup
+    service.getAudioBackupFolder = function()                                   // AllSpeak/recordings/backup
     {
         return service.config.defaults.file_system.audio_backup_folder;             
     }; 

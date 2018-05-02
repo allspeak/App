@@ -16,7 +16,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
     $scope.foldername           = "";       // standard
     $scope.sessionPath          = "";       // training_XXXXYYZZ
     
-    $scope.recordings_relpath       = "";               // AllSpeak/training_sessions
+    $scope.recordings_folder       = "";               // AllSpeak/recordings
 
     $scope.labelResumeTrainSession  = "REGISTRA RIPETIZIONI"
     $scope.labelSubmit              = "ADDESTRA"
@@ -49,7 +49,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
             $state.go("vocabulary", {foldername:$scope.foldername});
         }, 100);         
         
-        $scope.recordings_relpath   = InitAppSrv.getAudioFolder();
+        $scope.recordings_folder   = InitAppSrv.getAudioFolder();
         //---------------------------------------------------------------------------------------------------------------------
         // manage input params
         //---------------------------------------------------------------------------------------------------------------------        
@@ -75,8 +75,8 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
             $scope.subject_id       = parseInt(data.stateParams.subjId);
             $scope.subject          = SubjectsSrv.getSubject($scope.subject_id);
             $scope.foldername       = $scope.subject.folder;
-            $scope.training_relpath = $scope.recordings_relpath + "/" + $scope.foldername;
-            $scope.training_relpath = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/training_sessions  /  standard  /  training_XXFDFD
+            $scope.training_relpath = $scope.recordings_folder + "/" + $scope.foldername;
+            $scope.training_relpath = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/recordings  /  standard  /  training_XXFDFD
             
         }    
 
@@ -91,7 +91,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         
         $scope.initMfccParams       = {"nDataDest": $scope.plugin_enum.MFCC_DATADEST_FILE,
                                        "nDataType": $scope.plugin_enum.MFCC_DATATYPE_MFFILTERS,  //write FILTERS to FILE        
-                                       "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S_CTX};  //    
+                                       "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S};  //    
         $scope.mfccCfg              = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
         
         
@@ -157,7 +157,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         }
         else
         {
-            return CommandsSrv.getCommandsFilesByPath($scope.commands, $scope.recordings_relpath)
+            return CommandsSrv.getCommandsFilesByPath($scope.commands, $scope.recordings_folder)
             .then(function(session_commands)
             {
                 // session_commands = [{nrepetitions:int, files:["filename.wav", ""], firstAvailableId:int, id:int, title:String}]                
@@ -237,7 +237,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
             return SequencesRecordingSrv.calculateSequence( sentences, 
                                                             $scope.selectedTrainingModality.value, 
                                                             $scope.repetitionsCount, 
-                                                            $scope.recordings_relpath,    // AllSpeak/training_sessions
+                                                            $scope.recordings_folder,    // AllSpeak/recordings
                                                             $scope.sequenceMode,        // MODE_SEQUENCE_TRAINING_  append or replace
                                                             "train",
                                                             true)                       //  add #repetition to file name
@@ -268,7 +268,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         .then(function(res) 
         {
             if (res){
-                return FileSystemSrv.deleteFilesInFolder($scope.recordings_relpath, ["wav"])
+                return FileSystemSrv.deleteFilesInFolder($scope.recordings_folder, ["wav"])
                 .then(function()
                 {
                     if($scope.subject)  $state.go("subject", {subjId:$scope.subject.id});       
