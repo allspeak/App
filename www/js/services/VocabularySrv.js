@@ -74,79 +74,63 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });
     }; 
     
-    // given a root folder, returns the voc object of each vocabulary that can recognize
-    getValidTrainVocabularies = function(rootfolder)
-    {
-        var validvocs = [];
-        return FileSystemSrv.listDir(rootfolder)    // AllSpeak/vocabularies/
-        .then(function(folders)
+    
+    
+    // given a folder, returns the voc object of each vocabulary that can recognize
+    getValidTrainVocabularies = function(dir)
+    {    
+        var existing_vocs           = [];
+        var existing_jsonfiles      = [];
+        
+        return FileSystemSrv.listFilesInDir(dir, ["json"], "net_")    // AllSpeak/vocabularies/gigi/   files: net_*
+        .then(function(jsonfiles)
         {
-            // Promises cycle !!
+            existing_jsonfiles = jsonfiles
             var subPromises = [];
-            for (var v=0; v<folders.length; v++) 
+            for (var v=0; v<existing_jsonfiles.length; v++) 
             {
-                var foldername = folders[v];
-                (function(jsonfile) 
+                var jsonfile = existing_jsonfiles[v];
+                (function(json_file) 
                 {
-//                    var inputjson       = $scope.vocabularies[j].inputjson;
-                    var subPromise  = getTrainVocabulary(jsonfile)
-                    .then(function(voc) 
-                    {
-                        return voc;
-                    })
+                    var subPromise  = getTrainVocabulary(json_file)
                     subPromises.push(subPromise);
-                })(rootfolder + "/" + foldername + "/" + "vocabulary.json");           
+                })(dir + "/" + jsonfile);           
             }
-            $q.all(subPromises)
-            .then(function(vocs)
-            {
-                var subPromises = [];
-                for(var v=0; v<vocs.length; v++)
-                {
-                    (function(voc) 
-                    {
-                        if(voc.sModelFilePath.length)
-                        {
-                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
-                            .then(function(exist) 
-                            {                            
-                                if(exist)
-                                {
-                                    voc.sStatus = "PRONTO";
-                                    return voc;
-                                }
-                            })
-                            .catch(function(error)
-                            {
-                               return $q.reject(error); 
-                            });                              
-                        }   
-                        subPromises.push(subPromise);
-                    })(vocs[v]);                        
-                }
-                $q.all(subPromises)
-                .then(function(validvocs)
-                {                
-                    return validvocs;
-                })
-                .catch(function(error)
-                {
-                   return $q.reject(error); 
-                }); 
-            })
-            .catch(function(error)
-            {
-                alert("ERROR in VocabularySrv::getValidTrainVocabularies. " + error);
-                error.message = "ERROR in VocabularySrv::getValidTrainVocabularies. " + error.message;
-                return $q.reject(error);
-            }); 
+            if(subPromises.length)  return $q.all(subPromises);     // gets nets' vocabularies
+            else                    return null;
         })
-        .catch(function(error) 
+        .then(function(vocs)        
         {
-            alert("Error", "VocabularySrv::getValidTrainVocabularies : " + error.message);
-            return $q.reject(error);
-        });
-    };
+            if(vocs == null || !vocs.length) return null;
+            
+            existing_vocs = vocs;       // vocs has the same ordering as: existing_jsonfiles
+            var subPromises = [];
+            for(var v=0; v<existing_vocs.length; v++)
+            {
+                (function(voc) 
+                {
+                    if(voc.sModelFilePath.length)
+                    {
+                        var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
+                        subPromises.push(subPromise);
+                    }
+                })(existing_vocs[v]);                        
+            }
+            return $q.all(subPromises);
+        })
+        .then(function(trues) 
+        {      
+            if(trues == null)   return null;
+            
+            for(var v=0; v<existing_vocs.length; v++)
+            {
+                existing_vocs[v].jsonpath = existing_jsonfiles[v];
+                if(trues[v])
+                    existing_vocs[v].sStatus = "PRONTO";
+            }
+            return existing_vocs;
+        })
+    }
     //====================================================================================================================================================
     //  GET SOME COMMANDS
     //==================================================================================================================================================== 
@@ -228,10 +212,11 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             var cmds = [];
             var lent = voc.commands.length;
             var lenv = vbcmds.length;
-            for(t=0; t<lent; t++) 
+            for(var t=0; t<lent; t++) 
             {
-                var id = vocabulary.commands[t].id;
-                for(v=0; v<lenv; v++) 
+                cmds[t] = "";
+                var id = voc.commands[t].id;
+                for(var v=0; v<lenv; v++) 
                 {
                     if(id == vbcmds[v].id)
                     {
@@ -241,6 +226,27 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                 }
             }
             return cmds;
+        });
+    };   
+    
+    // get paths of voicebank user-voices-to-playback files associated to vocabulary's commands ( AllSpeak/voicebank/vb_1314.wav )
+    // if file does not exist, filename=""
+    // called by RecognitionCtrl::startVoiceActivityMonitoring
+    getExistingTrainVocabularyVoicesPaths = function(voc) 
+    {
+        var files = [];
+        return getTrainVocabularyVoicesPaths(voc)
+        .then(function(fileslist)
+        {
+            files = fileslist;
+            return FileSystemSrv.existFilesList(fileslist)
+        })
+        .then(function(exists)
+        {
+            var l = files.length;
+            for(var f=0; f<l; f++)
+                if(!exists[f])  files[f] = "";
+            return files;
         });
     };   
  
@@ -697,31 +703,110 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
     // public methods      
     //====================================================================================================================================================  
     return {
-        init                                : init,                                 // 
+        init                                    : init,                                 // 
         
-        getTrainVocabulary                  : getTrainVocabulary,                   // returns promise of a train_vocabulary, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
-        getTrainVocabularyName              : getTrainVocabularyName,               // returns promise of a volatile train_vocabulary, given a foldername
-        setTrainVocabulary                  : setTrainVocabulary,                   // write train_vocabulary to file
-        getValidTrainVocabularies           : getValidTrainVocabularies,            // returns the list of train vocabularies which can recognize
+        getTrainVocabulary                      : getTrainVocabulary,                   // returns promise of a train_vocabulary, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
+        getTrainVocabularyName                  : getTrainVocabularyName,               // returns promise of a volatile train_vocabulary, given a foldername
+        setTrainVocabulary                      : setTrainVocabulary,                   // write train_vocabulary to file
+        getValidTrainVocabularies               : getValidTrainVocabularies,            // returns the list of train vocabularies that can recognize
 
-        existsTrainVocabulary               : existsTrainVocabulary,                // returns voc.commands.length ? 1 : 0 
-        getTrainCommand                     : getTrainCommand,                      // get TV's sentence entry given its ID
-        getTrainVocabularyIDs               : getTrainVocabularyIDs,                // returns [ids] of commands within the train_vocabulary
-        getTrainVocabularyIDLabels          : getTrainVocabularyIDLabels,           // returns [labels] of commands within the train_vocabulary
-        getTrainCommandsByArrIDs            : getTrainCommandsByArrIDs,             // get array of commands with given IDs
-        getTrainVocabularyJsonPath          : getTrainVocabularyJsonPath,           // get the vocabulary.json path given a sLocalFolder or "" if input param is empty
-        getExistingTrainVocabularyJsonPath  : getExistingTrainVocabularyJsonPath,   // get the voc.json path given a sLocalFolder or "" if not existent
+        existsTrainVocabulary                   : existsTrainVocabulary,                // returns voc.commands.length ? 1 : 0 
+        getTrainCommand                         : getTrainCommand,                      // get TV's sentence entry given its ID
+        getTrainVocabularyIDs                   : getTrainVocabularyIDs,                // returns [ids] of commands within the train_vocabulary
+        getTrainVocabularyIDLabels              : getTrainVocabularyIDLabels,           // returns [labels] of commands within the train_vocabulary
+        getTrainCommandsByArrIDs                : getTrainCommandsByArrIDs,             // get array of commands with given IDs
+        getTrainVocabularyJsonPath              : getTrainVocabularyJsonPath,           // get the vocabulary.json path given a sLocalFolder or "" if input param is empty
+        getExistingTrainVocabularyJsonPath      : getExistingTrainVocabularyJsonPath,   // get the voc.json path given a sLocalFolder or "" if not existent
         
-        getUpdatedStatus                    : getUpdatedStatus,                     // {status_obj}:  set 7 flags regarding the availability of the following training components :
-        getUpdatedStatusName                : getUpdatedStatusName,                 // cmds, rec, feature, zip, remote model, local model
-        hasVoicesTrainVocabulary            : hasVoicesTrainVocabulary,             // [true | false]:  check if all the to-be-recognized commands have their corresponding playback wav
-        hasVoicesTrainVocabularyName        : hasVoicesTrainVocabularyName,         // [true | false]:  check if all the to-be-recognized commands have their corresponding playback wav
-        updateTrainVocabularyAudioPresence  : updateTrainVocabularyAudioPresence,   // list wav files in vb folder and updates train_vocabulary[:].nrepetitions
-        existCompleteRecordedTrainSession   : existCompleteRecordedTrainSession,    // check if the given train session has at least 5 repetitions of each command
-        existFeaturesTrainSession           : existFeaturesTrainSession,            // check if in the given folder, exist one dat file for each wav one
-        getTrainVocabularyVoicesPaths       : getTrainVocabularyVoicesPaths,        // get the rel paths of the to-be-recognized wav files 
+        getUpdatedStatus                        : getUpdatedStatus,                     // {status_obj}:  set 7 flags regarding the availability of the following training components :
+        getUpdatedStatusName                    : getUpdatedStatusName,                 // cmds, rec, feature, zip, remote model, local model
+        hasVoicesTrainVocabulary                : hasVoicesTrainVocabulary,             // [true | false]:  check if all the to-be-recognized commands have their corresponding playback wav
+        hasVoicesTrainVocabularyName            : hasVoicesTrainVocabularyName,         // [true | false]:  check if all the to-be-recognized commands have their corresponding playback wav
+        updateTrainVocabularyAudioPresence      : updateTrainVocabularyAudioPresence,   // list wav files in vb folder and updates train_vocabulary[:].nrepetitions
+        existCompleteRecordedTrainSession       : existCompleteRecordedTrainSession,    // check if the given train session has at least 5 repetitions of each command
+        existFeaturesTrainSession               : existFeaturesTrainSession,            // check if in the given folder, exist one dat file for each wav one
+        getTrainVocabularyVoicesPaths           : getTrainVocabularyVoicesPaths,        // get the rel paths of the to-be-recognized wav files 
+        getExistingTrainVocabularyVoicesPaths   : getExistingTrainVocabularyVoicesPaths,// get the rel paths of the to-be-recognized wav files, = "" if file is absent 
         
-        getExistingNets                     : getExistingNets,                      // get the available nets within a vocabulary folder
-        getTempSessions                     : getTempSessions                       // get the temp sessions list (shoulb be ONE at max) and returns it
+        getExistingNets                         : getExistingNets,                      // get the available nets within a vocabulary folder
+        getTempSessions                         : getTempSessions                       // get the temp sessions list (shoulb be ONE at max) and returns it
     };
 });
+
+
+/*
+ *     
+    // UNUSED : given a root folder, returns the voc object of each vocabulary that can recognize
+    getValidTrainVocabulariesOld = function(rootfolder)
+    {
+        var validvocs = [];
+        return FileSystemSrv.listDir(rootfolder)    // AllSpeak/vocabularies/
+        .then(function(folders)
+        {
+            // Promises cycle !!
+            var subPromises = [];
+            for (var v=0; v<folders.length; v++) 
+            {
+                var foldername = folders[v];
+                (function(jsonfile) 
+                {
+//                    var inputjson       = $scope.vocabularies[j].inputjson;
+                    var subPromise  = getTrainVocabulary(jsonfile)
+                    .then(function(voc) 
+                    {
+                        return voc;
+                    })
+                    subPromises.push(subPromise);
+                })(rootfolder + "/" + foldername + "/" + "vocabulary.json");           
+            }
+            return $q.all(subPromises)
+            .then(function(vocs)
+            {
+                var subPromises = [];
+                for(var v=0; v<vocs.length; v++)
+                {
+                    (function(voc) 
+                    {
+                        if(voc.sModelFilePath.length)
+                        {
+                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
+                            .then(function(exist) 
+                            {                            
+                                if(exist)
+                                {
+                                    voc.sStatus = "PRONTO";
+                                    return voc;
+                                }
+                            })
+                            .catch(function(error)
+                            {
+                               return $q.reject(error); 
+                            });                              
+                        }   
+                        subPromises.push(subPromise);
+                    })(vocs[v]);                        
+                }
+                $q.all(subPromises)
+                .then(function(validvocs)
+                {                
+                    return validvocs;
+                })
+                .catch(function(error)
+                {
+                   return $q.reject(error); 
+                }); 
+            })
+            .catch(function(error)
+            {
+                alert("ERROR in VocabularySrv::getValidTrainVocabularies. " + error);
+                error.message = "ERROR in VocabularySrv::getValidTrainVocabularies. " + error.message;
+                return $q.reject(error);
+            }); 
+        })
+        .catch(function(error) 
+        {
+            alert("Error", "VocabularySrv::getValidTrainVocabularies : " + error.message);
+            return $q.reject(error);
+        });
+    };
+ */

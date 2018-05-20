@@ -4,14 +4,14 @@
  * and open the template in the editor.
  */
 
-function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, RuntimeStatusSrv, VocabularySrv, StringSrv)
+function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetectionSrv, $ionicPlatform, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, RuntimeStatusSrv, VocabularySrv, StringSrv)
 {
     //--------------------------------------------------------------------
     // debug
     $scope.saveFullSpeechData       = false;
     $scope.saveSentences            = false;    
-    $scope.chunkName                = "chunk.wav"
-    $scope.commandsList             = [1305, 1404, 1405, 1616, 1208, 1400, 1211, 1203, 1202, 1205, 1204, 1206, 1207, 1210, 1302, 1401, 1306, 1102, 1103, 1619, 1407, 1209, 1105]
+    $scope.chunkName                = "chunk.wav";
+    $scope.commandsList             = null; // [1305, 1404, 1405, 1616, 1208, 1400, 1211, 1203, 1202, 1205, 1204, 1206, 1207, 1210, 1302, 1401, 1306, 1102, 1103, 1619, 1407, 1209, 1105]
     //--------------------------------------------------------------------
     
     $scope.foldername               = "";   // gigi
@@ -20,8 +20,8 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
     $scope.vocabulary               = null;
     $scope.vocabulary_status        = null;
     
-    $scope.vocabularies_relpath       = "";     // AllSpeak/vocabularies
-    $scope.voicebank_relpath           = "";    // AllSpeak/voicebank
+    $scope.vocabularies_relpath     = "";     // AllSpeak/vocabularies
+    $scope.voicebank_relpath        = "";    // AllSpeak/voicebank
     $scope.voicebank_resolved_root  = "";       // 
     $scope.vocabulary_json          = "";       // AllSpeak/vocabularies/gigi/vocabulary.json
     $scope.recThreshold             = 0;
@@ -121,7 +121,7 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
             for(item in $scope.initTfParams)        $scope.vocabulary[item] = $scope.initTfParams[item];
             
             $scope.recThreshold         = $scope.vocabulary.fRecognitionThreshold;     
-            return VocabularySrv.getTrainVocabularyVoicesPaths($scope.vocabulary);  // get the path of the wav to playback once a sentence is recognized            
+            return VocabularySrv.getExistingTrainVocabularyVoicesPaths($scope.vocabulary);  // get the path of the wav to playback once a sentence is recognized            
         })
         .then(function(voicefiles)
         {
@@ -303,15 +303,31 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
     {    
         $scope.recognizedItems = event.items;
         var recognized_index    = parseInt($scope.recognizedItems[0].id);   // IS NOT the command id, but the index/position within the vocabulary.commands array
-        var wav_resolved_path   = FileSystemSrv.getResolvedOutDataFolder() + $scope.saAudioPath[recognized_index];
-     
-//        var command_label       = $scope.vocabulary.commands[recognized_index].id;
-//        var wav_resolved_path   = $scope.voicebank_resolved_root + "/vb_" + $scope.commandsList[recognized_index] + ".wav";
-        var volume              = 1; //$scope.volume/100;
         
-        $scope.playAudio(wav_resolved_path, volume);
-        cordova.plugin.pDialog.dismiss();        
-        $scope.$apply();
+        var audiofilename       = $scope.saAudioPath[recognized_index];
+        
+        if(audiofilename == "")
+        {
+            var text = $scope.vocabulary.commands[recognized_index].title;
+            cordova.plugin.pDialog.dismiss(); 
+            $scope.isPlaying = 1;
+            $scope.$apply();            
+            return $cordovaTextToSpeech.speak({"text":text, "locale":"it-IT"})
+            .then(function()
+            {
+                $scope.OnPlaybackCompleted();
+            });
+        }
+        else
+        {
+            var wav_resolved_path   = FileSystemSrv.getResolvedOutDataFolder() + $scope.saAudioPath[recognized_index];
+    //        var command_label       = $scope.vocabulary.commands[recognized_index].id;
+    //        var wav_resolved_path   = $scope.voicebank_resolved_root + "/vb_" + $scope.commandsList[recognized_index] + ".wav";
+            var volume              = 1; //$scope.volume/100;
+            $scope.playAudio(wav_resolved_path, volume);
+            cordova.plugin.pDialog.dismiss();        
+            $scope.$apply();
+        }
     };
     
     $scope.onRecognitionError = function(error)
@@ -408,64 +424,24 @@ function RecognitionCtrl($scope, $q, $state, SpeechDetectionSrv, $ionicPlatform,
         else                        $scope.loadedJsonFolderName   = "";
         
         var existing_vocs           = [];
-        var existing_jsonfiles      = [];
 
-        return FileSystemSrv.listFilesInDir(dir, ["json"], "net_")    // AllSpeak/vocabularies/gigi/   files: net_*
-        .then(function(jsonfiles)
+        return VocabularySrv.getValidTrainVocabularies(dir)    // AllSpeak/vocabularies/gigi/
+        .then(function(validvocs)
         {
-            existing_jsonfiles = jsonfiles
-            var subPromises = [];
-            for (var v=0; v<existing_jsonfiles.length; v++) 
-            {
-                var jsonfile = existing_jsonfiles[v];
-                (function(json_file) 
-                {
-                    var subPromise  = VocabularySrv.getTrainVocabulary(json_file)
-                    subPromises.push(subPromise);
-                })(dir + "/" + jsonfile);           
-            }
-            if(subPromises.length)  return $q.all(subPromises);     // gets nets' vocabularies
-            else                    return null;
-        })
-        .then(function(vocs)        
-        {
-            if(vocs == null || !vocs.length) return null;
+            existing_vocs   = validvocs;
+            var len         = existing_vocs.length;
             
-            existing_vocs = vocs;       // vocs has the same ordering as: existing_jsonfiles
-            var subPromises = [];
-            for(var v=0; v<existing_vocs.length; v++)
-            {
-                (function(voc) 
-                {
-                    if(voc.sModelFilePath.length)
-                    {
-                        var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
-                        subPromises.push(subPromise);
-                    }
-                })(existing_vocs[v]);                        
-            }
-            return $q.all(subPromises);
-        })
-        .then(function(trues) 
-        {      
-            if(trues == null)   return null;
-            
-            for(var v=0; v<existing_vocs.length; v++)
-                if(trues[v])
-                    existing_vocs[v].sStatus = "PRONTO";
-
-            var len = existing_vocs.length;
             $scope.modelsJson = [];
             for (var jf=0; jf<len; jf++)
             {
-                var jsonpath            = dir + "/" + existing_jsonfiles[jf];
-                var net_name            = StringSrv.removeExtension(existing_jsonfiles[jf]);
+                var jsonpath            = dir + "/" + existing_vocs[jf].jsonpath;
+                var net_name            = StringSrv.removeExtension(existing_vocs[jf].jsonpath);
                 $scope.modelsJson[jf]   = {"label": existing_vocs[jf].sLabel, "net_name": net_name, "jsonpath":jsonpath};
                 
                 if($scope.loadedJsonFolderName == net_name)
                 {
                     $scope.modelsJson[jf].checked    = true;
-                    $scope.loadedToggleId           = jf;
+                    $scope.loadedToggleId            = jf;
                 }
                 else $scope.modelsJson[jf].checked   = false;
             }

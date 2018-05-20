@@ -49,5 +49,6 @@
     <plugin name="cordova-plugin-app-version" spec="^0.1.9" />
     <plugin name="cordova-plugin-app-update" spec="/data/AllSpeak/CODE/cordova/cordova-plugin-app-update" />
     <plugin name="cordova-plugin-speechrecognition" spec="/data/AllSpeak/CODE/cordova/cordova-plugin-speechrecognition" />
+    <plugin name="cordova-plugin-tts" spec="^0.2.3" />
     <engine name="android" spec="^6.1.0" />
 </widget>

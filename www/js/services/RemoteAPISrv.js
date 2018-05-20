@@ -56,8 +56,8 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         initAppSrv      = initappserv;
         api_key         = apikey;
         
-        ServerCfg.url   = "http://10.245.72.33:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.1.81:8095";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://10.245.72.33:8095";     // OVERWRITE FOR DEBUG
+        ServerCfg.url   = "http://192.168.1.68:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://api.allspeak.eu";     // OVERWRITE FOR DEBUG
         Enums           = window.AppUpdate.ENUM.PLUGIN;

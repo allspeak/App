@@ -71,6 +71,19 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         });        
     };
     
+    service.existFilesList = function(fileslist)
+    {
+        var subPromises = [];
+        for (var f=0; f<fileslist.length; f++) 
+        {
+            (function(fpath) 
+            {
+                var subPromise  = service.existFile(fpath)
+                subPromises.push(subPromise);
+            })(fileslist[f]);
+        }
+        return $q.all(subPromises)
+    };      
     //--------------------------------------------------------------------------
     service.readJSON = function(relative_path)
     {
@@ -239,7 +252,6 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
             return $q.reject(error);
         });        
     };
-
         
     service.renameFilesInFolder = function(source_relative_folder_path, target_relative_folder_path, valid_extensions, overwrite, textobj)
     {

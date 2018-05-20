@@ -138,7 +138,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
             AppStatus = EnumsSrv.STATUS.NEW_TV;
         else
         {
-            if(vocabulary.status.isNetLoaded && vocabulary.status.vocabularyHasVoices)
+            if(vocabulary.status.isNetLoaded) // && vocabulary.status.vocabularyHasVoices) 190518 : with text to speech, voices can be absent (completely or partially)
             {
                 AppStatus                       = EnumsSrv.STATUS.CAN_RECOGNIZE;
                 vocabulary.status.canRecognize  = true;

@@ -142,7 +142,9 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         //------------------------------------------------------------------------------------------
         // TF
         $scope.initTfParams             = { "nProcessingScheme": $scope.plugin_enum.MFCC_PROCSCHEME_F_S,
+                                            "nModelClass":$scope.plugin_enum.TF_MODELCLASS_FF,
                                             "nModelType":$scope.plugin_enum.TF_MODELTYPE_USER_FT};
+                                        
         $scope.tfCfg                    = TfSrv.getUpdatedStandardCfgCopy($scope.initTfParams);  
         
         $scope.aProcScheme              = MfccSrv.getPreProcTypes();
@@ -476,7 +478,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.createSubmitSessionJson = function(jsonpath) 
     {
         var ids = VocabularySrv.getTrainVocabularyIDLabels($scope.vocabulary);
-        return TfSrv.createSubmitDataJSON($scope.foldername, $scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelType, $scope.init_sessionid, jsonpath);
+        return TfSrv.createSubmitDataJSON($scope.foldername, $scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelClass, $scope.tfCfg.nModelType, $scope.init_sessionid, jsonpath);
     };
     
     // called by $scope.onExtractFeaturesEnd whether isSubmitting

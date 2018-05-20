@@ -216,7 +216,7 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
     // PRE-SUBMIT & POST-DOWNLOAD activity
     //=========================================================================
     // the crucial params are: sLabel, commands, nProcessingScheme (taken from default)
-    createSubmitDataJSON = function(label, localfolder, commandsids, procscheme, modeltype, initsessid, filepath)
+    createSubmitDataJSON = function(label, localfolder, commandsids, procscheme, modelclass, modeltype, initsessid, filepath)
     {
         
         var train_obj = {};
@@ -224,6 +224,7 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
         train_obj.sLocalFolder          = localfolder;    
         train_obj.commands              = commandsids;
         train_obj.nProcessingScheme     = procscheme;
+        train_obj.nModelClass           = modelclass;
         train_obj.nModelType            = modeltype;
         train_obj.init_sessionid        = initsessid;    
         return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj));
