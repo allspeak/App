@@ -33,7 +33,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
     
     // training process
     is_training         = false;    // indicate whether a training process have been started on the server
-    sessionid           = 0;        // got from server (after uploadTrainingData) 
+    sessionid           = "";        // got from server (after uploadTrainingData) 
     
 //    sModelFileName      = "";       // set by the server (without extension) and returned from : /api/v1/training-sessions/<session_uid>
                                     // I add the extension the first time I receive it.
@@ -56,10 +56,14 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         initAppSrv      = initappserv;
         api_key         = apikey;
         
-//        ServerCfg.url   = "http://10.245.72.33:8095";     // OVERWRITE FOR DEBUG
-        ServerCfg.url   = "http://192.168.1.68:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://192.168.43.69:8095";     // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://api.allspeak.eu";     // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://10.245.72.26:8095";        // IIT WL
+//        ServerCfg.url   = "http://10.245.71.123:8095";        // IIT WL
+        ServerCfg.url   = "http://192.168.1.6:8095";          // casa
+//        ServerCfg.url   = "http://192.168.36.28:8095";        // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://192.168.43.69:8095";        // Moto G3
+//        ServerCfg.url   = "http://api.allspeak.eu";           // produzione
+//        ServerCfg.url   = "http://api.allspeak.staging.eu";   // staging
+//        ServerCfg.url   = "http://10.255.7.79";               // OVERWRITE FOR DEBUG
         Enums           = window.AppUpdate.ENUM.PLUGIN;
     };
     
@@ -106,7 +110,9 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
                 break;
             
             case window.AppUpdate.ENUM.PLUGIN.REMOTE_FILE_NOT_FOUND:
-                // server is on, but update file is not present...
+            case window.AppUpdate.ENUM.PLUGIN.VERSION_RESOLVE_FAIL:
+            case window.AppUpdate.ENUM.PLUGIN.VERSION_COMPARE_FAIL:
+                // server is on, but update file is not present 
                 isServerOn = true;
                 onUpdateSuccess(isServerOn);        
         }
@@ -151,21 +157,21 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
             sessionid  = sess_id;
             callback(sess_id);
         })
-        .catch(function(error) 
+        .catch(function(error) // {"code", "message", "session_id"}  with session_id always != null ( is == ''  when "empty")
         {
-            alert(error);
+//            alert(error);
             is_training = false;
-            sessionid  = 0;
+            sessionid  = "";
             errorCallback(error);
         });        
     };
 
     isNetAvailable = function(sess_id)
     {
-        if(sess_id != null)  sessionid = sess_id;
+        if(sess_id != "")  sessionid = sess_id;
         else
         {
-            if(sessionid == 0)         return $q.reject({"message":"Session id is not defined"});
+            if(sessionid == "")         return $q.reject({"message":"Session id is not defined"});
         }
         return _getApi("is_training_session_available", api_key, sessionid)
         .then(function(result)
@@ -195,7 +201,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
 
     getNet = function(sessionid, destlocalfolder, modelfilename, callback, errorCallback, progressCallback) 
     {
-        sessionid = sessionid
+        sessionid = sessionid;
         if(sessionid == null || !sessionid.length)
         {
             alert("ERROR: received sessionid is empty");
@@ -434,7 +440,14 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         .catch(function(error) 
         {
             fileTransfer = null;
-            return $q.reject({"code":error.code, "message":_onTransferError(error)});
+            // retrieve session_id (when it crashes the DB, a folder has been created..it must be deleted)
+            var sess_id = "";
+            if(error.body != null)
+                var error_body = JSON.parse(error.body);
+                if(error_body.ex != null)
+                    sess_id = error_body.ex;
+                        
+            return $q.reject({"code":error.code, "message":_onTransferError(error), "session_id":sess_id});
         });        
     };
         
@@ -470,7 +483,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
             }
         });
         var resolved_dest_file = FileSystemSrv.getResolvedOutDataFolder() + outFolder + "/" + localFilename;
-        return fileTransfer.download(fileUrl, resolved_dest_file, true, {headers:{"api_key":api_key}})
+        return fileTransfer.download(fileUrl, resolved_dest_file, true, {headers:{"api-key":api_key}})
         .then(function(entry) 
         {
             console.log('download complete: ' + entry.toURL());         

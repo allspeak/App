@@ -1,19 +1,22 @@
 <ion-view view-title="VOCABOLARI">
-    
-    <ion-nav-bar class="bar-positive">    
-        <ion-nav-back-button class="button-clear" ui-sref="home">
-            <i class="ion-arrow-left-c"></i>Home
-        </ion-nav-back-button> 
+    <ion-nav-bar class="bar-positive">  
         
+        <ion-nav-buttons side="left">
+            <button class="button button-header-big" ui-sref="home">
+               <i class="ion-home"></i>
+            </button>
+        </ion-nav-buttons>          
+        
+<!--        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button> -->
         
         <ion-nav-buttons side="right">
-            <button class="button" ng-click="newVocabulary()">
+            <button class="button button-header-big" ng-click="newVocabulary()">
                 <i class="icon ion-plus-round"></i>
             </button>        
         </ion-nav-buttons>          
-        
     </ion-nav-bar>     
-
 
     <ion-content>
         <ion-item class="item item-divider">VOCABOLARIO SELEZIONATO</ion-item>
@@ -31,7 +34,6 @@
         <ion-list>
             <ion-item ng-repeat="item in vocabularies track by $index">
                 <div class="card" ng-if="item.sLocalFolder != activeVocabularyName">
-                    
                     <ion-item class="item item-divider item-button-right"  style="background-color: #C2A5A5 !important">{{item.sLabel}}
                         <div class="buttons">
                             <button class="button" ng-click="editVocabulary(item)">

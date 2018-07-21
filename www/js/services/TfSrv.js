@@ -83,7 +83,8 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
     //=========================================================================
     // returns:  (true | false) or catch("NO_FILE")
     // load model json and load it if model.sModelFilePath exist
-    loadTFModelPath = function(json_relpath, force)
+    // PRESENTLY UNUSED !!!!
+    loadTFNetPath = function(json_relpath, force)
     {
         if(force == null)   force = false;
            
@@ -94,12 +95,12 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
             .then(function(existfile)
             {
                 if(existfile)       return FileSystemSrv.readJSON(json_relpath);
-                else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"TfSrv::loadTFModelPath : NO_FILE " + json_relpath});
+                else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"TfSrv::loadTFNetPath : NO_FILE " + json_relpath});
             })
             .then(function(voc)
             {
                 modelJsonFile = json_relpath;
-                return loadTFModel(voc);
+                return loadTFNet(voc);
             })
             .catch(function(error)
             {
@@ -114,62 +115,64 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
     // returns: string or throws
     // load NET if model.sModelFileName is valid
     // ONLY methods allowed to modify mTfCfg
-    loadTFModel = function(voc)
+    loadTFNet = function(net)
     {
-        if(voc.sModelFilePath == null || voc.sModelFilePath == "")
+        var localfolder = net.sLocalFolder;
+        if(net.sModelFilePath == null || net.sModelFilePath == "")
             return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY, message:"Model pb path is null"});
         else
         {
-            return FileSystemSrv.existFileResolved(voc.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
+            return FileSystemSrv.existFileResolved(net.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
             .then(function(exist)
             {
-                if(exist)   return pluginInterface.loadTFModel(voc)
+                if(exist)   return pluginInterface.loadTFNet(net)
                 else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST, message:"Model pb is not present"} );
             })
             .then(function(loaded)
             {  
-                modelLoaded = loaded;
-                if(loaded)    mTfCfg     = voc;
+                modelLoaded = localfolder;
+                if(loaded)    mTfCfg     = net;
                 else
                 {
                     mTfCfg          = null;
                     modelJsonFile   = "";                
                 }
-                return loaded;
+                return modelLoaded;
             })
             .catch(function(error)
             {
+                if(error.mycode == null)    error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
+                
                 modelLoaded     = false;
                 mTfCfg          = null;
-                modelJsonFile   = "";    
-                error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
+                modelJsonFile   = "";  
                 return $q.reject(error);
             });     
         }
     };    
     
-    // test if the TFmodel pointed by the given voc is correct
+    // test if the TFmodel pointed by the given net is correct
     // load it, check if ok, then load back to current one
     // doesn't change the mTfCfg
     // returns: string or reject
-    testNewTFModel = function(voc)
+    testNewTFModel = function(net)
     {
-        if(voc.sModelFilePath == null || voc.sModelFilePath == "")
+        if(net.sModelFilePath == null || net.sModelFilePath == "")
             return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY, message:"Model pb path is null"});
 
         var loadnew         = true;
         var isnewmodelvalid = false;
          
-        return FileSystemSrv.existFileResolved(voc.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
+        return FileSystemSrv.existFileResolved(net.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
         .then(function(exist)
         {
-            if(exist)   return pluginInterface.loadTFModel(voc)
+            if(exist)   return pluginInterface.loadTFNet(net)
             else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST, message:"Model pb is not present"} );
         })
         .then(function()
         {  
             loadnew = false;
-            if(mTfCfg)  return loadTFModel(mTfCfg);     // reload current net if exist
+            if(mTfCfg)  return loadTFNet(mTfCfg);     // reload current net if exist
             else        return true;
         })
         .then(function()
@@ -183,7 +186,7 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
                  // error while testing the new net...reload current one and reject with the original error
                 if(mTfCfg)
                 {
-                    return loadTFModel(mTfCfg)
+                    return loadTFNet(mTfCfg)
                     .then(function()
                     {
                         error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
@@ -303,10 +306,10 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
         getCfg                      : getCfg, 
         getNetTypes                 : getNetTypes,
         isModelLoaded               : isModelLoaded,
-        loadTFModelPath             : loadTFModelPath,
+        loadTFNetPath               : loadTFNetPath,
+        loadTFNet                   : loadTFNet,
         fixTfModel                  : fixTfModel,
         testNewTFModel              : testNewTFModel,
-        loadTFModel                 : loadTFModel,
         createSubmitDataJSON        : createSubmitDataJSON
     };    
 }

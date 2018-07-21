@@ -4,16 +4,16 @@
     <ion-nav-title> {{ pageTitle }} </ion-nav-title>
     
     <ion-nav-bar class="bar-positive">    
-        <ion-nav-buttons side="left">
-            <button class="button button-header-big" ui-sref="home"><i class="ion-home"></i></button>
-        </ion-nav-buttons>    
-        
-        <ion-nav-buttons side="right">
-            <button class="button" ng-click="openSettings()">
-                <i class="icon ion-settings"></i>
-            </button>
-        </ion-nav-buttons>          
+        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button>    
     </ion-nav-bar>     
+    
+    <ion-nav-buttons side="right">
+        <button class="button" ng-click="openSettings()">
+            <i class="icon ion-settings"></i>
+        </button>
+    </ion-nav-buttons>  
 
     <ion-footer-bar class="bar-positive">
         <div class="button-bar">        
@@ -26,25 +26,43 @@
     <ion-content>
 
         <div class="card">
-            <!--NEW PURE USER  always present, just change text-->
-            <button class="button button-big button-block button-large button-positive" ng-if="!existingNets.pu.exist" ng-click="startNewSession(aNetType[0].value, false)">NUOVA UTENTE PURA</button>
-            <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pu.exist" ng-click="startNewSession(aNetType[0].value, true)">SOSTITUISCI UTENTE PURA</button>
-            
-            <!--CREATE PUA or PURA -->
-            <button class="button button-block button-maxi button-calm" ng-if="existingNets.pu.exist && !existingNets.pua.exist" ng-click="startNewSession(aNetType[1].value, false, existingNets.pu.voc.sessionid)">ADATTA UTENTE PURA</button>
-            <button class="button button-block button-maxi button-calm" ng-if="existingNets.pu.exist && existingNets.pua.exist" ng-click="startNewSession(aNetType[3].value, true, existingNets.pua.voc.sessionid)">RI-ADATTA UTENTE PURA</button>
+            <!--NEW PURE USER-->
+            <button class="button button-big button-block button-large button-positive" ng-if="!existingNets.pu.exist" ng-click="startNewSession(aNetType[0].value, false)">UTENTE PURA</button>
+            <!--REPLACE PU or CREATE PUA -->
+            <div class="button-bar" ng-if="existingNets.pu.exist && !existingNets.pua.exist">        
+                <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[0].value, true)">RICREA<br>UTENTE PURA</button>
+                <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[1].value, false, existingNets.pu.voc.sessionid)">ADATTA<br>UTENTE PURA</button>
+            </div> 
+            <!--REPLACE PU or REPLACE PUA -->
+    <!--        <div class="button-bar" ng-if="existingNets.pu.exist && existingNets.pua.exist">        
+                <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[0].value, true)">SOSTITUISCI<br>UTENTE PURA</button>
+                <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[1].value, true, existingNets.pu.voc.sessionid)">RIFAI ADATTA<br>UTENTE PURA</button>
+            </div> -->
+
+            <!--CREATE URA or READAPT URA (incremental readapting from user side)-->
+            <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pua.exist && !existingNets.pura.exist" ng-click="startNewSession(aNetType[3].value, false, existingNets.pua.voc.sessionid)">READATTA UTENTE</button>
+            <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pua.exist &&  existingNets.pura.exist" ng-click="startNewSession(aNetType[3].value, true, existingNets.pura.voc.sessionid)">READATTA UTENTE</button>
         </div>                    
         
         <ion-item class="item item-divider"></ion-item>
 
         <div class="card">
+        
             <!--NEW CA-->
-            <button class="button button-big button-block button-positive" ng-if="!existingNets.ca.exist" ng-click="startNewSession(aNetType[2].value, false)">NUOVA COMUNE</button>
-            <button class="button button-big button-block button-positive" ng-if="existingNets.ca.exist" ng-click="startNewSession(aNetType[2].value, true)">SOSTITUISCI ADATTA COMUNE</button>
-            
+            <button class="button button-big button-block button-large button-positive" ng-if="!existingNets.ca.exist" ng-click="startNewSession(aNetType[2].value, false)">ADATTA COMUNE</button>
             <!--REPLACE CA or CREATE CRA -->
-            <button class="button button-big button-block button-calm" ng-if="existingNets.ca.exist && !existingNets.cra.exist" ng-click="startNewSession(aNetType[4].value, false, existingNets.ca.voc.sessionid)">RIADATTA COMUNE</button>
-            <button class="button button-big button-block button-calm" ng-if="existingNets.ca.exist && existingNets.cra.exist" ng-click="startNewSession(aNetType[4].value, true, existingNets.cra.voc.sessionid)">RIADATTA COMUNE</button>
+            <div class="button-bar" ng-if="existingNets.ca.exist && !existingNets.cra.exist">        
+                <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[2].value, true)">RICREA<br>ADATTA COMUNE</button>
+                <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[4].value, false, existingNets.ca.voc.sessionid)">RIADATTA<br>COMUNE</button>
+            </div> 
+            <!--REPLACE CA or REPLACE CRA -->
+    <!--        <div class="button-bar" ng-if="existingNets.ca.exist && existingNets.cra.exist">        
+                <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[2].value, true)">SOSTITUISCI<br>ADATTA COMUNE</button>
+                <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[4].value, true, existingNets.cra.voc.sessionid)">RIADATTA<br>COMUNE</button>
+            </div> -->
+            <!--CREATE CRA or READAPT CRA (incremental readapting from common side)-->
+            <button class="button button-big button-block button-large button-positive" ng-if="existingNets.ca.exist && !existingNets.cra.exist" ng-click="startNewSession(aNetType[4].value, false, existingNets.ca.voc.sessionid)">READATTA COMUNE</button>
+            <button class="button button-big button-block button-large button-positive" ng-if="existingNets.ca.exist &&  existingNets.cra.exist" ng-click="startNewSession(aNetType[4].value, true, existingNets.cra.voc.sessionid)">READATTA COMUNE</button>
         </div>  
     </ion-content>    
 </ion-view>

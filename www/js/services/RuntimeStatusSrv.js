@@ -212,9 +212,9 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         .then(function(voc)
         {
             vocabulary        = voc;
-            return TfSrv.loadTFModel(vocabulary);
+            return TfSrv.loadTFNet(vocabulary);
         })
-        .then(function()
+        .then(function(string)      //vocabulary.sLabel
         {
             return VocabularySrv.getUpdatedStatus(vocabulary);
         })
@@ -261,32 +261,26 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         })
         .then(function(existfile)
         {
-            if(existfile)       return VocabularySrv.getTrainVocabulary(vocabulary_json_path);
+            if(existfile)       return VocabularySrv.getTrainVocabularySelectedNet(vocabulary_json_path);
             else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"NO_FILE"});
         })
-        .then(function(voc)
+        .then(function(retvoc)
         {
-            vocabulary        = voc;
-            
-            if(vocabulary.sModelFileName != null && vocabulary.sModelFileName != "")
-            {
-                selected_net_relpath = vocabulary_relpath + "/" + vocabulary.sModelFileName + ".json";
-                return VocabularySrv.getTrainVocabulary(selected_net_relpath);
-            }
-            else return null;
-        })
-        .then(function(selvoc)
-        {
-            if(selvoc == null)  return false;
-            else                return TfSrv.loadTFModel(selvoc);
+            vocabulary        = retvoc.voc;
+            if(retvoc.net == null)  return false;
+            else                    return TfSrv.loadTFNet(retvoc.net);
         })
         .catch(function(error)
         {
-//            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST || error.mycode == ErrorSrv.ENUMS.VOCABULARY.VOCFOLDER_NOTEXIST)
-            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY || error.mycode == ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST)
-                return $q.resolve(false); // this reject are not problematic, there could be 
-            else
-                return $q.reject(error);
+            switch(error.mycode)
+            {
+                case ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST:
+                    return recoverMissingPb(vocabulary_json_path, vocabulary_relpath + "/" + vocabulary.sModelFileName);
+                case ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY:
+                    return $q.resolve(false);
+                default:
+                    return $q.reject(error);
+            }
         })        
         .then(function()
         {
@@ -347,6 +341,17 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         return clone;
     };  
     //======================================================================================================================================
+    // pb file is missing:
+    // present solution: set to empty sModelFileName and delete the net json. user shall select a new net
+    // optimum solution try to retrieve the net from the server. TODO
+    recoverMissingPb = function(voc_relpath, net_noextension)
+    {
+        return FileSystemSrv.updateJSONFileWithObj(voc_relpath, {"sModelFileName":""}, FileSystemSrv.OVERWRITE)
+        .then(function()
+        {
+            return FileSystemSrv.deleteFile(net_noextension + ".json");
+        });
+    };
     //======================================================================================================================================
     //======================================================================================================================================
     return {

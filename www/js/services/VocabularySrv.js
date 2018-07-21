@@ -14,7 +14,7 @@
  * NEW USER SENTENCE ?  : both uVB & VB files/structures are updated
 */
 
-main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, FileSystemSrv, TfSrv, StringSrv, EnumsSrv, UITextsSrv, ErrorSrv) 
+main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, FileSystemSrv, TfSrv, StringSrv, EnumsSrv, UITextsSrv, ErrorSrv, MiscellaneousSrv) 
 {
     universalJsonFileName                   = "";               // training.json
     vocabularies_folder                     = "";               // AllSpeak/vocabularies
@@ -74,7 +74,34 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });
     }; 
     
-    
+    // look into a folder, load the vocabulary.json and if a net is present, read also its content
+    // returns{voc:vocabulary, net:selected_net | null}
+    getTrainVocabularySelectedNet = function(path, silentcheck) 
+    {
+        var retvoc = {};
+        return getTrainVocabulary(path, silentcheck)
+        .then(function(voc)
+        {
+            retvoc.voc = voc;
+            if(voc.sModelFileName != null && voc.sModelFileName != "")
+            {
+                var selected_net_relpath = StringSrv.getFileFolder(path) + "/" + voc.sModelFileName + ".json";
+                return getTrainVocabulary(selected_net_relpath);
+            }
+            else
+                return null;
+        })
+        .then(function(net)
+        {            
+            retvoc.net = net;
+            return retvoc;
+        })
+        .catch(function(err)
+        {
+            console.log("Error in VocabularySrv::getTrainVocabularySelectedNet : " + err.message);
+            return $q.reject(err);
+        });
+    }; 
     
     // given a folder, returns the voc object of each vocabulary that can recognize
     getValidTrainVocabularies = function(dir)
@@ -85,14 +112,14 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         return FileSystemSrv.listFilesInDir(dir, ["json"], "net_")    // AllSpeak/vocabularies/gigi/   files: net_*
         .then(function(jsonfiles)
         {
-            existing_jsonfiles = jsonfiles
+            existing_jsonfiles = jsonfiles;
             var subPromises = [];
             for (var v=0; v<existing_jsonfiles.length; v++) 
             {
                 var jsonfile = existing_jsonfiles[v];
                 (function(json_file) 
                 {
-                    var subPromise  = getTrainVocabulary(json_file)
+                    var subPromise  = getTrainVocabulary(json_file);
                     subPromises.push(subPromise);
                 })(dir + "/" + jsonfile);           
             }
@@ -111,7 +138,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                 {
                     if(voc.sModelFilePath.length)
                     {
-                        var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
+                        var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath);
                         subPromises.push(subPromise);
                     }
                 })(existing_vocs[v]);                        
@@ -129,8 +156,8 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                     existing_vocs[v].sStatus = "PRONTO";
             }
             return existing_vocs;
-        })
-    }
+        });
+    };
     //====================================================================================================================================================
     //  GET SOME COMMANDS
     //==================================================================================================================================================== 
@@ -339,7 +366,6 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             return $q.reject(error);
         });
     }; 
-    
     //====================================================================================================================================================
     //  CHECK STATUS
     //====================================================================================================================================================  
@@ -347,6 +373,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
     getUpdatedStatus = function(voc)
     {
         if(voc.status == null)  voc.status         = {};
+        voc.net = null;
         
         voc.status.vocabularyHasVoices             = false;
         voc.status.haveValidTrainingSession        = false;
@@ -399,10 +426,11 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                     else                    return null;
                     
                 })
-                .then(function(voc_or_null)
+                .then(function(net_or_null)
                 {  
-                    if(voc_or_null)
+                    if(net_or_null)
                     {
+                        voc.net = net_or_null
                         var selnetpath = vocabularies_folder + "/" + voc.sLocalFolder  + "/" + voc.sModelFileName + ".pb";
                         return FileSystemSrv.existFile(selnetpath)
                     }
@@ -542,7 +570,6 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });
     };    
     
-    
     // returns existingNets{{exist, path, voc},..,{exist, path, voc}}
     getExistingNets = function(uservocabularyname)
     {    
@@ -655,6 +682,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                 }  
                 id++;
             }
+            console.log(MiscellaneousSrv.printObjectArray(existingNets));
             return existingNets;
         })
         .catch(function(error)
@@ -663,8 +691,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         }); 
     };      
     
-    
-    getTempSessions = function(temp_session_folder)
+    getTempSessions = function(temp_session_folder)     //  vocabularies/gigi/train_....
     {
         var temp_voc        = null;
         var temp_voc_name   = "";
@@ -683,7 +710,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             }
             else return FileSystemSrv.readJSON(temp_session_folder + "/" + universalJsonFileName);       // no "net_****.json" is present ==> read "vocabulary.json"
         })
-        .then(function(voc) // can be like upload json + sessionid, or valid if net is to be downloaded
+        .then(function(voc) // can be like uploaded json + sessionid, or valid if net is to be downloaded
         {
             temp_voc = voc;
             return FileSystemSrv.countFilesInDir(temp_session_folder, ["pb"]); // check pb presence
@@ -691,12 +718,12 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         .then(function(npb)
         {
             if(npb)  exist_pb = true;      // pb is present
-                                                            // presumably is:
-            if(!exist_netjson        && !exist_pb)   res = 1;    // crashed/aborted training => delete it !
-            else if(exist_netjson    && !exist_pb)   res = 2;    // valid train, still to be download => ask to download | delete it | cancel
-            else if(exist_netjson    &&  exist_pb)   res = 3;    // valid train, under local evaluation => ask whether confirming | delete it | cancel
+                                                                    // presumably is:
+            if(!exist_netjson        && !exist_pb)   res = 1;       // crashed/aborted training => delete it !
+            else if(exist_netjson    && !exist_pb)   res = 2;       // valid train, still to be download => ask to download | delete it | cancel
+            else if(exist_netjson    &&  exist_pb)   res = 3;       // valid train, under local evaluation => ask whether confirming | delete it | cancel
             return {"res":res, "path":temp_session_folder, voc:temp_voc, voc_name:temp_voc_name};
-        })        
+        });       
     };
     
     //====================================================================================================================================================
@@ -706,6 +733,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         init                                    : init,                                 // 
         
         getTrainVocabulary                      : getTrainVocabulary,                   // returns promise of a train_vocabulary, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
+        getTrainVocabularySelectedNet           : getTrainVocabularySelectedNet,        // returns promise of a {voc:train_vocabulary, net:selected net}, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
         getTrainVocabularyName                  : getTrainVocabularyName,               // returns promise of a volatile train_vocabulary, given a foldername
         setTrainVocabulary                      : setTrainVocabulary,                   // write train_vocabulary to file
         getValidTrainVocabularies               : getValidTrainVocabularies,            // returns the list of train vocabularies that can recognize

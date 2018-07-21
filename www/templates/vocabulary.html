@@ -6,14 +6,20 @@
     
 <!--    <ion-nav-title> {{ pageTitle }} </ion-nav-title>-->
     
-    <ion-nav-bar class="bar-positive">    
-       <ion-nav-back-button class="button-clear" ui-sref="home">
-           <i class="ion-arrow-left-c"></i>Home
+<!--    <ion-nav-bar class="bar-positive">    
+       <ion-nav-back-button ui-sref="home">
+           <i class="ion-home"></i>
        </ion-nav-back-button>    
-     </ion-nav-bar>    
+     </ion-nav-bar>    -->
+       
+    <ion-nav-buttons side="left">
+        <button class="button button-header-big" ui-sref="home">
+           <i class="ion-home"></i>
+        </button>
+    </ion-nav-buttons>  
        
     <ion-nav-buttons side="right">
-        <button class="button" ng-click="deleteVocabulary()">
+        <button class="button button-header-big" ng-disabled="isDefault" ng-click="deleteVocabulary()">
             <i class="icon ion-trash-a"></i>
         </button>
     </ion-nav-buttons>  
@@ -29,8 +35,8 @@
         
         <button class="button button-outline button-tall button-block button-large button-positive" ng-disabled="isDefault" ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
         
-        <label class="item item-input item-select">
-            <div class="input-label">RETE SELEZIONATA</div>
+        <label class="item item-input item-select" ng-if="!isDefault">
+            <div class="input-label">RETE ATTIVA</div>
             <select ng-model="selectedNet" ng-change="updateSelectedNet(selectedNet)" ng-options="item.label for item in existingNets track by item.value"></select>            
         </label>   
         

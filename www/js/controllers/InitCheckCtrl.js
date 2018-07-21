@@ -18,46 +18,74 @@
  * finally, before sending to home, load the active vocabulary (if exists)
  */
  
-function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPopup, $cordovaSplashscreen, InitAppSrv, RuntimeStatusSrv, RemoteAPISrv, EnumsSrv)
+function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPopup, $cordovaSplashscreen, InitAppSrv, RuntimeStatusSrv, RemoteAPISrv, EnumsSrv, UITextsSrv)
 {
-    $scope.want2beAssistedText      = "PUOI UTILIZZARE ALLSPEAK CON LE SEGUENTI MODALITA:";
-    $scope.want2beRegisteredText    = "Inserisci il codice che ti è stato fornito dal tuo medico";
-    $scope.createNewVocabularyText    = "Registra questo dispositivo";
-    $scope.appStatus            = null;
-    $scope.api_key              = "";
-    $scope.modeljson            = "";
+    $scope.want2beAssistedText              = "";
+    $scope.want2beAssistedText2             = "";
+    $scope.want2beRegisteredText            = "";
+    $scope.registerNewDeviceText            = "";
+    $scope.noConnectionText                 = "";
+    $scope.confirmRegisterDeviceText        = "";
+    $scope.askConfirmSkipRegistrationText   = "";
+    $scope.criticalErrorText                = "";
+    $scope.confirmExitText                  = "";
     
-    //-----------------------------------------------------------------------------------------
-    // MODALS
-    //-----------------------------------------------------------------------------------------
-    // modal Want2beAssisted ?
-    $ionicModal.fromTemplateUrl('templates/modal/want2beAssisted.html', {
-        scope: $scope,
-        animation: 'slide-in-up',
-        backdropClickToClose: false,
-        hardwareBackButtonClose: false        
-    }).then(function(modal) {
-        $scope.modalWant2beAssisted = modal;
-    });  
-
-    // insert Api Key
-    $ionicModal.fromTemplateUrl('templates/modal/modalInsertApiKey.html', {
-        scope: $scope,
-        animation: 'slide-in-up',
-        backdropClickToClose: false,
-        hardwareBackButtonClose: false        
-    }).then(function(modal) {
-        $scope.modalInsertApiKey = modal;
-    });  
+    $scope.appStatus                        = null;
+    $scope.api_key                          = "";
+    $scope.modeljson                        = "";
+    
     //-----------------------------------------------------------------------------------------
     $scope.$on('$ionicView.enter', function()
     {
-        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(){ var a=1; }, 100);         
+        $scope.modalities       = EnumsSrv.MODALITY;
+        $scope.deregisterFunc   = $ionicPlatform.registerBackButtonAction(function(){ var a=1; }, 100);         
         
-        if(RuntimeStatusSrv.hasInternet())
-            RemoteAPISrv.checkAppUpdate($scope.startApp, null);
-        else
-            $scope.startApp(true);
+        $scope.want2beAssistedText              = UITextsSrv.SETUP.want2beAssistedText;
+        $scope.want2beAssistedText2             = UITextsSrv.SETUP.want2beAssistedText2;
+        $scope.want2beRegisteredText            = UITextsSrv.SETUP.want2beRegisteredText;
+        $scope.registerNewDeviceText            = UITextsSrv.SETUP.registerNewDeviceText;
+        $scope.noConnectionText                 = UITextsSrv.SETUP.noConnectionText; 
+        $scope.confirmRegisterDeviceText        = UITextsSrv.SETUP.confirmRegisterDeviceText; 
+        $scope.askConfirmSkipRegistrationText   = UITextsSrv.SETUP.askConfirmSkipRegistrationText; 
+        $scope.criticalErrorText                = UITextsSrv.SETUP.criticalErrorText; 
+        $scope.confirmExitText                  = UITextsSrv.SETUP.confirmExitText; 
+        $scope.specifyGenderText                = UITextsSrv.SETUP.specifyGenderText; 
+        
+        // setup modal Want2beAssisted
+        return $ionicModal.fromTemplateUrl('templates/modal/want2beAssisted.html', {
+                                            scope: $scope,
+                                            animation: 'slide-in-up',
+                                            backdropClickToClose: false,
+                                            hardwareBackButtonClose: false
+        })
+        .then(function(modal) 
+        {
+            $scope.modalWant2beAssisted = modal;
+            // setup modal insert api key
+            return $ionicModal.fromTemplateUrl('templates/modal/modalInsertApiKey.html', {
+                                            scope: $scope,
+                                            animation: 'slide-in-up',
+                                            backdropClickToClose: false,
+                                            hardwareBackButtonClose: false})
+        })
+        .then(function(modal) 
+        {
+            $scope.modalInsertApiKey = modal;
+            // setup modal insert api key
+            return $ionicModal.fromTemplateUrl('templates/modal/specifyGender.html', {
+                                            scope: $scope,
+                                            animation: 'slide-in-up',
+                                            backdropClickToClose: false,
+                                            hardwareBackButtonClose: false})
+        })
+        .then(function(modal) 
+        {
+            $scope.modalSpecifyGender = modal;
+            if(RuntimeStatusSrv.hasInternet())
+                RemoteAPISrv.checkAppUpdate($scope.startApp, null);
+            else
+                $scope.startApp(true);                
+        });  
     });
     
     $scope.$on('$ionicView.leave', function(){if($scope.deregisterFunc)   $scope.deregisterFunc();});    
@@ -76,7 +104,6 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     $scope.startApp = function(isServerOn) 
     {    
         $scope.appStatus    = InitAppSrv.getStatus();
-        $scope.modalities   = EnumsSrv.MODALITY;
         $scope.modeljson    = "";
         RuntimeStatusSrv.setStatus({"isLogged": false, "isServerOn": isServerOn});
         
@@ -87,18 +114,18 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                 $cordovaSplashscreen.hide();
                 $scope.modalWant2beAssisted.show();
             }
-            else $scope.checkIsAssisted();        
+            else $scope.checkIsAssisted($scope.appStatus.appModality);        
         }
         else
         {
-            alert("Non hai una connessione internet o il server sembra attualmente non funzionante, puoi continuare ad usare l\'App senza pero accedere alle funzioni speciali")
+            alert($scope.noConnectionText);
             $scope.endCheck('home'); 
         }
-    }
+    };
    
     $scope.exit = function()
     {
-        $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
+        $ionicPopup.confirm({ title: 'Attenzione', template: $scope.confirmExitText})
         .then(function(res) 
         {
             if (res){  ionic.Platform.exitApp();  }
@@ -106,23 +133,10 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     };
     
     // callback from modalWant2beAssisted 
-    $scope.OnWant2beAssisted = function(int) 
+    $scope.OnWant2beAssisted = function(modality) 
     {
         $scope.modalWant2beAssisted.hide();
-
-        return InitAppSrv.setStatus({"isFirstUse":false, "appModality":int})
-        .then(function()
-        {
-            $scope.appStatus.isFirstUse     = false;
-            $scope.appStatus.appModality    = int;            
-            return $scope.checkIsAssisted();
-        })
-        .catch(function(error)
-        {
-            $scope.appStatus.isFirstUse     = true;
-            $scope.appStatus.appModality    = 0;
-            alert(error.toString()); 
-        });
+        return $scope.checkIsAssisted(modality);
     };    
 
     // called by:
@@ -133,9 +147,11 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     //          - guest     => LAV & goto home
     //          - assisted  => check register and if ok => get tasks => LAV & goto home
     //
-    $scope.checkIsAssisted = function() 
+//    $scope.checkIsAssisted = function() 
+    $scope.checkIsAssisted = function(modality) 
     {
-        switch($scope.appStatus.appModality)
+//        switch($scope.appStatus.appModality)
+        switch(modality)
         {
             case EnumsSrv.MODALITY.ASSISTED:
                 if($scope.appStatus.isDeviceRegistered)
@@ -143,7 +159,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                     $scope.api_key = RemoteAPISrv.getApiKey();
                     if($scope.api_key == null || !$scope.api_key.length) 
                     {
-                        alert("Errore critico ! Contatta il responsabile del App");
+                        alert($scope.criticalErrorText);
                         return $scope.endCheck('home');
                     }
                     return $scope.onApiKey({"label":$scope.api_key});
@@ -151,12 +167,17 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                 else
                 {
                     // assisted & NOT registered
-                    $cordovaSplashscreen.hide();            
-                    return $ionicPopup.confirm({ title: 'Attenzione', template: 'Vuoi registrare ora il telefono sul server?\nIn caso contrario, potrai farlo in seguito\nCosi puoi utilizzare solo le funzioni base'})
+                    $cordovaSplashscreen.hide();           
+                    
+                    var myNullAction = $ionicPlatform.registerBackButtonAction(function(){ var a=1;}, 401);                    
+                    
+                    return $ionicPopup.confirm({ title: 'Attenzione', template: $scope.confirmRegisterDeviceText})
                     .then(function(res) 
                     {
-                        if(!res)    return $scope.endCheck('home');
-                        else        return $scope.modalInsertApiKey.show();
+                        myNullAction();                        
+                        if(res == false)        return $scope.endCheck('home');
+                        else if(res == true)    return $scope.modalInsertApiKey.show();
+
                     });        
                 }                 
                 break;
@@ -175,9 +196,14 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     {
         if(apikey == null) // user pressed cancel in modalInsertApiKey
         {
-            return $ionicPopup.confirm({ title: 'Attenzione', template: "Premendo Cancel non si potrà accedere alle funzioni avanzate di AllSpeak, sicuro di voler saltare la registrazione?"})
+            var myNullAction = $ionicPlatform.registerBackButtonAction(function(){ var a=1;}, 401);
+            return $ionicPopup.confirm({title: 'Attenzione',
+                                        template: $scope.askConfirmSkipRegistrationText,
+                                        cancelText: 'RIPROVA',
+                                        okText: 'PROSEGUI senza registrare'})
             .then(function(res) 
             {
+                myNullAction();
                 if(res)    // user wants to skip registration
                 {
                     $scope.modalInsertApiKey.hide();
@@ -194,24 +220,42 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                 $scope.appStatus.isDeviceRegistered = response.result;
                 if(response.result)    // CODICE VALIDO
                 {
-                    RuntimeStatusSrv.setStatus("isLogged", true);
-                    $scope.modalInsertApiKey.hide();
-                    return $scope.getTaskList();      // device is registered, get task list
+                    // now I can set firstuse=false and app modality
+                    return InitAppSrv.setStatus({"isFirstUse":false, "appModality":EnumsSrv.MODALITY.ASSISTED})
+                    .then(function()
+                    {
+                        $scope.appStatus.isFirstUse     = false;
+                        $scope.appStatus.appModality    = EnumsSrv.MODALITY.ASSISTED;                     
+
+                        RuntimeStatusSrv.setStatus("isLogged", true);
+                        $scope.modalInsertApiKey.hide();
+                        return $scope.getTaskList();      // device is registered, get task list
+                    })
+                    .catch(function(error)
+                    {
+                        $scope.appStatus.isFirstUse     = true;
+                        $scope.appStatus.appModality    = 0;
+                        alert(error.toString()); 
+                    });                    
                 }   
                 else                   // ERRORE
                 {
                     $cordovaSplashscreen.hide();
+                    var myNullAction = $ionicPlatform.registerBackButtonAction(function(){ var a=1;}, 401);
                     switch(response.status)
                     {
                         case 401:
-                            return $ionicPopup.confirm({ title: 'Attenzione', template: response.message})
+                            return $ionicPopup.confirm({title: 'Attenzione', template: response.message})
                             .then(function(res) 
                             {
+                                myNullAction();
                                 if(!res)    // user pressed cancel, aborted to login in
                                 {
                                     $scope.modalInsertApiKey.hide();
                                     return $scope.endCheck('home');
                                 }
+                                else
+                                    $scope.modalInsertApiKey.show();
                             });                    
                             break;
                             
@@ -220,12 +264,12 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                             return $ionicPopup.alert({ title: 'Attenzione', template: response.message})
                             .then(function()
                             {
+                                myNullAction();
                                 $scope.modalInsertApiKey.hide();
                                 return $scope.endCheck('home');   
                             });                    
                             break
                     }
-
                 }
             })
             .catch(function(error)
@@ -255,15 +299,32 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
             return $q.reject(error);
         });     
     };    
-
+    
     //-----------------------------------------------------------------------
     // LOAD ACTIVE VOC & MOVE TO DEST STATE
     //-----------------------------------------------------------------------
-    $scope.endCheck = function(nextstate) 
+    $scope.endCheck = function(unusedpath) 
     {
-        $cordovaSplashscreen.hide();
-        $state.go(nextstate);
+//        if($scope.appStatus.isMale == "")
+//            $scope.modalSpecifyGender.show();
+//        else
+//        {
+            $cordovaSplashscreen.hide();
+            $state.go("home");            
+//        }
     };
+    //-----------------------------------------------------------------------
+    // unused
+    $scope.isMale = function(bool)
+    {
+        return InitAppSrv.setStatus({"isMale":bool})
+        .then(function()
+        {       
+            $scope.modalSpecifyGender.hide();
+            $cordovaSplashscreen.hide();
+            $state.go("home");
+        });
+    };    
     //-----------------------------------------------------------------------
 };
 controllers_module.controller('InitCheckCtrl', InitCheckCtrl);

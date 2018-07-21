@@ -1,9 +1,10 @@
 <ion-view view-title="RICONOSCIMENTO">
     
     <ion-nav-bar class="bar-positive">    
-        <ion-nav-back-button class="button-clear" ui-sref="home">
-            <i class="ion-arrow-left-c"></i>Home
-        </ion-nav-back-button> 
+        <ion-nav-buttons side="left">
+            <button class="button button-header-big" ng-if="!sessionname.length" ui-sref="home"><i class="ion-home"></i>
+            <button class="button button-header-big" ng-if="sessionname.length"  ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})"></i>Back</button>
+        </ion-nav-buttons> 
 
         <ion-nav-buttons side="right">
             <button class="button" ng-disabled="isvoicemonitoring" ng-click="go2settings()">
@@ -25,9 +26,9 @@
             
             <div class="item item-input">
                 <div class="input-label">Soglia di riconoscimento</div>
-                 <span class="badge">{{recThreshold}}    
                 <button type="button button-right" ng-click="changeThreshold(false);">-</button>
                 <button type="button button-right" ng-click="changeThreshold(true);">+</button></span>
+                 <span class="badge">{{recThreshold}} %    
             </div>            
             
             <ion-list>
@@ -65,7 +66,7 @@
                             ng-click="selectModel($index)"
                             ng-disabled="isvoicemonitoring"
                             class="item item-text-wrap">
-                            {{model.label}}
+                            {{model.sLabel}}
                     </ion-toggle>            
                 </ion-list>  
             </div>            

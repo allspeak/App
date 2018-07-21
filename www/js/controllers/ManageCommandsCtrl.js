@@ -116,15 +116,15 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         if($scope.mode_id != EnumsSrv.TRAINING.NEW_TV)
         {
             // TRAINING.EDIT_TV || TRAINING.SHOW_TV
-            return VocabularySrv.getTrainVocabulary($scope.vocabulary_json_path)
-            .then(function(voc)
+            return VocabularySrv.getTrainVocabularySelectedNet($scope.vocabulary_json_path)
+            .then(function(retvoc)
             {
-                $scope.vocabulary               = voc;
-                $scope.commands                 = voc.commands;
+                $scope.vocabulary               = retvoc.voc;
+                $scope.commands                 = $scope.vocabulary.commands;
                 
                 $scope.isDefault                = false;
-                if($scope.vocabulary.nModelType != null)
-                    if($scope.vocabulary.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
+                if(retvoc.net != null)
+                    if(retvoc.net.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
                         $scope.isDefault = true;                
                 
                 if($scope.mode_id == EnumsSrv.TRAINING.EDIT_TV) 
@@ -241,8 +241,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         return FileSystemSrv.existDir(local_voc_folder)
         .then(function(existdir)
         {
-//            if(existdir)      // #DEBUG
-            if(false)   
+            if(existdir)
             {
                 var alertPopup = $ionicPopup.alert({
                     title: 'Attenzione',

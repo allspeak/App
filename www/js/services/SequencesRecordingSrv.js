@@ -139,6 +139,28 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
         });
     };
 
+    // sentences            : [{nrepetitions:int, files:["filename.wav", ""], firstAvailableId:int, id:int, title:String}] 
+    // rel_folder_root      : determined file name : rel_folder_root + "/"+ file_prefix + separator_filename_rep + sentence.id.toString();
+    // file_prefix          : ["audio"] define file prefix 
+    // RETURNS:             [{"id":int, "rel_filepath":string, "title":string}]
+    calculateVBSequence = function(sentences, rel_folder_root, file_prefix)
+    {
+        _clear();
+
+        var nsentences          = sentences.length;
+        if(file_prefix == null) file_prefix         = "vb";
+        
+        for(var s = 0; s < nsentences; s++)
+        {
+            var sentence        = sentences[s];
+            if(sentence == null) continue;
+            
+            var rel_filepath    = rel_folder_root + "/"+ file_prefix + separator_filename_rep + sentence.id.toString() + EnumsSrv.RECORD.FILE_EXT;
+            sequence.push({"id": sentence.id, "rel_filepath":rel_filepath, "title":sentence.title});
+        }
+        return sequence;    // unused in the controller
+    };
+
     // it manage sequence progression. 
     // returns :
     // - next sequence 
@@ -162,7 +184,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
                 .catch(function(error)
                 {
                     return $q.reject(error)
-                })
+                });
             }
             else return Promise.resolve(-1);
         }
@@ -172,7 +194,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
     mergeDirs = function()
     {
         return CommandsSrv.mergeDirs(sourceDir, destDir, backupDir);
-    }
+    };
     // ======== UNUSED !!!!!!! ====================================================================================
     // for each command, get the highest recorded repetition IDs (+1). New repetitions will start from that Id
 //    calculateFirstAvailableRepetitions = function(sentences, rel_folder_root)
@@ -245,6 +267,7 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
     //================================================================================
     return {
         calculateSequence: calculateSequence,
+        calculateVBSequence: calculateVBSequence,
         mergeDirs: mergeDirs,
         getRepetitions: getRepetitions,
         getModalities: getModalities,

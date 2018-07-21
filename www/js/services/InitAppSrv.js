@@ -183,7 +183,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
                 .then(function(appconfig)
                 {
                     service._updateAppConfig(appconfig.user)
-                    return FileSystemSrv.createJSONFileFromObj(localConfigJson, service.config.appConfig, 2);
+                    return FileSystemSrv.createJSONFileFromObj(localConfigJson, service.config.appConfig, FileSystemSrv.OVERWRITE);
                 })
                 .then(function(){
                     return FileSystemSrv.readJSON(localConfigJson);
@@ -361,6 +361,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         user.isDeviceRegistered         = false;
         user.api_key                    = "";
         user.userActiveVocabularyName   = "default";
+        //user.isMale                     = "";
         
         user.vad = {};
         user.vad.nSpeechDetectionThreshold      = service.config.appConfig.vad.nSpeechDetectionThreshold;
@@ -407,13 +408,14 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
                 "userActiveVocabularyName"  : service.config.appConfig.user.userActiveVocabularyName,
                 "isDeviceRegistered"        : service.config.appConfig.user.isDeviceRegistered,
                 "api_key"                   : service.config.appConfig.user.api_key
+                //, "isMale"                    : service.config.appConfig.user.isMale
         };
     }; 
  
     //==========================================================================
     // UPDATE STATUS & CONFIG
     //==========================================================================
-    // write to json the following :  AppStatus, isFirstUse, userActiveVocabulary, isDeviceRegistered, api_key
+    // write to json the following :  AppStatus, isFirstUse, userActiveVocabulary, isDeviceRegistered, api_key, isMale
     service.setStatus = function(statusobj)
     {
         var old = {};

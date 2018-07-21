@@ -2,12 +2,13 @@
 manage the following object
 sentence = { "title": "Ho sete", "id": 1, "label": "ho_sete", "filename": "ho_sete.wav", "nrepetitions": 0 }
 */
-function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, VocabularySrv, CommandsSrv, StringSrv)  
+function SessionSentenceCtrl($scope, $state, $ionicPlatform, $ionicHistory, SubjectsSrv, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, VocabularySrv, CommandsSrv, StringSrv)  
 {
     $scope.subject          = null;
     $scope.subject_label    = "";
     $scope.sentence         = {};
-    $scope.isPlaying        = 0;
+    $scope.isBusy        = 0;
+    
     
     $scope.foldername       = "";       // standard
     $scope.sessionPath      = "";       // training_XXXXYYZZ    
@@ -15,6 +16,11 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
     //==================================================================================================================
     $scope.$on("$ionicView.enter", function(event, data)
     {
+        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function(event)
+        {
+            if($scope.isBusy)   return;
+            else                $ionicHistory.goBack()
+        }, 100);           
         // LOAD curr subject/session/sentence info
         
         // standard
@@ -38,6 +44,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         
         if(data.stateParams.subjId != null && data.stateParams.subjId != "")
         {        
+            // VOICERECORDER            
             var subjectId       = parseInt(data.stateParams.subjId);
         
             $scope.subject      = SubjectsSrv.getSubject(subjectId);
@@ -53,8 +60,9 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
         }
         else
         {
-            $scope.subject                      = null
-            $scope.training_relpath             = InitAppSrv.getAudioFolder() + "/" + $scope.foldername + "/" + $scope.sessionPath; 
+            // ALLSPEAK
+            $scope.subject                      = null;
+            $scope.training_relpath             = InitAppSrv.getAudioFolder(); // + "/" + $scope.foldername + "/" + $scope.sessionPath; 
             $scope.audio_files_resolved_root    = FileSystemSrv.getResolvedOutDataFolder() + $scope.training_relpath;        
             $scope.titleLabel                   = $scope.foldername + "/" + $scope.sessionPath;
             
@@ -70,6 +78,8 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
             })
         }
     });
+    // ask user's confirm after pressing back (thus trying to exit from the App)
+    $scope.$on('$ionicView.leave', function(){if($scope.deregisterFunc) $scope.deregisterFunc();});   
     
     $scope.refreshAudioList = function()
     {
@@ -97,31 +107,34 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
     $scope.playAudio = function(filename_noext)
     {
         filename_noext = StringSrv.removeExtension(filename_noext);
-        if (!$scope.isPlaying)
+        if (!$scope.isBusy)
         {
             var volume          = 1; //$scope.volume/100;
-            $scope.isPlaying    = 1;
+            $scope.isBusy    = 1;
             IonicNativeMediaSrv.playAudio($scope.audio_files_resolved_root + "/" + filename_noext + ".wav", volume, $scope.OnPlaybackCompleted, $scope.OnPlaybackError);
         }
     };
     
     $scope.OnPlaybackCompleted = function(success)
     {
-        $scope.isPlaying    = 0;
+        $scope.isBusy = 0;
+        $scope.$apply();
     };
     
     $scope.OnPlaybackError = function(error)
     {
-        $scope.isPlaying    = 0;
+        $scope.isBusy    = 0;
+        $scope.$apply();
         console.log(error.message);
     };
     
     $scope.stopAudio = function()
     {
-        if ($scope.isPlaying)
+        if ($scope.isBusy)
         {
             IonicNativeMediaSrv.stopAudio();
-            $scope.isPlaying    = 0;
+            $scope.isBusy    = 0;
+            $scope.$apply();
         }        
     };   
     
@@ -133,7 +146,7 @@ function SessionSentenceCtrl($scope, $state, SubjectsSrv, FileSystemSrv, IonicNa
     $scope.deleteAudio = function(filename_noext)
     {
         filename_noext = StringSrv.removeExtension(filename_noext);
-        if (!$scope.isPlaying)
+        if (!$scope.isBusy)
         {        
             FileSystemSrv.deleteFile($scope.training_relpath + "/" + filename_noext + ".wav")
             .then(function(){

@@ -5,6 +5,8 @@ filename is by default empty. is here initialized as "$scope.audiofileprefix_ID.
 */
 function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state, $ionicHistory, FileSystemSrv, IonicNativeMediaSrv, InitAppSrv, EnumsSrv, VocabularySrv, VoiceBankSrv, SequencesRecordingSrv)  
 {
+    $scope.rel_rootpath         = "";   // AllSpeak/voicebank
+    
     $scope.audiofileprefix      = "vb"; // PREFIX of all saved file  ($scope.audiofileprefix + "_" + sentence.id + ".wav"
     $scope.subject              = null;
     $scope.subject_label        = "";
@@ -33,14 +35,17 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         $ionicHistory.clearHistory();
         $scope.deregisterFunc       = $ionicPlatform.registerBackButtonAction(function(event)
         {
-            if(!$scope.isInsertingNewSent)
+            if(!$scope.isBusy)
             {
-                if($scope.backState == "vocabulary")
-                    $state.go($scope.backState, {"foldername":$scope.foldername});                 
-                else
-                    $state.go($scope.backState);
+                if(!$scope.isInsertingNewSent)
+                {
+                    if($scope.backState == "vocabulary")
+                        $state.go($scope.backState, {"foldername":$scope.foldername});                 
+                    else
+                        $state.go($scope.backState);
+                }
+                else    $scope.closeModal();
             }
-            else    $scope.closeModal();
         }, 100);   
         
         //---------------------------------------------------------------------------------------------------------------------
@@ -89,6 +94,11 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
                     scope: $scope, animation: 'slide-in-up'}).then(function(modal) {$scope.modalRecordNewCommand = modal;});                
             }        
         })
+        .then(function()
+        {        
+            $ionicModal.fromTemplateUrl('templates/modal/modalNewSentence.html', {
+                    scope: $scope, animation: 'slide-in-up'}).then(function(modal){ $scope.modalCreateNewSentence = modal; });  
+        })
         .catch(function(error){
             alert(error.message);
         });        
@@ -134,6 +144,10 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         return VocabularySrv.updateTrainVocabularyAudioPresence($scope.rel_rootpath, $scope.vocabulary)
         .then(function(voc)
         {
+            for(var c=0; c<voc.commands.length; c++)
+                if(voc.commands[c].files.length)
+                    voc.commands[c].filename = voc.commands[c].files[0].label;
+            
             $scope.voicebankSentences   = voc.commands;
             $scope.isBusy               = 0;
             $scope.showOnlyTrained      = true; 
@@ -194,7 +208,8 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     {
         $scope.selCategory.data = 7 ;
         $scope.newsentencelabel = "";        
-        $scope.modal.show();
+        $scope.isInsertingNewSent = true;
+        $scope.modalCreateNewSentence.show();
     };
 
     $scope.saveNewSentence = function(sentencelabel)
@@ -242,20 +257,9 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
         if(bool)        $scope.recordAudio($scope.newSentenceObj.id)
     };
     
-    $ionicModal.fromTemplateUrl('templates/modal/modalNewSentence.html', 
-    {
-        scope: $scope,
-        animation: 'slide-in-up'            
-    })
-    .then(function(modal) 
-    {
-        $scope.isInsertingNewSent = true;
-        $scope.modal = modal;
-    });   
-    
     $scope.closeModal = function()
     {
-        $scope.modal.hide();
+        $scope.modalCreateNewSentence.hide();
         $scope.isInsertingNewSent = false;
     };    
     //==================================================================================================================
@@ -309,21 +313,13 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
 
     $scope.recordAudioSequence = function()
     {
-        //create folder
-        return SequencesRecordingSrv.calculateSequence( $scope.voicebankSentences, 
-                                                        EnumsSrv.RECORD.BY_SENTENCE, 
-                                                        1, 
-                                                        $scope.rel_rootpath,
-                                                        $scope.audiofileprefix,
-                                                        false)                      //  don't add repetition id
-        .then(function(sequence)
+        $scope.record_sequence = SequencesRecordingSrv.calculateVBSequence($scope.voicebankSentences, 
+                                                                            $scope.rel_rootpath,
+                                                                            $scope.audiofileprefix);
+        if($scope.record_sequence)
         {
-            $scope.record_sequence = sequence;
-            if($scope.record_sequence)
-            {
-                $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, commandId:0, successState:$scope.successState, cancelState:$scope.cancelState});
-            }
-        });
+            $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, commandId:0, successState:$scope.successState, cancelState:$scope.cancelState});
+        }
     };
 
     $scope.deleteAudio = function(filename)

@@ -9,6 +9,7 @@ function UITextsSrv()
     service.RECORD = {};
     service.TRAINING = {};
     service.REMOTE = {};
+    service.SETUP = {};
     
     service.TRAINING.models = {};
     
@@ -51,6 +52,17 @@ function UITextsSrv()
     
     service.REMOTE.labelConnect                                 = "Connetti questo dispositivo al tuo centro SLA di riferimento";    
     service.REMOTE.labelWant2Connect                            = "Vuoi connettere questo dispositivo al tuo centro SLA di riferimento?";    
+    
+    service.SETUP.want2beAssistedText                           = "PUOI UTILIZZARE ALLSPEAK CON LE SEGUENTI MODALITA:";
+    service.SETUP.want2beAssistedText2                          = "Per attivare la modalità ASSISTITA devi avere una connessione internet e disporre del codice a 6 cifre fornito dal tuo medico";
+    service.SETUP.want2beRegisteredText                         = "Inserisci il codice che ti è stato fornito dal tuo medico";
+    service.SETUP.registerNewDeviceText                         = "Registra questo dispositivo";    
+    service.SETUP.noConnectionText                              = "Non hai una connessione internet o il server sembra attualmente non funzionante, puoi continuare ad usare l\'App senza pero accedere alle funzioni speciali";    
+    service.SETUP.confirmRegisterDeviceText                     = "Vuoi registrare ora il telefono sul server?\nIn caso contrario, potrai farlo in seguito\nCosi puoi utilizzare solo le funzioni base";    
+    service.SETUP.askConfirmSkipRegistrationText                = "Premendo PROSEGUI non si potrà accedere alle funzioni avanzate di AllSpeak, sicuro di voler saltare la registrazione?";    
+    service.SETUP.criticalErrorText                             = "Errore critico ! Contatta il responsabile del App";    
+    service.SETUP.confirmExitText                               = "Sei sicuro di voler uscire?";    
+    service.SETUP.specifyGenderText                             = "AI FINI DI POTER RIPRODURRE LA TUA VOCE IN MANIERA SINTETICA, INDICA SE SEI MASCHIO O FEMMINA";    
 
     //==========================================================================
     return service;
