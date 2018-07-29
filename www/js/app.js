@@ -113,7 +113,7 @@ main_module.config(function($stateProvider, $urlRouterProvider)
         controller: 'SessionSentenceCtrl'
     })    
     .state('record_sequence', {
-        url: '/record/:modeId/:commandId/:subjId/:successState/:cancelState/:foldername',
+        url: '/record/:modeId/:commandId/:subjId/:successState/:cancelState/:foldername/:backState/:elems2display',
         templateUrl: 'templates/record_sequence.html',
         controller: 'SequenceRecordCtrl'
     })    

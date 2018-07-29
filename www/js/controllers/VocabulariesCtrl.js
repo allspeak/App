@@ -111,47 +111,48 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
             }        
             return $q.all(subPromises)            
         })
-        .then(function(nets)    // array of vocabulary.json contents
+        .then(function(nets)    // array of net_xxxxxxx.json contents
         {
             var subPromises = [];
             for(var v=0; v<nets.length; v++)
             {
                 (function(voc, v) 
                 {
-                    if(voc.sModelFilePath == null || !voc.sModelFilePath.length)
+                    if(voc != null)
                     {
-                        $scope.vocabularies[v].sStatus = "NON PRONTO";
-                        return voc;                            
-                    }   
+                        if(voc.sModelFilePath == null || !voc.sModelFilePath.length)
+                        {
+                            $scope.vocabularies[v].sStatus = "NON PRONTO";
+                            subPromises.push(Promise.resolve(null))
+                        }   
+                        else
+                        {
+                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
+                            .then(function(exist) 
+                            {                            
+                                if(exist)   $scope.vocabularies[v].sStatus = "PRONTO";
+                                else        $scope.vocabularies[v].sStatus = "NON PRONTO";
+                                return voc;
+                            })
+                            .catch(function(error)
+                            {
+                               return $q.reject(error); 
+                            });   
+                            subPromises.push(subPromise);
+                        }
+                    }
                     else
                     {
-                        var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
-                        .then(function(exist) 
-                        {                            
-                            if(exist)
-                            {
-                                $scope.vocabularies[v].sStatus = "PRONTO";
-                                return voc;
-                            }
-                            else
-                            {
-                                $scope.vocabularies[v].sStatus = "NON PRONTO";
-                                return voc;
-                            }
-                        })
-                        .catch(function(error)
-                        {
-                           return $q.reject(error); 
-                        });                              
-
+                        $scope.vocabularies[v].sStatus = "NON PRONTO";
+                        subPromises.push(Promise.resolve(null));
                     }
-                    subPromises.push(subPromise);
                 })(nets[v], v);                        
             }
-            return $q.all(subPromises)
+            return $q.all(subPromises);
        })
         .then(function(vocs)
         {                
+            $scope.$apply()
             return 1;
         })
         .catch(function(error)

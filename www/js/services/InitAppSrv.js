@@ -174,28 +174,28 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
     service.loadConfigFile = function()
     {
         var localConfigJson = service.config.defaults.file_system.config_filerel_path;
-        return FileSystemSrv.existFile(localConfigJson)
+        return FileSystemSrv.existFile(localConfigJson, FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root))    // config_storage_root = dataDirectory
         .then(function(exist)
         {
             if(exist)
             {
-                return FileSystemSrv.readJSON(localConfigJson)
+                return FileSystemSrv.readJSON(localConfigJson, FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root))
                 .then(function(appconfig)
                 {
                     service._updateAppConfig(appconfig.user)
-                    return FileSystemSrv.createJSONFileFromObj(localConfigJson, service.config.appConfig, FileSystemSrv.OVERWRITE);
+                    return FileSystemSrv.createJSONFileFromObj(localConfigJson, service.config.appConfig, FileSystemSrv.OVERWRITE, null, FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root));
                 })
                 .then(function(){
-                    return FileSystemSrv.readJSON(localConfigJson);
+                    return FileSystemSrv.readJSON(localConfigJson, FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root));
                 });
             }
             else
             {
                 // file://.../config.json file does not exist, copy defaults subfields to appConfig subfields 
                 service._createFirstAppConfig();
-                return FileSystemSrv.createJSONFileFromObj(localConfigJson, service.config.appConfig)
+                return FileSystemSrv.createJSONFileFromObj(localConfigJson, service.config.appConfig, FileSystemSrv.OVERWRITE, null, FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root))
                 .then(function(){
-                    return FileSystemSrv.readJSON(localConfigJson);
+                    return FileSystemSrv.readJSON(localConfigJson, FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root));
                 });
             }
         })
@@ -413,7 +413,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
     }; 
  
     //==========================================================================
-    // UPDATE STATUS & CONFIG
+    // UPDATE STATUS & CONFIG (at the end...all write config.json)
     //==========================================================================
     // write to json the following :  AppStatus, isFirstUse, userActiveVocabulary, isDeviceRegistered, api_key, isMale
     service.setStatus = function(statusobj)
@@ -424,7 +424,9 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
             old[elem]                               = service.config.appConfig.user[elem];
             service.config.appConfig.user[elem]     = statusobj[elem];
         };
-        return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config.appConfig))
+        return FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, 
+                                            JSON.stringify( service.config.appConfig), 
+                                            FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root))
         .catch(function(error)
         { 
             for(elem in old)
@@ -457,7 +459,9 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
             }
         }
         // writes data to JSON
-        FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config.appConfig))
+        return FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, 
+                                            JSON.stringify( service.config.appConfig), 
+                                            FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root))
         .then(function(){
             return 1;
         })
@@ -471,7 +475,9 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         var old_conf = service.config.appConfig.user.vad;
         service.config.appConfig.user.vad = obj;
         // writes data to JSON
-        return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify(service.config.appConfig))
+        return FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, 
+                                            JSON.stringify(service.config.appConfig), 
+                                            FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root))
         .then(function(){
             return 1;
         })
@@ -486,7 +492,9 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         var old_conf = service.config.appConfig.capture_configurations[field];
         service.config.appConfig.capture_configurations[field] = obj;
         // writes data to JSON
-        return FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify( service.config.appConfig))
+        return FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, 
+                                            JSON.stringify( service.config.appConfig), 
+                                            FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root))
         .then(function(){
             return 1;
         })
@@ -501,7 +509,9 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         var old_conf = service.config.appConfig[field];
         service.config.appConfig[field] = obj;
         // writes data to JSON
-        FileSystemSrv.overwriteFile(service.config.defaults.file_system.config_filerel_path, JSON.stringify(service.config.appConfig))
+        return FileSystemSrv.overwriteFile( service.config.defaults.file_system.config_filerel_path, 
+                                            JSON.stringify(service.config.appConfig), 
+                                            FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root))
         .then(function(){
             return 1;
         })

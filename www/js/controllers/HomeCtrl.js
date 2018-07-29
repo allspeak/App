@@ -15,12 +15,12 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
         // delete history once in the home
         $ionicHistory.clearHistory();
         // ask user's confirm after pressing back (thus trying to exit from the App)
-        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
+        $scope.deregisterFunc   = $ionicPlatform.registerBackButtonAction(function()
         {
             $scope.exit();
         }, 100); 
-        
-        $scope.appStatus    = InitAppSrv.getStatus();
+        $scope.enum_show_allvb  = EnumsSrv.VOICEBANK.SHOW_ALL;
+        $scope.appStatus        = InitAppSrv.getStatus();
 
         return RuntimeStatusSrv.loadVocabulary($scope.appStatus.userActiveVocabularyName)
         .then(function(rtstatus)

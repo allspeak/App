@@ -27,6 +27,7 @@
         },
         "file_system":{
             "data_storage_root":"externalRootDirectory",
+            "config_storage_root":"dataDirectory",
             "data_assets_folder":"www",
             "app_folder":"AllSpeak",
             "recordings_folder":"AllSpeak/recordings",
@@ -36,7 +37,7 @@
             "vocabularies_folder":"AllSpeak/vocabularies",
             "temp_folder":"AllSpeak/temp",
             "json_folder":"AllSpeak/json",
-            "config_filerel_path":"AllSpeak/json/config.json",
+            "config_filerel_path":"config.json",
             "voicebank_commands_www_path":"./json/voicebank_commands.json",
             "voicebank_commands_filerel_path":"AllSpeak/json/voicebank_commands.json",
             "voicebank_usercommands_www_path":"./json/voicebank_usercommands.json",

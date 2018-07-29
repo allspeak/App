@@ -26,7 +26,12 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     $scope.mode_id          = -1;        // ctrl modality MODE_SINGLE_RECORD, MODE_SEQUENCE_RECORD, MODE_SINGLE_TRAINING, MODE_SEQUENCE_TRAINING
     $scope.sentence_id      = -1;
     $scope.subject_id       = -1;       // used by multi-users Apps like VoiceRecorder
-
+    
+    $scope.successState     = -1;       // store the name of the caller state (e.g:  vocabulary->voicebank->seqrecord; successState is "voicebank"
+    
+    // when the caller is VB
+    $scope.backState        = -1;       // store the name of the state before the caller (e.g:  vocabulary->voicebank->seqrecord; backState is "vocabulary"
+    $scope.elems2display    = -1;       // indicates whether show trained or all sentences        
 
     // over-ride params
     $scope.captureProfile       = "record";
@@ -103,27 +108,38 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         //---------------------------------------------------------------------------------------------------------------------
         // manage input params
         //---------------------------------------------------------------------------------------------------------------------
+        $scope.backState        = "";
         $scope.successState     = "";
         $scope.cancelState      = "";
         $scope.foldername       = "";
+        $scope.elems2display    = EnumsSrv.VOICEBANK.SHOW_ALL;
         
-        if(data.stateParams.modeId != null)         $scope.mode_id         = parseInt(data.stateParams.modeId);
+        $scope.subject          = null;
+        
+        if(data.stateParams.modeId != "")           $scope.mode_id         = parseInt(data.stateParams.modeId);
         else                                        alert("SequenceRecordCtrl::$ionicView.enter. error : modeId is empty");
 
         // in MODE_SINGLE_BANK is really a commandId, in SEQUENCE mode is the index of the array of sequences
-        if(data.stateParams.commandId != null)     $scope.sentence_id     = parseInt(data.stateParams.commandId);
+        if(data.stateParams.commandId != "")        $scope.sentence_id     = parseInt(data.stateParams.commandId);
         else                                        alert("SequenceRecordCtrl::$ionicView.enter. error : commandId is empty");
 
-        if(data.stateParams.successState != null)   $scope.successState    = data.stateParams.successState;
-        if(data.stateParams.cancelState != null)    $scope.cancelState     = data.stateParams.cancelState;
-        if(data.stateParams.foldername != null)     $scope.foldername      = data.stateParams.foldername;       // if successState/cancelState == voicebank
+        if(data.stateParams.backState != "")        $scope.backState        = data.stateParams.backState;
+        if(data.stateParams.successState != "")     $scope.successState     = data.stateParams.successState;
+        if(data.stateParams.cancelState != "")      $scope.cancelState      = data.stateParams.cancelState;
+        if(data.stateParams.foldername != "")       $scope.foldername       = data.stateParams.foldername;       // if successState/cancelState == voicebank
+        if(data.stateParams.elems2display != "")    $scope.elems2display    = parseInt(data.stateParams.elems2display);       // if successState/cancelState == voicebank
                            
         // optional param
-        if(data.stateParams.subjId != null)
+        if(data.stateParams.subjId != "")
         {
             $scope.subject_id      = parseInt(data.stateParams.subjId);
             $scope.subject         = SubjectsSrv.getSubject($scope.subject_id);
-        }        
+        }   
+        else
+        {
+            $scope.subject_id       = -1;
+            $scope.subject          = null;
+        }
         //---------------------------------------------------------------------------------------------------------------------
         
         $scope.resetFlags();  
@@ -435,7 +451,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 .then(function()
                 {
                     if($scope.successState != "")
-                        $state.go($scope.successState);
+                        $state.go($scope.successState, {foldername:$scope.foldername, backState:$scope.backState, elems2display:$scope.elems2display});
                     else
                         $ionicHistory.goBack();
                 })
@@ -449,16 +465,17 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, 2)    // force renaming
                 .then(function()
                 {
-                    return SequencesRecordingSrv.getNextSentenceId()
+                    return SequencesRecordingSrv.getNextSentenceId();
                 })
                 .then(function(next_id)
                 {
                     if(next_id >= 0)
-                        $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername});
+                        $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername, backState:$scope.backState});
                     else
                     {
                         // SEQUENZA FINITA
-                        if($scope.successState != "") $state.go($scope.successState);
+                        
+                        if($scope.successState != "") $state.go($scope.successState, {foldername:$scope.foldername, backState:$scope.backState, elems2display:$scope.elems2display});
                         else                          $ionicHistory.goBack();
                     }                         
                 })
@@ -475,14 +492,12 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 .then(function(next_id) // returns -1 when sequence is finished
                 {
                     if(next_id >= 0)
-                        $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername});
+                        $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername, backState:$scope.backState});
                     else
                     {
                         // sequence terminated
-                        if($scope.successState != "")
-                            $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
-                        else
-                            $ionicHistory.goBack();
+                        if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+                        else                            $ionicHistory.goBack();
                     }
                 })
                 break;
@@ -503,7 +518,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                     if(next_id >= 0)                    $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername});
                     else
                     {
-                        if($scope.successState != "")   $state.go($scope.successState);
+                        if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername});
                         else                            $ionicHistory.goBack();
                     }
                 })

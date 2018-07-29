@@ -20,13 +20,14 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
     
     $scope.record_by_sentences  = 1;
     
+    $scope.backState            = "home";
     $scope.successState         = "voicebank";
     $scope.cancelState          = "voicebank";    
     
     $scope.selCategory          = {};
     
     $scope.vocabulary           = null;
-    $scope.modalRecordNewCommand  = null;
+    $scope.modalRecordNewCommand= null;
     $scope.newSentenceObj       = null; // used to 
     //==================================================================================================================
     //==================================================================================================================
@@ -305,10 +306,10 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
             sentence.filename = $scope.getFileName(sentence_id);
             return VoiceBankSrv.setVoiceBankCommandFilename(sentence_id, sentence.filename)
             .then(function(){
-                $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, commandId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
+                $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, commandId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState, backState:$scope.backState, foldername:$scope.foldername, elems2display:$scope.elems2display});
             })
         }
-        else    $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, commandId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState});
+        else    $state.go("record_sequence", {modeId:EnumsSrv.RECORD.MODE_SINGLE_BANK, commandId: sentence_id, successState:$scope.successState, cancelState:$scope.cancelState, backState:$scope.backState, foldername:$scope.foldername, elems2display:$scope.elems2display});
     };
 
     $scope.recordAudioSequence = function()
@@ -318,7 +319,7 @@ function VoiceBankCtrl($scope, $ionicPlatform, $ionicPopup, $ionicModal, $state,
                                                                             $scope.audiofileprefix);
         if($scope.record_sequence)
         {
-            $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, commandId:0, successState:$scope.successState, cancelState:$scope.cancelState});
+            $state.go('record_sequence', {modeId:EnumsSrv.RECORD.MODE_SEQUENCE_BANK, commandId:0, successState:$scope.successState, cancelState:$scope.cancelState, backState:$scope.backState, foldername:$scope.foldername});
         }
     };
 
