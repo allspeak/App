@@ -142,18 +142,20 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
         if(overwrite == null)   overwrite = 1; // will ask by default
         var vb_string   = JSON.stringify({"commands_categories":commands_categories, "voicebank_commands": cmds});
         
-        return FileSystemSrv.createFile(voicebank_commands_filerel_path, vb_string, overwrite, { title: 'Attenzione', template: 'Stai aggiornando la lista dei tuoi comandi, sei sicuro?'})
+        return FileSystemSrv.createFile(voicebank_commands_filerel_path, vb_string, overwrite, { title: UITextsSrv.labelAlertTitle, template: 'Stai aggiornando la lista dei tuoi comandi, sei sicuro?'})
     }; 
     
-    setVoiceBankUserVocabulary = function(cmds, usercmds) 
+    setVoiceBankUserVocabulary = function(cmds, usercmds, overwrite) 
     {
+        if(overwrite == null)   overwrite = FileSystemSrv.ASK_OVERWRITE;
+        
         var vb_string   = JSON.stringify({"commands_categories":commands_categories, "voicebank_commands": cmds});
         var uvb_string  = JSON.stringify({"voicebank_usercommands": usercmds});
         
-        return FileSystemSrv.createFile(voicebank_usercommands_filerel_path, uvb_string, 1, { title: 'Attenzione', template: 'Stai aggiornando la lista dei tuoi comandi, sei sicuro?'})
+        return FileSystemSrv.createFile(voicebank_usercommands_filerel_path, uvb_string, overwrite, { title: UITextsSrv.labelAlertTitle, template: 'Stai aggiornando la lista dei tuoi comandi, sei sicuro?'})
         .then(function()
         {
-            return FileSystemSrv.createFile(voicebank_commands_filerel_path, vb_string, 2);   //don't ask anything
+            return FileSystemSrv.createFile(voicebank_commands_filerel_path, vb_string, FileSystemSrv.OVERWRITE);   //don't ask anything
         });
     }; 
 
@@ -211,7 +213,7 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
         });
     };
     
-    removeUserVoiceBankCommand = function(sentence)
+    removeUserVoiceBankCommand = function(sentence, overwrite)
     {
         var lenvb       = voicebank_commands.length;
         var lenuvb      = voicebank_usercommands.length;
@@ -225,7 +227,7 @@ main_module.service('VoiceBankSrv', function($http, $q, FileSystemSrv, StringSrv
         for(s=0; s<lenvb;  s++) if(vbdeepcopy[s].id == id2remove)   vbdeepcopy.splice(s,1);
         for(s=0; s<lenuvb; s++) if(uvbdeepcopy[s].id == id2remove)  uvbdeepcopy.splice(s,1);
         
-        return setVoiceBankUserVocabulary(vbdeepcopy, uvbdeepcopy)
+        return setVoiceBankUserVocabulary(vbdeepcopy, uvbdeepcopy, overwrite)
         .then(function(res)
         {
             voicebank_commands        = vbdeepcopy;

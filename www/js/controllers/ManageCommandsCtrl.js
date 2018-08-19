@@ -39,29 +39,13 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     $scope.isDefault                = false;    // if is a default NET, I cannot train it, doesn't have any recordings
                                                 // I can see the commands, but cannot edit them    
     $scope.isNewVoc                 = false; 
+    
+    // copy from existing vocabularies
+    $scope.existingVocabularies     = null;     // list of all available vocs, used to propose to create a copy
+    $scope.selVoc2Copy              = {};       // 
+    $scope.newTV                    = {};
                                                 
     // =======================================================================================================
-    // MODAL
-    // =======================================================================================================
-    // when train_vocabulary does not exist. 
-    // prompt user for a name, then retrieve and display all possible commands (voicebank vocabulary)
-    // start creating a new vocabulary
-    $ionicModal.fromTemplateUrl('templates/modal/newVocabulary.html', 
-    {
-        scope: $scope,
-        animation: 'slide-in-up',
-        backdropClickToClose: false      
-    })
-    .then(function(modal) 
-    {
-        $scope.modalSelectNewVocabulary = modal; 
-    })
-    .catch(function(error)
-    {
-        alert(error.message);
-    }); 
-    // =======================================================================================================
-
     $scope.$on("$ionicView.enter", function(event, data)
     {
         $ionicHistory.clearHistory();
@@ -75,7 +59,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         }, 100);   
         
         $scope.vocabularies_relpath     = InitAppSrv.getVocabulariesFolder();       // AllSpeak/vocabularies
-        $scope.recordings_folder = InitAppSrv.getAudioFolder();              // AllSpeak/recordings        
+        $scope.recordings_folder        = InitAppSrv.getAudioFolder();              // AllSpeak/recordings        
         $scope.default_tv_filename      = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         
         //---------------------------------------------------------------------------------------------------------------------
@@ -149,36 +133,34 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         else
         {
             // TRAINING.NEW_TV
-            // create new vocabulary
+            // when train_vocabulary does not exist. 
+            // prompt user for a name, then retrieve and display all possible commands (voicebank vocabulary)
+            // start creating a new vocabulary
             $scope.selectList               = true;
             $scope.editTrainVocabulary      = false;
             $scope.showTrainVocabulary      = false;  
-            if($scope.modalSelectNewVocabulary == null)
+            $scope.selVoc2Copy              = {data:null};
+            $scope.newTV                    = {label:""};
+            
+            
+            return VocabularySrv.getAllTrainVocabulary()
+            .then(function(vocs) 
+            {            
+                $scope.existingVocabularies = vocs;
+                return $ionicModal.fromTemplateUrl('templates/modal/newVocabulary.html',{scope: $scope,
+                                                                                        animation: 'slide-in-up',
+                                                                                        backdropClickToClose: false});
+            })
+            .then(function(modal) 
             {
-                // SHOULD NEVER HAPPENS, BUT SOMETIMES IT DOES !!
-                $ionicModal.fromTemplateUrl('templates/modal/newVocabulary.html', 
-                {
-                    scope: $scope,
-                    animation: 'slide-in-up',
-                    backdropClickToClose: false      
-                })
-                .then(function(modal) 
-                {
-                    $scope.isNewVoc                 = true;
-                    $scope.modalSelectNewVocabulary = modal; 
-                    $scope.modalSelectNewVocabulary.show();
-                })
-                .catch(function(error)
-                {
-                    alert(error.message);
-                });                 
-            }   
-            else
-            {
-                $scope.isNewVoc = true;
+                $scope.isNewVoc                 = true;
+                $scope.modalSelectNewVocabulary = modal; 
                 $scope.modalSelectNewVocabulary.show();
-                $scope.$apply();
-            }
+            })
+            .catch(function(error)
+            {
+                alert(error.message);
+            });                 
         }         
     });
 
@@ -208,7 +190,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             
             for(var cmd in $scope.commands) $scope.commands[cmd].checked = false;
             
-            $scope.labelButtonMulti     = "SALVA LISTA";
+            $scope.labelButtonMulti     = UITextsSrv.VOCABULARY.labelSaveList;
             $scope.selectList           = false;
             $scope.editTrainVocabulary  = true;
             $scope.showTrainVocabulary  = false;
@@ -216,7 +198,7 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         })
         .catch(function(err)
         {
-            alert(error.message);
+            alert(err.message);
         });
     };      
     
@@ -229,10 +211,8 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         // check if the selected folder is not called "default"
         if(validpath == $scope.default_voc_folder)
         {
-            var alertPopup = $ionicPopup.alert({
-                title: 'Attenzione',
-                template: 'Il nome \"' + $scope.default_voc_folder + '\" è riservato al sistema. Scegli un\'altro nome'
-            }); 
+            $ionicPopup.alert({ title: UITextsSrv.labelAlertTitle, 
+                                template: 'IL NOME \"' + $scope.default_voc_folder + UITextsSrv.VOCABULARY.labelReservedVocName}); 
             return;
         }
         
@@ -242,13 +222,8 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         .then(function(existdir)
         {
             if(existdir)
-            {
-                var alertPopup = $ionicPopup.alert({
-                    title: 'Attenzione',
-                    template: 'Un vocabolario chiamato \"' + obj.label + '\" è già presente. Scegli un\'altro nome'
-                }); 
-                return;                
-            }
+                $ionicPopup.alert({ title: UITextsSrv.labelAlertTitle, 
+                                    template: UITextsSrv.VOCABULARY.labelSelectAnotherVocName1 + obj.label + UITextsSrv.VOCABULARY.labelSelectAnotherVocName2}); 
             else
             {
                 $scope.modalSelectNewVocabulary.hide();   
@@ -270,12 +245,32 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
     {
         $scope.modalSelectNewVocabulary.hide(); 
         if($scope.backState != "")
-            $state.go($scope.backState)
+            $state.go($scope.backState);
         else
             $state.go('home');    
     };    
 
-  
+    $scope.onCopyFromVocabulary = function(labobj, selvoc)
+    {
+        var newvocname          = labobj.label;
+        var sourcefoldername    = selvoc.data;
+        return VocabularySrv.copyVocabularyName(newvocname, sourcefoldername)
+        .then(function(success)
+        {
+            if(success)
+            {
+                $state.go("vocabulary", {foldername: StringSrv.format2filesystem(newvocname)});
+                $scope.modalSelectNewVocabulary.hide();   
+            }
+            else
+                $ionicPopup.alert({ title: UITextsSrv.labelAlertTitle, 
+                                    template: UITextsSrv.VOCABULARY.labelSelectAnotherVocName1 + newvocname + UITextsSrv.VOCABULARY.labelSelectAnotherVocName2}); 
+        })
+        .catch(function(error)
+        {
+            $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: error.message});
+        });
+    };
     //-------------------------------------------------------------------
     // SHOW COMMANDS ($scope.showTrainVocabulary = true)
     //-------------------------------------------------------------------  
@@ -328,14 +323,18 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
             $scope.commands[s].checked = bool;
     };
     
-    // button 1 
+    // save a new commands list. it checks:
+    // - commands list ! empty
+    // - whether is a new voc or not
+    //      => existing
     $scope.saveTrainVocabulary = function()
     {
-        var selected_commands = [];
+        var old_commands        = $scope.vocabulary.commands;
+        var selected_commands   = [];
         
         if($scope.commands[0].checked == null)
         {
-            console.log("ERROR IN ManageCommandsCtrl::saveTrainVocabulary....$scope.commands[0].checked are null")
+            console.log("ERROR IN ManageCommandsCtrl::saveTrainVocabulary....$scope.commands[0].checked are null");
             return;
         }
         
@@ -345,32 +344,94 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
                 selected_commands.push($scope.commands[s]);
         
         if(!selected_commands.length)
+            $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: UITextsSrv.VOCABULARY.labelSelectAtLeastOneCommand});
+        else 
         {
-            var alertPopup = $ionicPopup.alert({
-                title: 'Attenzione',
-                template: 'Devi selezionare almeno un comando\naltrimenti premi RITORNA per annullare'
-            });
-        }
-        else
-        {
-            $scope.vocabulary.commands = selected_commands;
-            return VocabularySrv.setTrainVocabulary($scope.vocabulary)
-            .then(function()
+            // check whether is a new voc or an existing one (I prefer checking if the vocabulary.json exist, rather than relying on $scope.mode_id)
+            return FileSystemSrv.existFile($scope.vocabulary_json_path)
+            .then(function(res) 
+            {            
+                if(res)
+                {
+                    // is an existing voc => delete existing nets
+//                    return $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.VOCABULARY.labelSure2modifyCommands})
+                    return $ionicPopup.show(
+                    {
+                        title: UITextsSrv.labelAlertTitle,
+                        template: UITextsSrv.VOCABULARY.labelSure2modifyCommands,
+                        scope: $scope,
+                        buttons: [
+                         {
+                                text: '<b>CANC</b>',
+                                type: 'button-positive',
+                                onTap: function() { return 0; }
+                            },
+                            {
+                                text: '<b>OK</b>',
+                                type: 'button-positive',
+                                onTap: function() { return 1; }
+                            },
+                            {
+                                text: '<b>NUOVO</b>',
+                                type: 'button-positive',
+                                onTap: function() { return 2; }
+                            }]
+                    })
+                    .then(function(res) 
+                    {
+                        switch(res)
+                        {
+                            case 0:
+                                return false;
+                                break;
+                        
+                            case 1:
+                                return VocabularySrv.resetVocabularyNets($scope.foldername, FileSystemSrv.OVERWRITE);
+                                break;
+                                
+                            case 2:
+                                $state.go('manage_commands', {modeId:EnumsSrv.TRAINING.NEW_TV, backState:"vocabularies"});        
+                                return false;
+                                break;
+                        }
+                    })                
+                }
+                else return true;
+            })
+            .then(function(goon)
             {
-                $scope.isNewVoc             = false;
-                $scope.commands             = $scope.vocabulary.commands;
-                $scope.selectList           = false;
-                $scope.editTrainVocabulary  = false;
-                $scope.showTrainVocabulary  = true;    
-                $scope.$apply();
+                if(goon != false)
+                {
+                    // overwrite list
+                    $scope.vocabulary.sModelFileName    = "";
+                    $scope.vocabulary.commands          = selected_commands;
+                    return VocabularySrv.setTrainVocabulary($scope.vocabulary, FileSystemSrv.OVERWRITE)
+                }
+                return false;
+            })                
+            .then(function(goon)
+            {
+                if(goon != false)
+                {                
+                    $scope.isNewVoc             = false;
+                    $scope.commands             = $scope.vocabulary.commands;
+                    $scope.selectList           = false;
+                    $scope.editTrainVocabulary  = false;
+                    $scope.showTrainVocabulary  = true;    
+                    $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: UITextsSrv.VOCABULARY.labelListSaved});
+//                    $scope.$apply();
+                }
             })
             .catch(function(error)
             {
-//                if(error.mycode) { switch(error.mycode) { } }
-                alert(error.message);
-            });          
+                $ionicPopup.alert({title: UITextsSrv.labelErrorTitle, template: error.message});
+            });                
         };
     };
     //-------------------------------------------------------------------
 }
 controllers_module.controller('ManageCommandsCtrl', ManageCommandsCtrl);
+
+
+
+

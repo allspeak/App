@@ -120,15 +120,9 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     //--------------------------------------------------------------------------
     service.createFile = function(relative_path, jsonstrcontent, overwrite, textobj, alternative_resolved_root)
     {
-        var res_root = (alternative_resolved_root   ?   alternative_resolved_root   :   service.resolved_data_storage_root);
-        
-        var _overwrite = 1; // default behaviour: ask before overwriting
-        if(overwrite != null)
-        {
-            if(overwrite)   _overwrite = 2; // overwrite without asking
-            else            _overwrite = 0; // do not overwrite
-        }
-        if(textobj == null) textobj = { title: 'Attenzione', template: 'Il File esiste già, vuoi sovrascriverlo?'}
+        var res_root    = (alternative_resolved_root    ?   alternative_resolved_root   :   service.resolved_data_storage_root);
+        var _overwrite  = (overwrite == null            ?   service.ASK_OVERWRITE       :   overwrite); // default behaviour: ask before overwriting
+        var _textobj    = (textobj == null              ?   { title: UITextsSrv.labelAlertTitle, template: 'IL FILE ESISTE GIA\'.<br>VUOI SOVRASCRIVERLO ?'}    :   textobj);
 
         //-----------------------------------------------------------------------------------------------------------------------------    
         // already exist?
@@ -139,13 +133,13 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
             { // exist...see if can overwrite
                 switch (_overwrite)
                 {
-                    case 2:
+                    case service.OVERWRITE:
                         // overwrite
                         return service.overwriteFile(relative_path, jsonstrcontent, res_root);
                         
-                    case 1:
+                    case service.ASK_OVERWRITE:
                         // prompt for overwrite permissions
-                        return $ionicPopup.confirm(textobj)
+                        return $ionicPopup.confirm(_textobj)
                         .then(function(res) 
                         {
                             if(res)     return service.overwriteFile(relative_path, jsonstrcontent, res_root);               
@@ -234,7 +228,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
             if(overwrite)   _overwrite = 2; // overwrite without asking
             else            _overwrite = 0; // do not overwrite
         }
-        if(textobj == null) textobj = { title: 'Attenzione', template: 'Il File esiste già, vuoi sovrascriverlo?'}        
+        if(textobj == null) textobj = { title: UITextsSrv.labelAlertTitle, template: 'Il File esiste già, vuoi sovrascriverlo?'}        
         
         //-----------------------------------------------------------------------------------------------------------------------------    
         // already exist?
@@ -343,11 +337,11 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         });
     };
     
-    service.deleteFilesInFolder = function(relative_path, valid_extensions, alternative_resolved_root)
+    service.deleteFilesInFolder = function(relative_path, valid_extensions, filecontains, alternative_resolved_root)
     {
         var res_root = (alternative_resolved_root   ?   alternative_resolved_root   :   service.resolved_data_storage_root);
         
-        return service.listFilesInDir(relative_path, valid_extensions, res_root)
+        return service.listFilesInDir(relative_path, valid_extensions, filecontains, res_root)
         .then(function(files)
         {
             var subPromises = [];

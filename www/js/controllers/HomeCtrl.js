@@ -68,7 +68,7 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
     // ===============================================================================================
     $scope.exit = function()
     {
-        $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
+        $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.labelExit})
         .then(function(res) 
         {
             if (res){  ionic.Platform.exitApp();  }

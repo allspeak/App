@@ -26,8 +26,9 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.tfCfg                = null;
     $scope.nFiles               = 0;    // count number of audio within the session
     $scope.nCurFile             = 0;    // indicates the number of the currently processed file
-        
+    $scope.files2Process        = [];
     $scope.doOverwriteFeatures  = true;
+    $scope.stopMFCC             = false;
     //--------------------------------------------------------------------------
     // loaded vocabulary
     $scope.vocabulary           = null;
@@ -53,9 +54,9 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     // constants
     $scope.vocabulary_json_prefix   = "vocabulary";
     $scope.final_net_json_prefix    = "net";
-    $scope.labelResumeTrainSession  = "REGISTRA RIPETIZIONI"
-    $scope.labelSubmit              = "ADDESTRA"    
-    $scope.pageTitle                = "ADDESTRA COMANDI";
+    $scope.labelResumeTrainSession  = UITextsSrv.TRAINING.labelRecordRepetitions;
+    $scope.labelSubmit              = UITextsSrv.TRAINING.labelTrain;
+    $scope.pageTitle                = UITextsSrv.TRAINING.labelTrainCommands;
     
     //--------------------------------------------------------------------------
     // gui elements (select modeltype, audioproc)
@@ -70,6 +71,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.pluginInterface      = null;        
     $scope.plugin_enum          = null;
     
+    $scope.isConnected          = false;
     //--------------------------------------------------------------------------
     // session params    
     $scope.initSessionVariables = function()
@@ -155,8 +157,10 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
 
         $scope.recordings_folder       = InitAppSrv.getAudioFolder();
         
-        $ionicModal.fromTemplateUrl('templates/modal/popupSubmitSession.html', 
-        {
+        $scope.isConnected              = RemoteAPISrv.hasInternet();
+        window.addEventListener('connection' , $scope.onConnection);
+        
+        return $ionicModal.fromTemplateUrl('templates/modal/popupSubmitSession.html', {
             scope: $scope,
             animation: 'slide-in-up',
             backdropClickToClose: false,
@@ -191,6 +195,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
 
     $scope.$on('$ionicView.leave', function(){
         if($scope.deregisterFunc)   $scope.deregisterFunc();
+        window.removeEventListener('connection'  , $scope.onConnection);
     });     
 
     $scope.refresh = function(folder)
@@ -254,7 +259,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.startNewSessionDebug = function(net_type) 
     {
         // DEBUG CODE (given folder contains data_274/275/276/277.zip files)
-        $scope.training_relpath                 = $scope.vocabulary_relpath + "/" + "test_23032018_005341";    
+        $scope.training_relpath                 = $scope.vocabulary_relpath + "/" + "train_31072018_010705";    
         $scope.session_zip                      = $scope.training_relpath + "/" + "data_" + net_type.toString() + ".zip";      
         $scope.training_received_json_path      = $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme.toString() + "_" + $scope.tfCfg.nModelClass.toString() + ".json";        
         $scope.final_vocabulary_json_path       = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme.toString() + "_" + $scope.tfCfg.nModelClass.toString() + ".json";
@@ -270,20 +275,18 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     {
         if(initsessid == null) initsessid = "";
         return (function(repl) 
-               {
-                    if(!repl) return Promise.resolve(true);
-                    else
-                    {
-                        return $ionicPopup.confirm({title:"Attenzione", template:"Una rete uguale esiste gia" +
-                                                   ".\Continuando, potrai prima provare la nuova rete, ma quando l\' accetterai " + 
-                                                   "la vecchia versione ora presente verra eliminata.\nVuoi proseguire?"})
-                        .then(function(res){ return res;})
-                    }
-               })(isreplacing)
+        {
+             if(!repl) return Promise.resolve(true);
+             else
+             {
+                 return $ionicPopup.confirm({title: UITextsSrv.labelAlertTitle, template:UITextsSrv.TRAINING.labelNewNetSubstituting})
+                 .then(function(res){ return res;});
+             }
+        })(isreplacing)
         .then(function(goontraining)
         {
             if(goontraining == 0)   return false;       // user answered to NOT substitute the existing version !
-            else                    return $scope.checkTempSessions()
+            else                    return $scope.checkTempSessions();
         })
         .then(function(goontraining)
         {
@@ -296,7 +299,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                 if(initsessid.length)   $scope.init_sessionid = initsessid;
                 else                    $scope.init_sessionid = "";
         
-                $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai per inviare le tue registrazioni al server per addestrare nuovamente la tua applicazione.\nVuoi proseguire?'})
+                $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.TRAINING.labelNewNet})
                 .then(function(res) 
                 {
                     if (res)
@@ -338,9 +341,16 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
 
     $scope.closeModalSubmit = function()
     {
-        ClockSrv.removeClock($scope.timerID);
+        if($scope.isCalcFeatures)
+            $scope.stopMFCC = true;
+        else if($scope.isUploading)
+            RemoteAPISrv.cancelTransfer();
+        else if($scope.isChecking)
+            ClockSrv.removeClock($scope.timerID);
+        else if($scope.isDownloading)
+            RemoteAPISrv.cancelTransfer();
+        
         $scope.initSessionVariables();
-        RemoteAPISrv.cancelTransfer();
         $scope.modalSubmitSession.hide();
 
         $state.go('vocabulary', {"foldername":$scope.foldername});
@@ -352,8 +362,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         return $ionicPopup.show({
                             scope: $scope,
                             templateUrl: "templates/modal/popupSelectTrainingParams.html",
-                            title: 'Parametri Addestramento',
-                            subTitle: 'Seleziona la modalità di addestramento della rete',
+                            title: UITextsSrv.TRAINING.labelParameters,
+                            subTitle: UITextsSrv.TRAINING.labelSelTrainingMode,
                             buttons: [
                                 { text: 'Cambia',  type: 'button-positive', onTap: function() { return true;}},
                                 { text: 'Annulla', type: 'button-positive', onTap: function() { return false;}}
@@ -370,10 +380,10 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     //==============================================================================================================================
     $scope.askExtractFeatures = function() 
     {  
-        var myPopup = $ionicPopup.show(
+        return $ionicPopup.show(
         {
 //            template: '<center><img src="https://officeimg.vo.msecnd.net/en-us/images/MR900185586.gif"/></center> <br> <input type="password" ng-model="data.wifi">',
-            title: 'Attenzione',
+            title: UITextsSrv.labelAlertTitle,
             subTitle: 'Stai per rianalizzare i dati.\nVuoi sovrascrivere i dati esistenti?',
             scope: $scope,
             buttons: [
@@ -392,8 +402,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                     type: 'button-positive',
                     onTap: function() { return 0; }
                 }]
-        });
-        myPopup.then(function(res) 
+        })
+        .then(function(res) 
         {
             if(res > -1)  $scope.extractFeatures((res>0 ? true : false));
         });        
@@ -402,28 +412,40 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.extractFeatures = function(overwrite) 
     {  
         window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
-        window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
         window.addEventListener('pluginError'       , $scope.onMFCCError);
-        
-        return FileSystemSrv.countFilesInDir($scope.recordings_folder, ["wav"])
-        .then(function(cnt)
-        {
-            $scope.nFiles           = cnt;
+
+        return VocabularySrv.getTrainVocabularyRecordingsName($scope.foldername)
+        .then(function(files_list)
+        {    
+            $scope.files2Process    = files_list;
+            $scope.nFiles           = files_list.length;
             $scope.nCurFile         = 0;
             $scope.isCalcFeatures   = true;
-            $scope.percFiles        = 0;
-            
-            MfccSrv.getMFCCFromFolder($scope.recordings_folder, 
-                                      $scope.mfccCfg.nDataType,
-                                      $scope.plugin_enum.MFCC_DATADEST_FILE,
-                                      $scope.mfccCfg.nProcessingScheme,
-                                      overwrite,
-                                      $scope.training_relpath);  // does not overwrite existing (and valid) mfcc files
+            $scope.percFiles        = 0;          
+            $scope.stopMFCC         = false;
+            $scope.processFile($scope.files2Process[0]);
+
             $scope.percFiles = 0;
-            $scope.$apply(); 
+            $scope.$apply();             
         });
     };
     
+    $scope.processFile = function(input_filename, ow)
+    {
+        if(ow == null)  ow = true;
+        
+        var inputfile_noext     = $scope.recordings_folder + "/" + StringSrv.removeExtension(input_filename);
+        var outputfile_noext    = $scope.training_relpath + "/" + StringSrv.removeExtension(input_filename);
+
+        //inputrelpath_noext, data_type, data_dest, overwrite, outputrelpath_noext
+        MfccSrv.getMFCCFromFile(inputfile_noext, 
+                                $scope.mfccCfg.nDataType,
+                                $scope.plugin_enum.MFCC_DATADEST_FILE,
+                                $scope.mfccCfg.nProcessingScheme,
+                                ow,
+                                outputfile_noext);  
+        
+    }
     // manage pluginevents
     $scope.onMFCCProgressFolder = function(res)
     {
@@ -434,17 +456,26 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     // onFile processed
     $scope.onMFCCProgressFile = function(res)
     {
+        if($scope.stopMFCC)
+        {
+            $scope.resetExtractFeatures();  
+            $scope.vocabulary_status.haveFeatures = false;
+            $scope.$apply();
+            return;
+        }
+        
         $scope.nCurFile++;
         if($scope.nCurFile < $scope.nFiles)
         {
 //            cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
             $scope.percFiles = Math.round(($scope.nCurFile/$scope.nFiles)*100)
-            console.log("Feature file processed : " + $scope.nCurFile.toString());
+//            console.log("Feature file processed : " + $scope.nCurFile.toString());
+            $scope.processFile($scope.files2Process[$scope.nCurFile]);
             $scope.$apply();
         }
         else    $scope.onExtractFeaturesEnd();
         
-        console.log("_ManageTrainingCtrl::onMFCCProgressFile : " + res);
+//        console.log("_ManageTrainingCtrl::onMFCCProgressFile : " + res);
     };
     
     // if submitting => it calls $scope.zipSession();
@@ -469,6 +500,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         console.log("_ManageTrainingCtrl::onMFCCError : " + error);
         $scope.vocabulary_status.haveFeatures = false;
         $scope.modalSubmitSession.hide();
+        $scope.resetExtractFeatures();
         $scope.$apply();        
     };
    
@@ -553,7 +585,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     
     $scope.onSubmitProgress = function(progress)
     {
-        console.log(progress.label + " " + progress.perc + " %");
+//        console.log(progress.label + " " + progress.perc + " %");
         $scope.percUpload = progress.perc;
         if(!$scope.$$phase) $scope.$apply();
     };
@@ -603,10 +635,10 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                         if(doask)
                         {
                             // ask if download
-                            return $ionicPopup.confirm({ title: 'Attenzione', template: 'Il vocabolario è stato addestrato. Vuoi scaricarlo ora ? \nE possibile farlo in seguito'})
+                            return $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template:UITextsSrv.TRAINING.labelVocTrainedWant2Download})
                             .then(function(res) 
                             {
-                                if(res) $scope.getNet($scope.temp_sess_voc.sessionid, $scope.temp_sess_voc.sModelFileName + ".pb");
+                                if(res) $scope.getNet();
                                 return true;
                             });   
                         }
@@ -624,21 +656,21 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             if(error.status != null)
             {
                 if(error.status == 500)             msg = error.data.error;
-                else if(error.status == 'error')    msg = "Errore irrecuperabile sul server.";
+                else if(error.status == 'error')    msg = UITextsSrv.REMOTE.labelUnrecoverableError;
             }
             else                                    msg = error.message
 
             console.log(title + msg);
             $scope.closeModalSubmit();
-            alert(title + msg);
+            $ionicPopup.alert({title:UITextsSrv.labelErrorTitle, template:msg + "<br>" + error.description})
         });
     };
     
     // download in temp folder
-    $scope.getNet = function(sessionid, modelfilename)
+    $scope.getNet = function()
     {   
         $scope.isDownloading = true;
-        RemoteAPISrv.getNet(sessionid, $scope.training_relpath, modelfilename, $scope.onDownloadSuccess, $scope.onDownloadError, $scope.onDownloadProgress);
+        RemoteAPISrv.getNet($scope.temp_sess_voc.sessionid, $scope.training_relpath, $scope.temp_sess_voc.sModelFileName + ".pb", $scope.onDownloadSuccess, $scope.onDownloadError, $scope.onDownloadProgress);
     };
     
     // network downloaded:
@@ -654,27 +686,22 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         // I test the new NET
         return TfSrv.testNewTFModel($scope.temp_sess_voc)   // return string or reject
         .then(function()
-        {        
-            // delete vocabulary.json ....only one json is still present in the folder
-            return FileSystemSrv.deleteFile($scope.training_submitted_json_path);                                       // return 1|true or reject        
-        })
-        .then(function()
         {
             $scope.modalSubmitSession.hide();
-            return $ionicPopup.confirm({ title: 'Attenzione', template: 'Hai correttamente scaricato la rete, vuoi attivarla e passare al riconoscimento?'})
-            .then(function(r)
+            return $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.TRAINING.labelNetDownloadedWant2TestIt})
+        })
+        .then(function(resp)
+        {
+            if(resp)
             {
-                if(r)
+                // force loadVocabulary (I may retrain the same active voc, without the force, loadVocabulary could exit immediately)
+                return RuntimeStatusSrv.loadVocabulary($scope.foldername, true)
+                .then(function()
                 {
-                    // force loadVocabulary (I may retrain the same active voc, without the force, loadVocabulary could exit immediately)
-                    return RuntimeStatusSrv.loadVocabulary($scope.foldername, true)
-                    .then(function()
-                    {
-                        $state.go("recognition", {foldername:$scope.foldername, sessionname:$scope.temp_session_name});   // go to recognition page
-                    });
-                }
-                else    $state.go('vocabulary', {"foldername":$scope.foldername});  // go back to vocabulary page
-            });
+                    $state.go("recognition", {foldername:$scope.foldername, sessionname:$scope.temp_session_name});   // go to recognition page
+                });
+            }
+            else    $state.go('vocabulary',  {foldername:$scope.foldername});  // go back to vocabulary page
         })
         .catch(function(error)
         {   
@@ -688,14 +715,14 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                         break;
                     case ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL:
                         // the new net is invalid !  #ERROR_CRASH#
-//                        return $ionicPopup.confirm({ title: 'Attenzione', template: 'La rete che hai scaricato non funziona. Prova e ripetere il procedimento'})
+//                        return $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: 'La rete che hai scaricato non funziona. Prova e ripetere il procedimento'})
                         
                         break;
                 }
             }
             console.log("ManageTrainingCtrl::onDownloadSuccess :" + error.message);
             $scope.modalSubmitSession.hide();
-            $state.go('vocabulary', {"foldername":$scope.foldername});
+            $state.go('vocabulary', {foldername:$scope.foldername});
         });
     };
     
@@ -710,7 +737,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.onDownloadProgress = function(progress) 
     {
         $scope.percDownload = progress.perc;        
-        console.log(progress.label);
+//        console.log(progress.label);
 //        $scope.$apply();
    };
 
@@ -752,10 +779,11 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                     {
                         case 0: // no temp session are present
                             return true;        // do training
+                            
                         case 1: // an incomplete temp session (no net_xxxxxx.json, no pb) is present.
                                 // - delete it ! probably crashed the server while training
                                 // - cancel
-                            return $ionicPopup.confirm({ title: 'Attenzione', template: 'Una precedente sessione incompleta di training è stata trovata. Per cancellarla e proseguire premi OK, altrimenti annulla il nuovo training'})
+                            return $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.TRAINING.labelExistingSessionWant2CancelIt})
                             .then(function(res) 
                             {                    
                                 if(res) return $scope.deleteSessionDir(resobj.path, resobj.voc.sessionid);        // return true or reject
@@ -769,8 +797,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                                 // - cancel
                             return $ionicPopup.show(
                             {
-                                title: 'Attenzione',
-                                subTitle: 'Una precedente sessione di training sembra sia stata completata ma la rete non è stata ancora scaricata. Se vuoi scaricarla e proseguire con il training premi OK, per cancellarla premi CANCELLA, per annullare il training premi ANNULLA',
+                                title: UITextsSrv.labelAlertTitle,
+                                subTitle: UITextsSrv.TRAINING.labelExistingSessionWant2DownloadIt,
                                 buttons: [
                                     {text: '<b>OK</b>'      , type: 'button-positive', onTap: function() { return  1; }},                            
                                     {text: '<b>CANCELLA</b>', type: 'button-positive', onTap: function() { return  0; }},
@@ -786,7 +814,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                                         $scope.vocabulary_status.isNetAvailableRemote   = true;
                                         $scope.modalSubmitSession.show();    
                                         $scope.training_relpath = resobj.path;
-                                        $scope.getNet($scope.temp_sess_voc.sessionid, $scope.temp_sess_voc.sModelFileName + ".pb");      // TODO : show something revealing App is downloading
+                                        $scope.getNet();      // TODO : show something revealing App is downloading
                                         return false;       // stop training
 
                                     case 0: // delete temp train session and go on with a new training
@@ -802,11 +830,11 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                                 // - cancel new training
                             return $ionicPopup.show(
                             {
-                                title: 'Attenzione',
-                                subTitle: 'Esiste una sessione di training completata che richiede di essere approvata o cancellata. In caso una rete simile esista già, quest\'ultima verra\' cancellata. Per approvarla premi OK, per testarla premi TEST, per cancellarla premi CANC, per annullare premi ANNULLA',
-                                buttons: [  {text: '<b>OK</b>',    type: 'button-positive', onTap: function() { return  2; }},                            
-                                            {text: '<b>TEST</b>',       type: 'button-positive', onTap: function() { return  1; }},
-                                            {text: '<b>NO</b>',   type: 'button-positive', onTap: function() { return  0; }},
+                                title: UITextsSrv.labelAlertTitle,
+                                subTitle: UITextsSrv.TRAINING.labelExistingSessionWant2ApproveOrCancelIt, 
+                                buttons: [  {text: '<b>OK</b>',     type: 'button-positive', onTap: function() { return  2; }},                            
+                                            {text: '<b>TEST</b>',   type: 'button-positive', onTap: function() { return  1; }},
+                                            {text: '<b>CANC</b>',   type: 'button-positive', onTap: function() { return  0; }},
                                             {text: '<b>ANN</b>',    type: 'button-positive', onTap: function() { return -1; }}] 
                             })
                             .then(function(res) 
@@ -833,7 +861,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     // ------------------------------------------------------------------------------------------------
     // temporary training session is accepted:
     // fix modelpath, save json in final format
-    // move pb to session folder to voc folder. replace existing net (with same type and preproc scheme)
+    // move pb to session folder to voc folder. 
+    // if applicable, replace existing net (with same type and preproc scheme)
     $scope.acceptSession = function(trainfolder, voc)
     {
         $scope.temp_sess_voc = TfSrv.fixTfModel(voc);  // 2nd fix: set sModelFilePath to /vocabularies/gigi/net_274_252_280.pb
@@ -843,13 +872,13 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.final_vocabulary_pb_path     = $scope.vocabulary_relpath + "/" + voc.sModelFileName + ".pb";
         $scope.training_received_pb_path    = trainfolder + "/" + voc.sModelFileName + ".pb";
         
-        var message = { title: 'Attenzione', template: 'Stai sostituendo la nuova RETE. Sei sicuro?'};
+        var message = { title: UITextsSrv.labelAlertTitle, template: UITextsSrv.TRAINING.labelWant2SubstituteNewNet};
         return FileSystemSrv.createJSONFileFromObj($scope.final_vocabulary_json_path, $scope.temp_sess_voc, FileSystemSrv.ASK_OVERWRITE, message)
         .then(function(created)
         {
             // it returns false if user did not confirm.
-            if(!created)    return false;
-            else            return FileSystemSrv.createJSONFileFromObj($scope.final_vocabulary_json_path, $scope.temp_sess_voc, FileSystemSrv.ASK_OVERWRITE, message)
+            if(created)     return FileSystemSrv.createJSONFileFromObj($scope.final_vocabulary_json_path, $scope.temp_sess_voc, FileSystemSrv.OVERWRITE, message);
+            else            return false;
         })
         .then(function(created)
         {            
@@ -866,37 +895,71 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             if(renamed)     return FileSystemSrv.deleteDir(trainfolder);
             else            return false;
         })    
-        .then(function(deleted)
+        .then(function()
         {
-            // TODO: if I delete PU o CA ; I may delete all the derived 
-            if(voc.nModelType == pluginInterface.ENUM.PLUGIN.TF_MODELTYPE_USER)
-                return $scope.destroyDerivedUserNets();
-            else if (voc.nModelType == pluginInterface.ENUM.PLUGIN.TF_MODELTYPE_COMMON_ADAPTED)
-                return $scope.destroyDerivedUserNets();
-            else
-                return true;
+            return $scope.destroyDerivedNets($scope.temp_sess_voc.nModelType);
         })
-        .then(function(deleted)
+        .then(function()
         {                
             return VocabularySrv.getExistingNets($scope.foldername);
         })
         .then(function(existing_net_sobj)
         {
             $scope.existingNets = existing_net_sobj;
-            $ionicPopup.alert({ title: 'Attenzione', template: 'La nuova rete è stata accettata'});
-        })          
+            $ionicPopup.alert({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.TRAINING.labelNetAccepted});
+        });          
     }; 
 
-    // if user replace a pure user, all the nets derived from it are no more valid.
-    $scope.destroyDerivedUserNets = function()
+    // if user replace a PU or CA, all the nets derived from it are no more valid and must be destroyed.
+    $scope.destroyDerivedNets = function(deletedtype)
     {
-        return true;
-    };
+        return VocabularySrv.getExistingNets($scope.foldername)
+        .then(function(existing_net_sobj)
+        {
+            $scope.existingNets = existing_net_sobj;
+            
+            var promises = [];
+            switch(deletedtype)
+            {
+                case pluginInterface.ENUM.PLUGIN.TF_MODELTYPE_USER:
+                    if($scope.existingNets.pua.exist)
+                    {
+                        promises.push(FileSystemSrv.deleteFile($scope.existingNets.pua.path));
+                        promises.push(FileSystemSrv.deleteFile(StringSrv.removeExtension($scope.existingNets.pua.path) + ".pb"));
+                    }
+                    if($scope.existingNets.pura.exist)
+                    {
+                        promises.push(FileSystemSrv.deleteFile($scope.existingNets.pura.path));
+                        promises.push(FileSystemSrv.deleteFile(StringSrv.removeExtension($scope.existingNets.pura.path) + ".pb"));
+                    }
+                    break;
 
-    // if user replace a common adapted (ca), the CRA must be deleted
-    $scope.destroyDerivedUserNets = function()
-    {
-        return true;
+                case pluginInterface.ENUM.PLUGIN.TF_MODELTYPE_USER_ADAPTED:
+                    if($scope.existingNets.pura.exist)
+                    {
+                        promises.push(FileSystemSrv.deleteFile($scope.existingNets.pura.path));
+                        promises.push(FileSystemSrv.deleteFile(StringSrv.removeExtension($scope.existingNets.pura.path) + ".pb"));
+                    }                    
+                    break;
+                    
+
+                case pluginInterface.ENUM.PLUGIN.TF_MODELTYPE_COMMON_ADAPTED:
+                    if($scope.existingNets.cra.exist)
+                    {
+                        promises.push(FileSystemSrv.deleteFile($scope.existingNets.cra.path));
+                        promises.push(FileSystemSrv.deleteFile(StringSrv.removeExtension($scope.existingNets.cra.path) + ".pb"));
+                    }                      
+                    break;                    
+            }  
+            return promises;
+        }) 
+        .then(function(prom)
+        {
+            if(prom.length)
+                return $q.all(prom); 
+            else
+                return true;
+        });
     };
 
     // delete local folder and remote db entry (whether sessionid is not undefined)  
@@ -905,7 +968,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         if(sessionid == null || sessionid == "")
         {
             return FileSystemSrv.deleteDir(relpath)
-            .then(function(){$ionicPopup.alert({ title: 'Attenzione', template: 'La rete è stata cancellata'});})
+            .then(function(){$ionicPopup.alert({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.TRAINING.labelNetCanceled});})
         }
         else
         {
@@ -913,7 +976,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             .then(function()
             {
                 return FileSystemSrv.deleteDir(relpath)
-                .then(function(){$ionicPopup.alert({ title: 'Attenzione', template: 'La rete è stata cancellata'});})
+                .then(function(){$ionicPopup.alert({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.TRAINING.labelNetCanceled});})
             });
         }
     };
@@ -921,6 +984,19 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     //==============================================================================================================================
     // ACCESSORY
     //==============================================================================================================================
+    // event broadcasted by RemoteAPISrv when internet connection availability changes
+    $scope.onConnection = function(event)
+    {
+        $scope.isConnected = event.value;
+        $scope.$apply();
+        if(!$scope.isConnected) 
+            $ionicPopup.alert({title:UITextsSrv.labelAlertTitle, template: UITextsSrv.TRAINING.labelLostConnection})
+            .then(function()
+            {
+                $state.go("vocabulary", {foldername:$scope.foldername})
+            })
+    };
+        
     $scope._getFilesNum = function(commands)
     {
         var cnt = 0;

@@ -250,11 +250,10 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             
             if($scope.modalAskAbortReplaceSession == null)
             {
-                $ionicModal.fromTemplateUrl('templates/modal/modal3QuestionsBigButtons.html', {
-                    scope: $scope, animation: 'slide-in-up'}).then(function(modal) {$scope.modalAskAbortReplaceSession = modal;});                
+                return $ionicModal.fromTemplateUrl('templates/modal/modal3QuestionsBigButtons.html', {scope: $scope, animation: 'slide-in-up'})
+                .then(function(modal) {$scope.modalAskAbortReplaceSession = modal; return true;});                
             }              
-            
-        })
+        });
     });
 
     $scope.$on('$ionicView.leave', function(){
@@ -313,7 +312,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     
     $scope.saveAudio = function()
     {
-        return SpeechDetectionSrv.saveData2Wav($scope.rel_filepath, 1)
+        return SpeechDetectionSrv.saveData2Wav($scope.rel_filepath, FileSystemSrv.OVERWRITE)
         .then(function(){
             $scope.existNewFile   = true;
             $scope.$apply();

@@ -22,14 +22,20 @@ su allspeak
 pwd: bozzini
 
 
+# per lanciare update da github
+./bin/deploy.sh
+
+
 # per lanciare scripts python
 source env/bin/activate
 cd web
 python instance/scripts/create_all.py
 
-
-./bin/deploy.sh
-
-
+# access db from python
+>>> from sqlalchemy import create_engine
+>>> engine = create_engine('postgresql://apiallspeakeu:apiallspeakeu@localhost:5432/apiallspeakeu')
+>>> print (engine.table_names())
+>>> sql = text('DROP TABLE IF EXISTS alembic_version;')
+>>> result = engine.execute(sql)
 
 

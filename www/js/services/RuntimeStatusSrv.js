@@ -34,15 +34,15 @@
  *      isConnected 
  */
 
-main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, VocabularySrv, EnumsSrv, $cordovaNetwork, FileSystemSrv, UITextsSrv, ErrorSrv) 
+main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, VocabularySrv, EnumsSrv, FileSystemSrv, RemoteAPISrv, UITextsSrv, ErrorSrv) 
 {
     service                         = this;
     initAppSrv                      = null;
     
     AppStatus                       = 0;        // calculated here
     isLogged                        = false;    // InitCheckCtrl <== RemoteAPISrv     
-    isConnected                     = false;    // here accessing ionic native     
     isServerOn                      = false;    // indicated if the server is ON
+    isConnected                     = false;    // here accessing ionic native     
     
     vocabularies_folder             = "";       // <= init <= InitAppSrv        AllSpeak/vocabularies
     recordings_folder               = "";       // <= init <= InitAppSrv        AllSpeak/recordings
@@ -73,22 +73,6 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         
         _resetVoc();
         
-        $cordovaNetwork.onConnect().subscribe(function(event)  
-        {
-            if(event.type == "online") isConnected = true;
-            console.log('network onchange', event.type);
-        }, function(error){
-            alert("RuntimeStatusSrv::$cordovaNetwork.onConnect " + error.toString());
-        });    
-
-        $cordovaNetwork.onDisconnect().subscribe(function(event)  
-        {
-            if(event.type == "offline") isConnected = false;
-            console.log('network onchange', event.type);
-        }, function(error){
-            alert("RuntimeStatusSrv::$cordovaNetwork.onDisconnect " + error.toString());
-        });    
-        
         isConnected = (navigator.connection.type != "none" ? true : false);
     }
     //==============================================================================================================================
@@ -96,8 +80,8 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     //==============================================================================================================================    
     getStatus = function()
     {
-        hasInternet();  // sets isConnected
-        AppStatus = calculateAppStatus();        
+        isConnected = RemoteAPISrv.hasInternet();  // sets isConnected
+        AppStatus   = calculateAppStatus();        
         
         return  {"vocabulary"                    :vocabulary,
                  "AppStatus"                     :AppStatus,
@@ -324,12 +308,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
             return loadDefault();
         });        
     };
-    //======================================================================================================================================
-    hasInternet = function()
-    {
-        isConnected = (navigator.connection.type != "none" ? true : false);
-        return isConnected;
-    };    
+ 
     //==========================================================================
     // PRIVATE
     //==========================================================================
@@ -361,8 +340,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         saveTrainVocabulary         : saveTrainVocabulary,             //
         unloadVocabulary            : unloadVocabulary,                 //
         getStatus                   : getStatus,                       //
-        setStatus                   : setStatus,                       //
-        hasInternet                 : hasInternet                     //
+        setStatus                   : setStatus
     };
     //======================================================================================================================================
 });

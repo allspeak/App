@@ -1,6 +1,6 @@
 <ion-view view-title="VOCABOLARIO" align-title="center">  
         
-    <ion-header-bar class='bar-assertive bar-subheader bar-dark'>
+    <ion-header-bar align-title="center" class='bar-assertive bar-subheader bar-dark text-maxi text-center'>
         {{headerTitle}}
     </ion-header-bar>      
     
@@ -29,11 +29,12 @@
         
         <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_commands({modeId:enum_showvoccommands, foldername:foldername, backState:'vocabulary'})" >{{labelEditTrainVocabulary}}</button>
         
-        <button class="button button-outline button-tall button-block button-large button-positive" ng-disabled="isDefault" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
+        <button class="button button-outline button-tall button-block button-large button-positive" ng-if="!incompleteRecordings" ng-disabled="isDefault" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
+        <button class="button button-tall button-block button-large button-royal"               ng-if="incompleteRecordings" ng-disabled="isDefault" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
         
         <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="voicebank({elems2display:enum_show_vb_voc, foldername:foldername, backState:'vocabulary'})" >{{labelRecordVoice}}</button>
         
-        <button class="button button-outline button-tall button-block button-large button-positive" ng-disabled="isDefault" ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
+        <button class="button button-outline button-tall button-block button-large button-positive" ng-disabled="isDefault || !isConnected || incompleteRecordings" ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})" >{{labelTrainVocabulary}}</button>
         
         <label class="item item-input item-select" ng-if="!isDefault">
             <div class="input-label">RETE ATTIVA</div>

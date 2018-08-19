@@ -18,9 +18,6 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
     
     $scope.recordings_folder       = "";               // AllSpeak/recordings
 
-    $scope.labelResumeTrainSession  = "REGISTRA RIPETIZIONI"
-    $scope.labelSubmit              = "ADDESTRA"
-
     $scope.timerID              = -1;
     $scope.isNetAvailableRemote = false;        // net calculated. available online
     $scope.isNetAvailableLocale = false;        // net calculated. available online
@@ -77,10 +74,12 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
             $scope.foldername       = $scope.subject.folder;
             $scope.training_relpath = $scope.recordings_folder + "/" + $scope.foldername;
             $scope.training_relpath = ($scope.sessionPath.length    ?  $scope.training_relpath + "/" + $scope.sessionPath    :  $scope.training_relpath);   //    AllSpeak/recordings  /  standard  /  training_XXFDFD
-            
         }    
 
         //------------------------------------------------------------------------------------------
+        $scope.labelResumeTrainSession  = UITextsSrv.TRAINING.labelRecordRepetitions;
+        $scope.labelSubmit              = UITextsSrv.TRAINING.labelTrain;
+        
         $scope.repetitionsCount         = SequencesRecordingSrv.getRepetitions(); 
         $scope.selectedTrainingModality = SequencesRecordingSrv.getModalities()[1]; 
         
@@ -108,19 +107,16 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         })
         .then(function()
         {
-            if($scope.modalRecordSequence == null)
-            {
-                $ionicModal.fromTemplateUrl('templates/modal/modalSelectCmd2Record.html', {
-                    scope: $scope, animation: 'slide-in-up'}).then(function(modal) {$scope.modalRecordSequence = modal;});                
-            }
-        })    
-        .then(function()
+            return $ionicModal.fromTemplateUrl('templates/modal/modalSelectCmd2Record.html', {scope: $scope, animation: 'slide-in-up'});
+        })
+        .then(function(modal) 
         {
-            if($scope.modalAskRecordMode == null)
-            {
-                $ionicModal.fromTemplateUrl('templates/modal/modal2QuestionsBigButtons.html', {
-                    scope: $scope, animation: 'slide-in-up'}).then(function(modal) {$scope.modalAskRecordMode = modal;});                
-            }        
+            $scope.modalRecordSequence = modal; 
+            return $ionicModal.fromTemplateUrl('templates/modal/modal2QuestionsBigButtons.html', {scope: $scope, animation: 'slide-in-up'});
+        })
+        .then(function(modal)
+        {
+            $scope.modalAskRecordMode = modal;                
         })        
         .catch(function(error){
             alert("ManageRecordingsCtrl::$ionicView.enter => " + error.message);
@@ -177,14 +173,6 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
     //==============================================================================================================================
     // TRAINING SENTENCE SEQUENCES    
     //==============================================================================================================================
-    // add new sentences to train
-    $ionicModal.fromTemplateUrl('templates/modal/modalSelectCmd2Record.html', {
-        scope: $scope,
-        animation: 'slide-in-up'
-    }).then(function(modal) {
-        $scope.modalRecordSequence = modal;
-    });
-
     $scope.onChangeToogle = function()
     {
         var len = $scope.commands.length;
@@ -208,9 +196,9 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
     
     $scope.completeSession = function() 
     {
-        $scope.modalText = "AGGIUNGI NUOVE RIPETIZIONI AD UNA SESSIONE ESISTENTE, OPPURE SOSTITUISCI LE RIPETIZIONI PRESENTI"
-        $scope.labelActionA = "AGGIUNGI"
-        $scope.labelActionB = "SOSTITUISCI"
+        $scope.modalText = UITextsSrv.VOCABULARY.labelAskAddorSubstituteRec;
+        $scope.labelActionA = UITextsSrv.labelAdd;
+        $scope.labelActionB = UITextsSrv.labelSubstitute;
         $scope.modalAskRecordMode.show();
     };
     
@@ -264,7 +252,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
     // delete all wavs recorded in the vocabulary
     $scope.deleteSession = function() 
     {
-        $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai per cancellare tutte le registrazioni di questo vocabolario, sei sicuro ?'})
+        $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.VOCABULARY.labelSure2deleteAllRecordings})
         .then(function(res) 
         {
             if (res){

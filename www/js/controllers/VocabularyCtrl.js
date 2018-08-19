@@ -7,7 +7,7 @@
  * - use this model
  */
 
-function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatform, InitAppSrv, EnumsSrv, VocabularySrv, TfSrv, RuntimeStatusSrv, FileSystemSrv, UITextsSrv, MiscellaneousSrv)
+function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatform, InitAppSrv, EnumsSrv, VocabularySrv, TfSrv, RuntimeStatusSrv, FileSystemSrv, RemoteAPISrv, UITextsSrv, MiscellaneousSrv)
 {
     $scope.status       = 0;
     $scope.headerTitle  = "Vocabolario: ";
@@ -21,6 +21,9 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
     $scope.netsTypes    = null;
     $scope.existingNets = null;     // [{label, value}]
     $scope.overallNets  = null;      // {"pu":{}, "pua":{}, "ca", "cra", "pura"}
+    
+    $scope.isConnected          = false;
+    $scope.incompleteRecordings = true;
     
     $scope.$on("$ionicView.enter", function(event, data)
     {
@@ -39,6 +42,8 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         $scope.labelLoadVocabulary          = UITextsSrv.TRAINING.labelLoadVocabulary;
         
         $scope.labelManageRecordingSession  = UITextsSrv.TRAINING.labelManageRecordingSession;
+        
+        $scope.labelConfirmVocDelete        = UITextsSrv.VOCABULARY.CONFIRM_DELETE;
         
         $scope.enum_recordsession           = EnumsSrv.TRAINING.RECORD_TV;
         $scope.enum_manage_commands         = EnumsSrv.TRAINING.EDIT_TV;
@@ -64,6 +69,9 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         };  
         $scope.plugin_enums = InitAppSrv.getPlugin().ENUM.PLUGIN;
         
+        $scope.isConnected              = RemoteAPISrv.hasInternet();
+        window.addEventListener('connection' , $scope.onConnection); 
+        
         return VocabularySrv.getUpdatedStatusName($scope.foldername)
         .then(function(voc) // voc:{usual_voc_fields, status:{}, net:{} | null}
         {
@@ -77,17 +85,23 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
                 if(voc.net.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
                     $scope.isDefault = true;
             
-            return VocabularySrv.getExistingNets($scope.foldername);
+            return VocabularySrv.getExistingLastNets($scope.foldername);
         })
         .then(function(existing_nets)
         {
-            if(existing_nets)
+            if(JSON.stringify(existing_nets) !== "{}")
             {
                 $scope.overallNets = existing_nets;
                 $scope.updateExistingNets($scope.vocabulary.sModelFileName);
             }
-            $scope.$apply();             
+            
+            return VocabularySrv.existCompleteRecordedTrainSession($scope.recordings_folder, $scope.vocabulary, 1);
         })
+        .then(function(exist_min_rep)
+        {
+            $scope.incompleteRecordings = !exist_min_rep;
+            $scope.$apply();             
+        })     
         .catch(function(error)
         {
             var msg = error.toString();
@@ -100,13 +114,17 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
 
     $scope.$on('$ionicView.leave', function(){
         if($scope.deregisterFunc)   $scope.deregisterFunc();
+        window.removeEventListener('connection'  , $scope.onConnection);
     }); 
     
     //===============================================================================================
     $scope.updateSelectedNet = function(selnet)
     {
-        $scope.selectedNet = selnet;
-        return FileSystemSrv.updateJSONFileWithObj(VocabularySrv.getTrainVocabularyJsonPath($scope.foldername), {"sModelFileName":selnet.value}, FileSystemSrv.OVERWRITE);
+        if(selnet)
+        {
+            $scope.selectedNet = selnet;
+            return FileSystemSrv.updateJSONFileWithObj(VocabularySrv.getTrainVocabularyJsonPath($scope.foldername), {"sModelFileName":selnet.value}, FileSystemSrv.OVERWRITE);
+        }
     };
     
     $scope.updateExistingNets = function(selitem)
@@ -122,7 +140,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
                 {
                     if($scope.netsTypes[m].value == modeltype)
                     {
-                        $scope.existingNets.push({"label":$scope.netsTypes[m].label, "value":"net_" + modeltype.toString() + "_" + $scope.overallNets[item].voc.nProcessingScheme.toString() + "_" + $scope.overallNets[item].voc.nModelClass.toString()});
+                        $scope.existingNets.push({"label":$scope.netsTypes[m].label2, "value":"net_" + modeltype.toString() + "_" + $scope.overallNets[item].voc.nProcessingScheme.toString() + "_" + $scope.overallNets[item].voc.nModelClass.toString()});
                         break;
                     }
                 }
@@ -130,11 +148,12 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         }
         if(selitem)
             $scope.selectedNet = MiscellaneousSrv.selectObjByValue($scope.vocabulary.sModelFileName, $scope.existingNets);
+        $scope.$apply();
     };
     
     $scope.deleteVocabulary = function()    
     {
-        $ionicPopup.confirm({ title: 'Warning', template: 'Vuoi veramente cancellare il vocabolario?'})
+        return $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: $scope.labelConfirmVocDelete})
         .then(function(res) 
         {
             if(res)
@@ -142,6 +161,10 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
                 return FileSystemSrv.deleteDir($scope.vocabulary_relpath)
                 .then(function()
                 {
+                    return InitAppSrv.setStatus({"userActiveVocabularyName":"default"});
+                })
+                .then(function()                
+                {                    
                     $state.go("vocabularies");    
                 })
                 .catch(function(error)
@@ -161,6 +184,12 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         });        
     };
     
+    // event broadcasted by RemoteAPISrv when internet connection availability changes
+    $scope.onConnection = function(event)
+    {
+        $scope.isConnected = event.value;
+        $scope.$apply();
+    };    
     //===============================================================================================
  };
 controllers_module.controller('VocabularyCtrl', VocabularyCtrl);   

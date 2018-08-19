@@ -278,11 +278,11 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
     //=========================================================================
     getNetTypes = function()
     {
-        return [{"label": "SOLO UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER},
-                {"label": "ADATTA SOLO UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER_ADAPTED},
-                {"label": "ADATTA COMUNE", "value": plugin_enum_tf.TF_MODELTYPE_COMMON_ADAPTED}, 
-                {"label": "RI-ADATTA UTENTE", "value": plugin_enum_tf.TF_MODELTYPE_USER_READAPTED},
-                {"label": "RI-ADATTA COMUNE", "value": plugin_enum_tf.TF_MODELTYPE_COMMON_READAPTED}];
+        return [{"label": "SOLO UTENTE"         ,"label2": "UTENTE"         , "value": plugin_enum_tf.TF_MODELTYPE_USER},
+                {"label": "ADATTA SOLO UTENTE"  ,"label2": "UTENTE"         , "value": plugin_enum_tf.TF_MODELTYPE_USER_ADAPTED},
+                {"label": "ADATTA COMUNE"       ,"label2": "COMUNE ADATTATA", "value": plugin_enum_tf.TF_MODELTYPE_COMMON_ADAPTED}, 
+                {"label": "RI-ADATTA UTENTE"    ,"label2": "UTENTE"         , "value": plugin_enum_tf.TF_MODELTYPE_USER_READAPTED},
+                {"label": "RI-ADATTA COMUNE"    ,"label2": "COMUNE ADATTATA", "value": plugin_enum_tf.TF_MODELTYPE_COMMON_READAPTED}];
     };
    
     //==========================================================================

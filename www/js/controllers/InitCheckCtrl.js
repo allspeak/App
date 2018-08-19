@@ -24,7 +24,6 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
     $scope.want2beAssistedText2             = "";
     $scope.want2beRegisteredText            = "";
     $scope.registerNewDeviceText            = "";
-    $scope.noConnectionText                 = "";
     $scope.confirmRegisterDeviceText        = "";
     $scope.askConfirmSkipRegistrationText   = "";
     $scope.criticalErrorText                = "";
@@ -44,7 +43,6 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         $scope.want2beAssistedText2             = UITextsSrv.SETUP.want2beAssistedText2;
         $scope.want2beRegisteredText            = UITextsSrv.SETUP.want2beRegisteredText;
         $scope.registerNewDeviceText            = UITextsSrv.SETUP.registerNewDeviceText;
-        $scope.noConnectionText                 = UITextsSrv.SETUP.noConnectionText; 
         $scope.confirmRegisterDeviceText        = UITextsSrv.SETUP.confirmRegisterDeviceText; 
         $scope.askConfirmSkipRegistrationText   = UITextsSrv.SETUP.askConfirmSkipRegistrationText; 
         $scope.criticalErrorText                = UITextsSrv.SETUP.criticalErrorText; 
@@ -72,35 +70,28 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         {
             $scope.modalInsertApiKey = modal;
             // setup modal insert api key
-            return $ionicModal.fromTemplateUrl('templates/modal/specifyGender.html', {
-                                            scope: $scope,
-                                            animation: 'slide-in-up',
-                                            backdropClickToClose: false,
-                                            hardwareBackButtonClose: false})
-        })
-        .then(function(modal) 
-        {
-            $scope.modalSpecifyGender = modal;
-            if(RuntimeStatusSrv.hasInternet())
+//            return $ionicModal.fromTemplateUrl('templates/modal/specifyGender.html', {
+//                                            scope: $scope,
+//                                            animation: 'slide-in-up',
+//                                            backdropClickToClose: false,
+//                                            hardwareBackButtonClose: false})
+//        })
+//        .then(function(modal) 
+//        {
+//            $scope.modalSpecifyGender = modal;
+            if(RemoteAPISrv.hasInternet())
                 RemoteAPISrv.checkAppUpdate($scope.startApp, null);
             else
-                $scope.startApp(true);                
+            {
+                $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: UITextsSrv.SETUP.noConnectionText});
+                $scope.endCheck('home'); 
+            }
         });  
     });
     
     $scope.$on('$ionicView.leave', function(){if($scope.deregisterFunc)   $scope.deregisterFunc();});    
    
-    // in case of error during update check...start the current App
-    // The timeout error is managed within RemoteAPISrv with a proper timer, which is expected to trigger much later than this callback error. 
-    // thus this error should be related to a response from the server. which should be ON.
-//    $scope.OnUpdateAppError = function(error) 
-//    {
-//        $scope.startApp(true);  
-//    };
-//    
-    // callback from RemoteAPISrv.checkAppUpdate
-    // callback after update finish/ no update
-    // if trylogin = false the server should be considered down
+    // callback from RemoteAPISrv.checkAppUpdate (after update-finish or no-update)
     $scope.startApp = function(isServerOn) 
     {    
         $scope.appStatus    = InitAppSrv.getStatus();
@@ -118,17 +109,17 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         }
         else
         {
-            alert($scope.noConnectionText);
+            $ionicPopup.alert({title: UITextsSrv.labelAlertTitle,template: UITextsSrv.REMOTE.labelServerDown});
             $scope.endCheck('home'); 
         }
     };
    
     $scope.exit = function()
     {
-        $ionicPopup.confirm({ title: 'Attenzione', template: $scope.confirmExitText})
+        $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: $scope.confirmExitText})
         .then(function(res) 
         {
-            if (res){  ionic.Platform.exitApp();  }
+            if (res){ionic.Platform.exitApp();}
         });  
     };
     
@@ -171,7 +162,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                     
                     var myNullAction = $ionicPlatform.registerBackButtonAction(function(){ var a=1;}, 401);                    
                     
-                    return $ionicPopup.confirm({ title: 'Attenzione', template: $scope.confirmRegisterDeviceText})
+                    return $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: $scope.confirmRegisterDeviceText})
                     .then(function(res) 
                     {
                         myNullAction();                        
@@ -197,7 +188,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         if(apikey == null) // user pressed cancel in modalInsertApiKey
         {
             var myNullAction = $ionicPlatform.registerBackButtonAction(function(){ var a=1;}, 401);
-            return $ionicPopup.confirm({title: 'Attenzione',
+            return $ionicPopup.confirm({title: UITextsSrv.labelAlertTitle,
                                         template: $scope.askConfirmSkipRegistrationText,
                                         cancelText: 'RIPROVA',
                                         okText: 'PROSEGUI senza registrare'})
@@ -245,7 +236,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                     switch(response.status)
                     {
                         case 401:
-                            return $ionicPopup.confirm({title: 'Attenzione', template: response.message})
+                            return $ionicPopup.confirm({title: UITextsSrv.labelAlertTitle, template: response.message})
                             .then(function(res) 
                             {
                                 myNullAction();
@@ -261,7 +252,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
                             
                         default:
                             // here goes the timeout error. in this case go home but load the active vocabulary, if exists
-                            return $ionicPopup.alert({ title: 'Attenzione', template: response.message})
+                            return $ionicPopup.alert({ title: UITextsSrv.labelAlertTitle, template: response.message})
                             .then(function()
                             {
                                 myNullAction();

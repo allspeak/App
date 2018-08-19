@@ -228,7 +228,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         .then(function(verc)
         {
             service.config.appConfig.runtime.versioncode    = verc;
-            return FileSystemSrv.createJSONFileFromObj(service.config.defaults.file_system.config_filerel_path, service.config.appConfig, 2);
+            return FileSystemSrv.createJSONFileFromObj(service.config.defaults.file_system.config_filerel_path, service.config.appConfig, 2, null, FileSystemSrv.getResolvedPath(service.config.defaults.file_system.config_storage_root));
         });
     };
     

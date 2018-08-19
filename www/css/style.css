@@ -1,5 +1,7 @@
 /* Empty. Add your own CSS if you like */
-
+/* =======================================================================
+// TEXT
+======================================================================= */
 .text-maxi{
     font-size: 32px !important;
     line-height: 120%
@@ -9,9 +11,15 @@
     font-size: 20px !important;
     line-height: 110%
 }  
-
+/* =======================================================================
+// BUTTON
+======================================================================= */ 
 .button-giant{
     height:180px !important;
+}  
+
+.button-huge{
+    height:150px !important;
 }  
 
 .button-maxi{
@@ -44,6 +52,13 @@
     }
 }
 
+/* =======================================================================
+// POPUP
+======================================================================= */ 
+.popup-container .popup {
+    width: 350px;
+}
+
 .popup-head{
   background: blue  !important;
 }
@@ -51,6 +66,11 @@
 .popup-title {
     color: #fff !important;
     font-size:32px !important;  
+}
+
+.popup-sub-title {
+    color: #fff !important;
+    font-size:24px !important;  
 }
 
 .popup-body{

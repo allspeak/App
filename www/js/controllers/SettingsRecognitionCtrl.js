@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, $ionicPopup, SpeechDetectionSrv, InitAppSrv, ErrorSrv, MiscellaneousSrv)
+function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, $ionicPopup, SpeechDetectionSrv, InitAppSrv, ErrorSrv, MiscellaneousSrv, UITextsSrv)
 {
     $scope.captureProfile   = "recognition";
 //    $scope.captureParams    = null;
@@ -114,7 +114,7 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
     {
         if($scope.checkIFChanged())
         {
-            $ionicPopup.confirm({ title: 'Attenzione', template: 'Stai uscendo senza salvare i nuovi parametri, sei sicuro ?'})
+            $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.SETUP.labelSaveSettings})
             .then(function(res) 
             {
                 if (res) $ionicHistory.goBack(); // back ! 

@@ -14,7 +14,7 @@
  *  - backup/restore data
  */
 
-main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSystemSrv, StringSrv)
+main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, $cordovaNetwork, FileSystemSrv, StringSrv)
 {
     ServerCfg           = null;
     pluginInterface     = null;
@@ -46,6 +46,8 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
 //    abortCheckUpdate    = false;    // this flag is used to disable the server callback in case of server down. a timer is activated 
     waitServerTime      = 3000;
     isServerOn          = false;
+    
+    isConnected         = false;    // here accessing ionic native     
     // ==========================================================================================================================
     // PUBLIC
     // ==========================================================================================================================
@@ -65,8 +67,40 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
 //        ServerCfg.url   = "http://api.allspeak.staging.eu";   // staging
 //        ServerCfg.url   = "http://10.255.7.79";               // OVERWRITE FOR DEBUG
         Enums           = window.AppUpdate.ENUM.PLUGIN;
+        
+        $cordovaNetwork.onConnect().subscribe(function(event)  
+        {
+            if(event.type == "online")
+            {
+                isConnected = true;
+                cordova.fireWindowEvent("connection", {value:isConnected});
+            }
+            console.log('network onchange', event.type);
+        }, function(error){
+            alert("RuntimeStatusSrv::$cordovaNetwork.onConnect " + error.toString());
+        });    
+
+        $cordovaNetwork.onDisconnect().subscribe(function(event)  
+        {
+            if(event.type == "offline") 
+            {
+                isConnected = false;
+                cordova.fireWindowEvent("connection", {value:isConnected});
+            }
+            console.log('network onchange', event.type);
+        }, function(error){
+            alert("RuntimeStatusSrv::$cordovaNetwork.onDisconnect " + error.toString());
+        });           
+        
+        isConnected = (navigator.connection.type != "none" ? true : false);
     };
     
+    //======================================================================================================================================
+    hasInternet = function()
+    {
+        isConnected = (navigator.connection.type != "none" ? true : false);
+        return isConnected;
+    };       
     //===============================================================================================
     // UPDATE APP
     //===============================================================================================
@@ -77,10 +111,10 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         else                onUpdateError = error;
         
         onUpdateSuccess = succ;
-        window.AppUpdate.checkAppUpdate(onCheckAppUpdateSuccess, onCheckAppUpdateError, ServerCfg.url + "/" + initAppSrv.config.appConfig.remote.stableupdateurl,  waitServerTime, opts);
-//        onUpdateSuccess(true);
+        window.AppUpdate.checkAppUpdate(onCheckAppUpdateSuccess, onCheckAppUpdateError, ServerCfg.url + "/" + initAppSrv.config.appConfig.remote.stableupdateurl,  waitServerTime, opts);//        onUpdateSuccess(true);
     };
     
+    // callback from plugin
     onCheckAppUpdateSuccess = function(result)
     {
         isServerOn = true;
@@ -89,6 +123,7 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         switch(result.code)
         {
             case Enums.VERSION_UP_TO_UPDATE:
+            case Enums.UPDATE_CANCELLED:
                 onUpdateSuccess(isServerOn);
                 break;
 
@@ -520,7 +555,8 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, FileSy
         cancelTransfer              : cancelTransfer,
         getActivities               : getActivities,
         backupData                  : backupData,
-        restoreData                 : restoreData
+        restoreData                 : restoreData,
+        hasInternet                 : hasInternet
     };  
     //==========================================================================
 });

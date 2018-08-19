@@ -52,7 +52,7 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
         {
             if(error.message)   alert(error.message);        
             else                alert("Errore durante il caricamento del nuovo modello: " + error);
-        })        
+        });      
     };
     
     $scope.editVocabulary = function(item) 
