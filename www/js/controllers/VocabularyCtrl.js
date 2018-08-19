@@ -7,7 +7,7 @@
  * - use this model
  */
 
-function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatform, InitAppSrv, EnumsSrv, VocabularySrv, RuntimeStatusSrv, FileSystemSrv, UITextsSrv)
+function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatform, InitAppSrv, EnumsSrv, VocabularySrv, TfSrv, RuntimeStatusSrv, FileSystemSrv, RemoteAPISrv, UITextsSrv, MiscellaneousSrv)
 {
     $scope.status       = 0;
     $scope.headerTitle  = "Vocabolario: ";
@@ -16,18 +16,22 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
     $scope.isDefault    = false;    // if is a default NET, I cannot train it, doesn't have any recordings
                                     // I can see the commands, but cannot edit them
     
+    $scope.selectedNet  = null;      // name of the json file of the selected net : e.g. net_274_252
+    
+    $scope.netsTypes    = null;
+    $scope.existingNets = null;     // [{label, value}]
+    $scope.overallNets  = null;      // {"pu":{}, "pua":{}, "ca", "cra", "pura"}
+    
+    $scope.isConnected          = false;
+    $scope.incompleteRecordings = true;
     
     $scope.$on("$ionicView.enter", function(event, data)
     {
-        // delete history once in the home
+        // delete history once here
         $ionicHistory.clearHistory();
-        // ask user's confirm after pressing back (thus trying to exit from the App)
-        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
-        {
-            $state.go("vocabularies");
-        }, 100); 
+        $scope.deregisterFunc               = $ionicPlatform.registerBackButtonAction(function(){ $state.go("vocabularies"); }, 100); 
 
-        $scope.recordings_relpath           = InitAppSrv.getAudioFolder();
+        $scope.recordings_folder            = InitAppSrv.getAudioFolder();
         $scope.vocabularies_relpath         = InitAppSrv.getVocabulariesFolder();
         $scope.default_tv_filename          = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;        
         
@@ -39,19 +43,23 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         
         $scope.labelManageRecordingSession  = UITextsSrv.TRAINING.labelManageRecordingSession;
         
+        $scope.labelConfirmVocDelete        = UITextsSrv.VOCABULARY.CONFIRM_DELETE;
+        
         $scope.enum_recordsession           = EnumsSrv.TRAINING.RECORD_TV;
         $scope.enum_manage_commands         = EnumsSrv.TRAINING.EDIT_TV;
         $scope.enum_showvoccommands         = EnumsSrv.TRAINING.SHOW_TV;
         $scope.enum_show_vb_voc             = EnumsSrv.VOICEBANK.SHOW_TRAINED;
         
-        if(data.stateParams == null)    alert("ERROR in VocabularyCtrl::$ionicView.enter. error : NO PARAMS were sent"); 
+        $scope.netsTypes                    = TfSrv.getNetTypes();
+        
+        if(data.stateParams == null)        alert("ERROR in VocabularyCtrl::$ionicView.enter. error : NO PARAMS were sent"); 
         else
         {
             if(data.stateParams.foldername != null)
             {
                 $scope.foldername               = data.stateParams.foldername;
                 $scope.vocabulary_relpath       = $scope.vocabularies_relpath     + "/" + data.stateParams.foldername;
-                $scope.vocabulary_json_path      = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
+                $scope.vocabulary_json_path     = $scope.vocabulary_relpath  + "/" + $scope.default_tv_filename;
             }
             else if(data.stateParams.foldername == null)
             {
@@ -61,36 +69,91 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         };  
         $scope.plugin_enums = InitAppSrv.getPlugin().ENUM.PLUGIN;
         
+        $scope.isConnected              = RemoteAPISrv.hasInternet();
+        window.addEventListener('connection' , $scope.onConnection); 
+        
         return VocabularySrv.getUpdatedStatusName($scope.foldername)
-        .then(function(voc)
+        .then(function(voc) // voc:{usual_voc_fields, status:{}, net:{} | null}
         {
             $scope.vocabulary           = voc;
             $scope.vocabulary_status    = voc.status;
             
-            $scope.headerTitle          = "VOCABOLARIO:    " + $scope.vocabulary.sLabel;            
+            $scope.headerTitle          = $scope.vocabulary.sLabel;            
             
             $scope.isDefault            = false;
-            if($scope.vocabulary.nModelType != null)
-                if($scope.vocabulary.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
+            if(voc.net != null)
+                if(voc.net.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
                     $scope.isDefault = true;
-
-            $scope.$apply(); 
+            
+            return VocabularySrv.getExistingLastNets($scope.foldername);
         })
+        .then(function(existing_nets)
+        {
+            if(JSON.stringify(existing_nets) !== "{}")
+            {
+                $scope.overallNets = existing_nets;
+                $scope.updateExistingNets($scope.vocabulary.sModelFileName);
+            }
+            
+            return VocabularySrv.existCompleteRecordedTrainSession($scope.recordings_folder, $scope.vocabulary, 1);
+        })
+        .then(function(exist_min_rep)
+        {
+            $scope.incompleteRecordings = !exist_min_rep;
+            $scope.$apply();             
+        })     
         .catch(function(error)
         {
+            var msg = error.toString();
             console.log("Error in VocabularyCtrl::$ionicView.enter ");
-            alert("Error in VocabularyCtrl::$ionicView.enter "+ error.toString());
+            if(error.message) msg = error.message;
+            alert("Error in VocabularyCtrl::$ionicView.enter "+ msg);
             $state.go("home");
         });        
     });
 
     $scope.$on('$ionicView.leave', function(){
         if($scope.deregisterFunc)   $scope.deregisterFunc();
+        window.removeEventListener('connection'  , $scope.onConnection);
     }); 
+    
     //===============================================================================================
+    $scope.updateSelectedNet = function(selnet)
+    {
+        if(selnet)
+        {
+            $scope.selectedNet = selnet;
+            return FileSystemSrv.updateJSONFileWithObj(VocabularySrv.getTrainVocabularyJsonPath($scope.foldername), {"sModelFileName":selnet.value}, FileSystemSrv.OVERWRITE);
+        }
+    };
+    
+    $scope.updateExistingNets = function(selitem)
+    {
+        var modeltype;
+        $scope.existingNets = [];
+        for(var item in $scope.overallNets)
+        {
+            if($scope.overallNets[item].exist)
+            {
+                modeltype = $scope.overallNets[item].voc.nModelType;
+                for(var m in $scope.netsTypes)
+                {
+                    if($scope.netsTypes[m].value == modeltype)
+                    {
+                        $scope.existingNets.push({"label":$scope.netsTypes[m].label2, "value":"net_" + modeltype.toString() + "_" + $scope.overallNets[item].voc.nProcessingScheme.toString() + "_" + $scope.overallNets[item].voc.nModelClass.toString()});
+                        break;
+                    }
+                }
+            }
+        }
+        if(selitem)
+            $scope.selectedNet = MiscellaneousSrv.selectObjByValue($scope.vocabulary.sModelFileName, $scope.existingNets);
+        $scope.$apply();
+    };
+    
     $scope.deleteVocabulary = function()    
     {
-        $ionicPopup.confirm({ title: 'Warning', template: 'Vuoi veramente cancellare il vocabolario?'})
+        return $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: $scope.labelConfirmVocDelete})
         .then(function(res) 
         {
             if(res)
@@ -98,6 +161,10 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
                 return FileSystemSrv.deleteDir($scope.vocabulary_relpath)
                 .then(function()
                 {
+                    return InitAppSrv.setStatus({"userActiveVocabularyName":"default"});
+                })
+                .then(function()                
+                {                    
                     $state.go("vocabularies");    
                 })
                 .catch(function(error)
@@ -111,7 +178,18 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
     $scope.loadModel = function()    
     {
         RuntimeStatusSrv.loadVocabulary($scope.foldername)
+        .catch(function(error)
+        {
+            alert(error.message);
+        });        
     };
+    
+    // event broadcasted by RemoteAPISrv when internet connection availability changes
+    $scope.onConnection = function(event)
+    {
+        $scope.isConnected = event.value;
+        $scope.$apply();
+    };    
     //===============================================================================================
  };
 controllers_module.controller('VocabularyCtrl', VocabularyCtrl);   

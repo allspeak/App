@@ -477,7 +477,7 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
             var filename    = speechChunksFolderRoot + "/" + speechChunksFilenameRoot + ".wav";
             wavblob         = _dataArray2BlobWav(mCfg.captureCfg, sentenceData);
 
-            return FileSystemSrv.createFile(filename, wavblob, true)
+            return FileSystemSrv.createFile(filename, wavblob, FileSystemSrv.OVERWRITE)
             .then(function(){
                 if(_speechCapturedCB != null)
                     _speechCapturedCB(totalNoOfSpeechCaptured, filename);

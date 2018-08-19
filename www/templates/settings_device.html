@@ -1,13 +1,13 @@
 <ion-view view-title="Device Settings">
     
-<ion-nav-buttons side="left">
- <button class="button button-clear" ui-sref="home"><i class="icon ion-arrow-left-c" ></i>Home</button>
-</ion-nav-buttons>
-  <ion-content>
-    <ion-list>
-        <ion-item ng-repeat="item in device_item_to_be_shown">
-            {{item.label}} : <span class="badge"> {{item.value}} </span>
-        </ion-item>
-    </ion-list>
-  </ion-content>
+    <ion-nav-buttons side="left">
+        <button class="button button-header-big" ui-sref="home"><i class="ion-home"></i></button>
+    </ion-nav-buttons> 
+    <ion-content>
+        <ion-list>
+            <ion-item ng-repeat="item in device_item_to_be_shown">
+                {{item.label}} : <span class="badge"> {{item.value}} </span>
+            </ion-item>
+        </ion-list>
+    </ion-content>
 </ion-view>

@@ -1,0 +1,41 @@
+#attivare container con dockerstart.sh
+
+docker-compose exec web sh
+$ flask db upgrade
+$ flask db downgrade
+$ flask db stamp  (crea tabella alembic)
+$ flask db migrate -m "can delete session, saInputNodeNames, error.session nullable"
+
+
+
+
+
+chmod 600 inuggi 
+
+# STAGING
+ssh -i inuggi inuggi@10.255.7.79		
+
+#PRODUZIONE
+ssh -i inuggi inuggi@172.31.0.116
+
+su allspeak
+pwd: bozzini
+
+
+# per lanciare update da github
+./bin/deploy.sh
+
+
+# per lanciare scripts python
+source env/bin/activate
+cd web
+python instance/scripts/create_all.py
+
+# access db from python
+>>> from sqlalchemy import create_engine
+>>> engine = create_engine('postgresql://apiallspeakeu:apiallspeakeu@localhost:5432/apiallspeakeu')
+>>> print (engine.table_names())
+>>> sql = text('DROP TABLE IF EXISTS alembic_version;')
+>>> result = engine.execute(sql)
+
+

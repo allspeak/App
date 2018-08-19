@@ -1,0 +1,54 @@
+NEW RELEASE : versionCode="8", versionName="0.2.1"
+
+# training
+NEW FEATURE: semplified training management. in training page: pureuser e common adapted are in two separate cards. each card has a NEW and an UPDATE button...complexity is hidden
+in VocabularyCtrl e RecognitionCtrl I show only UTENTE o COMUNE ADATTATA regardless of the actual used subtype.
+
+# reset nets when:
+NEW FEATURE: when I modify the command list => it asks whether deleting ALL the trained nets (but also suggests to create a new voc as a copy)
+NEW FEATURE: when I delete a custom command => it remove such command from all the voc containing it and deletes ALL their trained nets
+NEW FEATURE: when I recreate a PU or CA     => delete PUA, PURA e CRA
+
+
+# connection
+NEW FEATURE: disable training button when at least one repetition of each command is present...make manage recordings button in violet to stress it.
+INITCHECK:   separation between no connection (alert and go directly to home) & server down.
+NEW FEATURE: disable training buttons when get disconnected from internet, automatically move from training => vocabulary
+NEW FEATURE: App update can be postponed.
+
+NEW FEATURE: may create a new vocabulary copying the commands' list from an existing one
+
+NEW FEATURE: when I delete the selected voc, I select the default one.
+
+NEW FEATURE: during training. cancel buttons stop everything...
+concerning features extraction: now the web layer call the plugin processFile and not processFolder...so when cancel is pressed, it waits for the completion of the ongoing file and then stops
+
+
+BUG FIX: in RecognitionCtrl 
+ - corrected fRecognitionThreshold
+ - corrected switch among net
+ - select a net only if is not a testing one.
+
+
+REFACTOR of text in ionicPopup (takes it from UITextSrv)
+
+# FileSystemSrv
+ - added contains to deleteFilesInFolder
+ - createFile accept an int and not a boolean to manage overwriting (all calls were changed!)
+
+# VocabularySrv
+ ADDED:
+ - getAllTrainVocabulary
+ - getVocabulariesNamesUsingCommandId
+ - copyVocabularyName
+ - copyVocabulary
+ - resetVocabularyNets
+ - resetVocabulariesNets
+ - removeCommandFromVocabulary
+ - removeCommandFromVocabularies
+
+# MfccSrv
+ - BUG FIX in getMFCCFromFile
+
+# RemoteAPISrv now manages internet connection, not RuntimeStatusSrv
+

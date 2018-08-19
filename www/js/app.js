@@ -1,6 +1,6 @@
 main_module = angular.module('main_module', ['ionic', 'controllers_module', 'ionic.native']);
 
-main_module.run(function($ionicPlatform, $ionicPopup, $cordovaSplashscreen, InitAppSrv, $state, $rootScope) //, $cordovaSplashscreen) 
+main_module.run(function($ionicPlatform, $ionicPopup, $cordovaSplashscreen, InitAppSrv, $state, $rootScope, UITextsSrv) //, $cordovaSplashscreen) 
 {
     $ionicPlatform.ready(function() 
     {
@@ -28,12 +28,13 @@ main_module.run(function($ionicPlatform, $ionicPopup, $cordovaSplashscreen, Init
             })
             .catch(function(error)
             {
+                $cordovaSplashscreen.hide();
+                
                 var str;
                 if(error.message)  str = error.message;
                 else               str = error;
-                $ionicPopup.alert({ title: 'Errore', template: "L\'applicazione verra chiusa per il seguente errore:\n" + str })
+                $ionicPopup.alert({ title: UITextsSrv.labelErrorTitle, template: UITextsSrv.labelCriticalErrorDesc + str })
                 .then(function() {
-                    $cordovaSplashscreen.hide();
                     console.log(error.message);
                     //ionic.Platform.exitApp(); // to uncomment in production
                 });                
@@ -112,7 +113,7 @@ main_module.config(function($stateProvider, $urlRouterProvider)
         controller: 'SessionSentenceCtrl'
     })    
     .state('record_sequence', {
-        url: '/record/:modeId/:commandId/:subjId/:successState/:cancelState/:foldername',
+        url: '/record/:modeId/:commandId/:subjId/:successState/:cancelState/:foldername/:backState/:elems2display',
         templateUrl: 'templates/record_sequence.html',
         controller: 'SequenceRecordCtrl'
     })    

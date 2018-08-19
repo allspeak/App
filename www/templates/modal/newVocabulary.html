@@ -10,10 +10,13 @@
             </label>            
             <div class="button-bar">        
                 <button class="button button-custom button-block button-positive" ng-disabled="!newTV.label.length" ng-click="onSelectNewVocabularyName(newTV)">CREA</button>
-                <button class="bu button button-custom button-block button-positive" ng-click="onCancelNewVocabularyName()">CANCELLA</button>
-            </div>            
-        </div>        
-        
+                <button class="button button-custom button-block button-positive" ng-click="onCancelNewVocabularyName()">CANCELLA</button>
+            </div> 
+        </div>  
 
+        <div class="card">
+            <button class="button button-block button-positive" ng-disabled="selVoc2Copy.data==null || !newTV.label.length" ng-click="onCopyFromVocabulary(newTV, selVoc2Copy)">COPIA UN VOCABOLARIO ESISTENTE</button>
+            <ion-radio ng-repeat="voc in existingVocabularies" ng-model="selVoc2Copy.data" ng-value="voc.sLocalFolder">{{ voc.sLabel }}</ion-radio>
+        </div>          
     </ion-content>
 </ion-modal-view>

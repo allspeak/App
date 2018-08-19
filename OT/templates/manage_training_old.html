@@ -1,0 +1,186 @@
+<!--<ion-view view-title="Recording Session">-->
+<ion-view>
+
+    <ion-nav-title> {{ pageTitle }} </ion-nav-title>
+    
+    <ion-nav-bar class="bar-positive">    
+        <ion-nav-back-button class="button-clear" ui-sref="home">
+            <i class="ion-arrow-left-c"></i>Home
+        </ion-nav-back-button>    
+    </ion-nav-bar>     
+    
+    <ion-nav-buttons side="right">
+        <button class="button" ng-click="openSettings()">
+            <i class="icon ion-settings"></i>
+        </button>
+    </ion-nav-buttons>  
+
+    <ion-footer-bar class="bar-positive">
+        <div class="button-bar">        
+            <button class="bu button button-custom button-block button-positive" ng-click="cancel()">RITORNA</button>
+            <!--<button class="button button-full button-positive" ng-click="completeSession()">{{labelResumeTrainSession}}</button>-->    
+            <button class="button button-full button-positive" ng-disabled="vocabulary_status.haveFeatures.length" ng-click="startNewSession()">{{labelSubmit}}</button>        
+        </div>          
+    </ion-footer-bar> 
+    
+    <ion-content>
+
+        <div class="card">
+            <!--NEW PURE USER-->
+            <button class="button button-big button-block button-large button-positive" ng-if="!existingNets.pu.exist" ng-click="startNewSession(aNetType[0].value, false)">UTENTE PURA</button>
+            <!--REPLACE PU or CREATE PUA -->
+            <div class="button-bar" ng-if="existingNets.pu.exist && !existingNets.pua.exist">        
+                <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[0].value, true)">RICREA<br>UTENTE PURA</button>
+                <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[1].value, false, existingNets.pu.voc.sessionid)">ADATTA<br>UTENTE PURA</button>
+            </div> 
+            <!--REPLACE PU or REPLACE PUA -->
+    <!--        <div class="button-bar" ng-if="existingNets.pu.exist && existingNets.pua.exist">        
+                <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[0].value, true)">SOSTITUISCI<br>UTENTE PURA</button>
+                <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[1].value, true, existingNets.pu.voc.sessionid)">RIFAI ADATTA<br>UTENTE PURA</button>
+            </div> -->
+
+            <!--CREATE URA or READAPT URA (incremental readapting from user side)-->
+            <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pua.exist && !existingNets.pura.exist" ng-click="startNewSession(aNetType[3].value, false, existingNets.pua.voc.sessionid)">READATTA UTENTE</button>
+            <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pua.exist &&  existingNets.pura.exist" ng-click="startNewSession(aNetType[3].value, true, existingNets.pura.voc.sessionid)">READATTA UTENTE</button>
+        </div>                    
+        
+        <ion-item class="item item-divider"></ion-item>
+
+        <div class="card">
+        
+            <!--NEW CA-->
+            <button class="button button-big button-block button-large button-positive" ng-if="!existingNets.ca.exist" ng-click="startNewSession(aNetType[2].value, false)">ADATTA COMUNE</button>
+            <!--REPLACE CA or CREATE CRA -->
+            <div class="button-bar" ng-if="existingNets.ca.exist && !existingNets.cra.exist">        
+                <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[2].value, true)">RICREA<br>ADATTA COMUNE</button>
+                <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[4].value, false, existingNets.ca.voc.sessionid)">RIADATTA<br>COMUNE</button>
+            </div> 
+            <!--REPLACE CA or REPLACE CRA -->
+    <!--        <div class="button-bar" ng-if="existingNets.ca.exist && existingNets.cra.exist">        
+                <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[2].value, true)">SOSTITUISCI<br>ADATTA COMUNE</button>
+                <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[4].value, true, existingNets.cra.voc.sessionid)">RIADATTA<br>COMUNE</button>
+            </div> -->
+            <!--CREATE CRA or READAPT CRA (incremental readapting from common side)-->
+            <button class="button button-big button-block button-large button-positive" ng-if="existingNets.ca.exist && !existingNets.cra.exist" ng-click="startNewSession(aNetType[4].value, false, existingNets.ca.voc.sessionid)">READATTA COMUNE</button>
+            <button class="button button-big button-block button-large button-positive" ng-if="existingNets.ca.exist &&  existingNets.cra.exist" ng-click="startNewSession(aNetType[4].value, true, existingNets.cra.voc.sessionid)">READATTA COMUNE</button>
+        </div>  
+    </ion-content>    
+</ion-view>
+
+
+
+
+
+
+
+
+
+        
+        
+<!--        <label class="item item-input item-select">
+            <div class="input-label">Tipo analisi</div>
+            <select ng-model="selectedProcScheme" ng-change="updateProcScheme(selectedProcScheme)" ng-options="item.label for item in aProcScheme track by item.value"></select>            
+        </label>     -->
+
+<!--        
+        CREATE/REPLACE COMMON READAPT 
+        <div class="button-bar" ng-if="existingNets.pu.exist && !existingNets.pua.exist">        
+            <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[1].value, true)">SOSTITUISCI<br>ADATTA COMUNE</button>
+            <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[3].value, false, existingNets.pu.voc.sessionid)">RIADATTA<br>ADATTA COMUNE</button>
+        </div> 
+        <div class="button-bar" ng-if="existingNets.pu.exist && existingNets.pua.exist">        
+            <button class="button button-block button-maxi button-dark" ng-click="startNewSession(aNetType[1].value, true)">SOSTITUISCI<br>ADATTA COMUNE</button>
+            <button class="button button-block button-maxi button-calm" ng-click="startNewSession(aNetType[3].value, true, existingNets.pu.voc.sessionid)">RIADATTA<br>ADATTA COMUNE</button>
+        </div> 
+        <button class="button button-big button-block button-large button-positive" ng-if="!existingNets.pu.exist" ng-click="startNewSession(aNetType[0].value, false)">UTENTE PURA</button>
+
+        -->
+
+
+<!--        <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pu.exist" ng-click="startNewSession(aNetType[0].value, true)">SOSTITUISCI<br>UTENTE PURA</button>
+        <button class="button button-big button-block button-large button-positive" ng-if="!existingNets.pu.exist" ng-click="startNewSession(aNetType[0].value, false)">UTENTE PURA</button>
+        
+        <button class="button button-big button-block button-large button-positive" ng-if="existingNets.ca.exist" ng-click="startNewSession(aNetType[1].value, true)">SOSTITUISCI<br>ADATTA COMUNE</button>
+        <button class="button button-big button-block button-large button-positive" ng-if="!existingNets.ca.exist" ng-click="startNewSession(aNetType[1].value, false)">ADATTA COMUNE</button>
+        
+         new pure user adapt 
+        <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pu.exist && !existingNets.pua.exist" ng-click="startNewSession(aNetType[2].value, false, existingNets.pu.voc.sessionid)">ADATTA UTENTE</button>
+         replace existing pure user adapt 
+        <button class="button button-big button-block button-large button-positive" ng-if="existingNets.pu.exist && existingNets.pua.exist" ng-click="startNewSession(aNetType[2].value, true, existingNets.pu.voc.sessionid)">SOSTITUISCI<br>ADATTA UTENTE</button>
+        
+        
+         new user re-adapt 
+        <button class="button button-big button-block button-large button-positive" ng-if="(existingNets.ua.exist || existingNets.ca.exist) && !existingNets.pua.exist" ng-click="startNewSession(aNetType[2].value, true, existingNets.pu.voc.sessionid)">ADATTA UTENTE</button>
+        -->
+        
+        
+
+        <!--<div class="item item-divider">STATUS</div>-->
+        
+        <!-- =====================================================-->
+        <!-- =============    BUTTONS / OPS ======================-->
+        <!-- =====================================================-->
+        
+        <!--RECORDINGS-->
+<!--        <ion-item class="item-button-right" ng-if="!vocabulary_status.haveValidTrainingSession">Registrazioni
+            <div class="buttons">
+                <button class="button button-assertive" ng-click="addSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         -->
+        <!--<ion-item class="item-icon-right" ng-if="vocabulary_status.haveValidTrainingSession">Registrazioni<span> <i class="icon ion-checkmark-circled"></i></span></ion-item>-->    
+        <!--<ion-item class="item-icon-right" ng-if="!vocabulary_status.haveValidTrainingSession">Registrazioni<span> <i class="icon ion-close-circled"></i></span></ion-item>-->    
+       
+        <!--FEATURES-->
+<!--        <ion-item class="item-button-right" ng-disabled="!vocabulary_status.haveValidTrainingSession" ng-if="vocabulary_status.haveFeatures.length">Features
+            <div class="buttons">
+                <button class="button button-assertive" ng-click="askExtractFeatures();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         -->
+        <!--<ion-item class="item-icon-right" ng-if="!vocabulary_status.haveFeatures.length">Features<span><i class="icon ion-checkmark-circled"></i></span></ion-item>-->    
+        <!--<ion-item class="item-icon-right" ng-if="vocabulary_status.haveFeatures.length">Features<span><i class="icon ion-close-circled"></i></span></ion-item>-->    
+       
+<!--        ZIP
+        <ion-item class="item-button-right" ng-if="!vocabulary_status.haveZip">ZIP features
+            <div class="buttons">
+                <button class="button button-assertive" ng-disabled="!vocabulary_status.haveFeatures" ng-click="zipSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+        <ion-item class="item-icon-right" ng-if="vocabulary_status.haveZip">ZIP features<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    -->
+       
+        <!--ADDESTRA RETE-->
+<!--        <ion-item class="item-button-right" ng-if="!vocabulary_status.isNetAvailableRemote">Addestra Rete
+            <div class="buttons">
+                <button class="button button-assertive" ng-disabled="!vocabulary_status.haveZip" ng-click="upLoadSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+        <ion-item class="item-icon-right" ng-if="vocabulary_status.isNetAvailableRemote">Addestra Rete<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    -->
+        
+        <!--CHIEDI RETE-->
+<!--        <ion-item class="item-button-right" ng-if="isTraining">Controlla rete
+            <div class="buttons">
+                <button class="button button-assertive" ng-click="checkSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         -->
+       
+        <!--SCARICA RETE-->
+<!--        <ion-item class="item-button-right" ng-if="!vocabulary_status.isNetAvailableLocale">Scarica rete
+            <div class="buttons">
+                <button class="button button-assertive" ng-disabled="!vocabulary_status.isNetAvailableRemote" ng-click="addSession();">
+                    <i class="icon ion-plus-round"></i>
+                </button>
+            </div>                
+        </ion-item>         
+        <ion-item class="item-icon-right" ng-if="vocabulary_status.isNetAvailableLocale">Scarica rete<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    -->
+       
+        <!--CARICA RETE-->
+        <!--<ion-toggle class="item" ng-disabled="!vocabulary_status.isNetAvailableLocale" ng-model="toogleSelectAll" ng-click="selectAll(toogleSelectAll)">USA QUESTA RETE</ion-toggle>-->

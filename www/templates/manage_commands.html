@@ -1,9 +1,9 @@
 <ion-view view-title="GESTISCI COMANDI">
 
     <ion-nav-bar class="bar-positive">    
-        <ion-nav-back-button class="button-clear" ui-sref="home">
-            <i class="ion-arrow-left-c"></i>Home
-        </ion-nav-back-button>    
+        <ion-nav-buttons side="left">
+            <button class="button button-header-big" ui-sref="home"><i class="ion-home"></i></button>
+        </ion-nav-buttons>     
     </ion-nav-bar>  
     
     <ion-header-bar class='bar-assertive bar-subheader bar-dark'>
@@ -18,9 +18,13 @@
             <button class="button button-custom button-block button-positive" ng-click="saveTrainVocabulary()">SALVA</button>
         </div> 
         
-        <div class="button-bar" ng-if="showTrainVocabulary">        
+        <div class="button-bar" ng-if="showTrainVocabulary && !isDefault">        
             <button class="bu button button-custom button-block button-positive" ng-click="cancel()">RITORNA</button>
             <button class="button button-custom button-block button-positive" ng-disabled="isDefault" ng-click="doEditTrainVocabulary()">{{labelEditTrainVocabulary}}</button>        
+        </div>          
+        
+        <div class="button-bar" ng-if="showTrainVocabulary && isDefault">        
+            <button class="bu button button-custom button-block button-positive" ng-click="cancel()">RITORNA</button>
         </div>          
     </ion-footer-bar>    
     

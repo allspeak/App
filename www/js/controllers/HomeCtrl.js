@@ -15,12 +15,12 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
         // delete history once in the home
         $ionicHistory.clearHistory();
         // ask user's confirm after pressing back (thus trying to exit from the App)
-        $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
+        $scope.deregisterFunc   = $ionicPlatform.registerBackButtonAction(function()
         {
             $scope.exit();
         }, 100); 
-        
-        $scope.appStatus    = InitAppSrv.getStatus();
+        $scope.enum_show_allvb  = EnumsSrv.VOICEBANK.SHOW_ALL;
+        $scope.appStatus        = InitAppSrv.getStatus();
 
         return RuntimeStatusSrv.loadVocabulary($scope.appStatus.userActiveVocabularyName)
         .then(function(rtstatus)
@@ -51,8 +51,12 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
         })
         .catch(function(error)
         {
-            console.log("Error in HomeCtrl::$ionicView.enter ");
-            alert("Error in HomeCtrl::$ionicView.enter "+ error.toString());
+            var msg = "Error in HomeCtrl::$ionicView.enter";
+            if(error.message)
+                msg = msg + " " + error.message;
+                
+            console.log(msg);
+            alert(msg);
         });
     });
     
@@ -64,7 +68,7 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
     // ===============================================================================================
     $scope.exit = function()
     {
-        $ionicPopup.confirm({ title: 'Attenzione', template: 'are you sure you want to exit?'})
+        $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.labelExit})
         .then(function(res) 
         {
             if (res){  ionic.Platform.exitApp();  }

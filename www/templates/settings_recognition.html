@@ -1,11 +1,9 @@
+
 <ion-view view-title="Voice Detection">
     
     <ion-nav-buttons side="left">
-        <button class="button button-clear" ui-sref="home"><i class="icon ion-arrow-left-c" ></i>Home</button>
-    </ion-nav-buttons>
-<!--    <ion-nav-buttons side="right">
-        <button class="button button-clear" ui-sref="home"><i class="icon ion-arrow-left-c" ></i>Back</button>
-    </ion-nav-buttons>-->
+        <button class="button button-header-big" ui-sref="home"><i class="ion-home"></i></button>
+    </ion-nav-buttons> 
     
     <ion-content>
         <div class="list">
@@ -44,15 +42,20 @@
               <button type="button" ng-click="decrementCounter('AD');">-</button>
               <button type="button" ng-click="incrementCounter('AD');">+</button></span>
             </div>
+
+<!--        ISSUE ..... the slider position is correctly set only the first time I see the page
+                        once modified...it is not updated anymore
+                        currently removed
+
             <div class="item range">
-                <!--<i class="icon ion-volume-low"></i>-->
-                Threshold:
-                <input type="range" name="threshold" ng-model="volume" ng-change="onChangeThreshold(threshold)">
-                <span class="badge">{{threshold}}</span>
-            </div>
+                Soglia Microfono: {{mic_threshold.toString()}} % 
+                <input type="range" ng-model="mic_threshold" ng-change="onChangeMicThreshold(mic_threshold)">
+            </div>-->
+
+                
              <div class="button-bar">        
-                <button class="button button-block button-round button-balanced" ng-click="save(1)">Save & Back</button>       
-                <button class="button button-block button-round button-energized" ng-click="save(0)">Save</button>       
+                 <button class="button button-block button-round button-balanced" ng-disabled="!has_changed" ng-click="save(1)">Save & Back</button>       
+                <button class="button button-block button-round button-energized" ng-disabled="!has_changed" ng-click="save(0)">Save</button>       
                 <button class="button button-block button-round button-assertive" ng-click="cancel()">Back</button>       
             </div>               
             

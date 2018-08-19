@@ -1,24 +1,24 @@
-<ion-view view-title="Sentence">
+<ion-view view-title="Comando registrato">
     
-<!--    <ion-nav-buttons side="right">
-        <button class="button" ng-click="addAudio()">
-            <i class="icon ion-plus-round"></i>
-        </button>
-    </ion-nav-buttons>      -->
+    <ion-nav-bar class="bar-positive">    
+        <ion-nav-buttons side="left">
+            <button class="button button-header-big" ng-disabled="isBusy" ui-sref="home"><i class="ion-home"></i></button>
+        </ion-nav-buttons>     
+    </ion-nav-bar>  
     
     <ion-content>
-        <ion-item >Vocabolario : <span class="badge"> {{titleLabel}} </span></ion-item>    
         <ion-item >Comando : <span class="badge"> {{sentence.title}} </span></ion-item>          
+        <ion-item >Vocabolario : <span class="badge"> {{titleLabel}} </span></ion-item>    
         <ion-item> Ripetizioni Esistenti</ion-item>        
         <ion-list>
             <ion-item class="item-button-right" ng-repeat="file in sentence.files"> {{file.label}}
                 <div class="buttons">
-                    <button class="button button-clear button-balanced" ng-click="playAudio(file.label)">
+                    <button class="button button-clear button-balanced" ng-disabled="isBusy" ng-click="playAudio(file.label)">
                         <i class="icon ion-play"></i>
                        <!--<i class="icon ion-play" on-icon="ion-play" off-icon="ion-stop" icon-switcher />-->
                         <!--<i ng-class="{'icon ion-play': !playing, 'icon ion-stop': playing}" ng-click="playing=!playing"></i>-->
                     </button>
-                    <button class="button button-clear button-assertive" ng-click="deleteAudio(file.label)">
+                    <button class="button button-clear button-assertive" ng-disabled="isBusy" ng-click="deleteAudio(file.label)">
                         <i class="icon ion-trash-a"></i>
                     </button>
                 </div>                

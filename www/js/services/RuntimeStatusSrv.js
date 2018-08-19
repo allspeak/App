@@ -34,18 +34,18 @@
  *      isConnected 
  */
 
-main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, VocabularySrv, EnumsSrv, $cordovaNetwork, FileSystemSrv, UITextsSrv, ErrorSrv) 
+main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, VocabularySrv, EnumsSrv, FileSystemSrv, RemoteAPISrv, UITextsSrv, ErrorSrv) 
 {
     service                         = this;
     initAppSrv                      = null;
     
     AppStatus                       = 0;        // calculated here
     isLogged                        = false;    // InitCheckCtrl <== RemoteAPISrv     
-    isConnected                     = false;    // here accessing ionic native     
     isServerOn                      = false;    // indicated if the server is ON
+    isConnected                     = false;    // here accessing ionic native     
     
     vocabularies_folder             = "";       // <= init <= InitAppSrv        AllSpeak/vocabularies
-    recordings_folder               = "";       // <= init <= InitAppSrv        AllSpeak/training_sessions
+    recordings_folder               = "";       // <= init <= InitAppSrv        AllSpeak/recordings
     
     updateTimeout                   = null; // timer started when check for update
     waitServerTime                  = 5000;
@@ -59,7 +59,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         userVocabularyName              = "";
 
         vocabulary_relpath              = "";       // defined in loadVocabulary    AllSpeak/vocabularies/gigi
-        train_relpath                   = "";       // defined in loadVocabulary    AllSpeak/training_sessions/gigi        
+        train_relpath                   = "";       // defined in loadVocabulary    AllSpeak/recordings/gigi        
         vocabulary_json_path            = "";       //  AllSpeak/vocabularies/gigi/vocabulary.json
     };
     //==============================================================================================================================
@@ -73,22 +73,6 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         
         _resetVoc();
         
-        $cordovaNetwork.onConnect().subscribe(function(event)  
-        {
-            if(event.type == "online") isConnected = true;
-            console.log('network onchange', event.type);
-        }, function(error){
-            alert("RuntimeStatusSrv::$cordovaNetwork.onConnect " + error.toString());
-        });    
-
-        $cordovaNetwork.onDisconnect().subscribe(function(event)  
-        {
-            if(event.type == "offline") isConnected = false;
-            console.log('network onchange', event.type);
-        }, function(error){
-            alert("RuntimeStatusSrv::$cordovaNetwork.onDisconnect " + error.toString());
-        });    
-        
         isConnected = (navigator.connection.type != "none" ? true : false);
     }
     //==============================================================================================================================
@@ -96,8 +80,8 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     //==============================================================================================================================    
     getStatus = function()
     {
-        hasInternet();  // sets isConnected
-        AppStatus = calculateAppStatus();        
+        isConnected = RemoteAPISrv.hasInternet();  // sets isConnected
+        AppStatus   = calculateAppStatus();        
         
         return  {"vocabulary"                    :vocabulary,
                  "AppStatus"                     :AppStatus,
@@ -138,7 +122,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
             AppStatus = EnumsSrv.STATUS.NEW_TV;
         else
         {
-            if(vocabulary.status.isNetLoaded && vocabulary.status.vocabularyHasVoices)
+            if(vocabulary.status.isNetLoaded) // && vocabulary.status.vocabularyHasVoices) 190518 : with text to speech, voices can be absent (completely or partially)
             {
                 AppStatus                       = EnumsSrv.STATUS.CAN_RECOGNIZE;
                 vocabulary.status.canRecognize  = true;
@@ -212,9 +196,9 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         .then(function(voc)
         {
             vocabulary        = voc;
-            return TfSrv.loadTFModel(vocabulary);
+            return TfSrv.loadTFNet(vocabulary);
         })
-        .then(function()
+        .then(function(string)      //vocabulary.sLabel
         {
             return VocabularySrv.getUpdatedStatus(vocabulary);
         })
@@ -241,7 +225,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
     //
     loadVocabulary = function(uservocabularyname, force)
     {
-        var doforce = (force == null ? false : force);
+        var doforce = (force == null ? true : force);
         if(userVocabularyName == uservocabularyname && !doforce)  return Promise.resolve(getStatus(vocabulary));
         
         vocabulary_old = cloneObj(vocabulary);
@@ -261,25 +245,30 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         })
         .then(function(existfile)
         {
-            if(existfile)       return VocabularySrv.getTrainVocabulary(vocabulary_json_path);
+            if(existfile)       return VocabularySrv.getTrainVocabularySelectedNet(vocabulary_json_path);
             else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"NO_FILE"});
         })
-        .then(function(voc)
+        .then(function(retvoc)
         {
-            vocabulary        = voc;
-            return TfSrv.loadTFModel(vocabulary);
+            vocabulary        = retvoc.voc;
+            if(retvoc.net == null)  return false;
+            else                    return TfSrv.loadTFNet(retvoc.net);
         })
         .catch(function(error)
         {
-//            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST || error.mycode == ErrorSrv.ENUMS.VOCABULARY.VOCFOLDER_NOTEXIST)
-            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY || error.mycode == ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST)
-                return $q.resolve(false); // this reject are not problematic, there could be 
-            else
-                return $q.reject(error);
+            switch(error.mycode)
+            {
+                case ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST:
+                    return recoverMissingPb(vocabulary_json_path, vocabulary_relpath + "/" + vocabulary.sModelFileName);
+                case ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY:
+                    return $q.resolve(false);
+                default:
+                    return $q.reject(error);
+            }
         })        
         .then(function()
         {
-            userVocabularyName              = uservocabularyname;
+            userVocabularyName = uservocabularyname;
             return initAppSrv.setStatus({"userActiveVocabularyName":userVocabularyName});
         })
         .then(function()
@@ -290,26 +279,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         {
             vocabulary = voc;
             return getStatus();
-        })
-        .catch(function(error)
-        {
-//            vocabulary = vocabulary_old;
-//            VocabularySrv.getUpdatedStatus(vocabulary);
-//            return $q.reject(error);
-//            
-//            if(error.mycode)    return getStatus();
-//            else                return $q.reject(error);
-//            
-//            isNetLoaded = false;
-//            switch(error)
-//            {
-//                case "NO_FOLDER":
-//                case "NO_FILE":
-//                    return getStatus();
-//                default:
-            return $q.reject(error);
-//            }
-        });    
+        });
     };
     //
     //--------------------------------------------------------------------------
@@ -338,12 +308,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
             return loadDefault();
         });        
     };
-    //======================================================================================================================================
-    hasInternet = function()
-    {
-        isConnected = (navigator.connection.type != "none" ? true : false);
-        return isConnected;
-    };    
+ 
     //==========================================================================
     // PRIVATE
     //==========================================================================
@@ -355,6 +320,17 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         return clone;
     };  
     //======================================================================================================================================
+    // pb file is missing:
+    // present solution: set to empty sModelFileName and delete the net json. user shall select a new net
+    // optimum solution try to retrieve the net from the server. TODO
+    recoverMissingPb = function(voc_relpath, net_noextension)
+    {
+        return FileSystemSrv.updateJSONFileWithObj(voc_relpath, {"sModelFileName":""}, FileSystemSrv.OVERWRITE)
+        .then(function()
+        {
+            return FileSystemSrv.deleteFile(net_noextension + ".json");
+        });
+    };
     //======================================================================================================================================
     //======================================================================================================================================
     return {
@@ -364,8 +340,7 @@ main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, Vocabulary
         saveTrainVocabulary         : saveTrainVocabulary,             //
         unloadVocabulary            : unloadVocabulary,                 //
         getStatus                   : getStatus,                       //
-        setStatus                   : setStatus,                       //
-        hasInternet                 : hasInternet                     //
+        setStatus                   : setStatus
     };
     //======================================================================================================================================
 });

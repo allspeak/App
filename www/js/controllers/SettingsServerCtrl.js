@@ -31,30 +31,26 @@ function SettingsServerCtrl($scope, $state, $ionicPlatform, $ionicModal, InitApp
         $scope.isAssisted   = ($scope.appStatus.appModality == EnumsSrv.MODALITY.ASSISTED ? true : false);
         $scope.isRegistered = $scope.appStatus.isDeviceRegistered;
         
-        if($scope.isRegistered)
+        // modal Want2beRegistered ?
+        return $ionicModal.fromTemplateUrl('templates/modal/want2beRegistered.html', {  scope: $scope,
+                                                                                        animation: 'slide-in-up',
+                                                                                        backdropClickToClose: false,
+                                                                                        hardwareBackButtonClose: false})
+        .then(function(modal) 
         {
-            
-        }
-        $scope.$apply();
+            $scope.modalWant2beRegistered = modal;
+            if($scope.isRegistered)
+            {
+
+            }
+            $scope.$apply();
+        });         
     }; 
     
     $scope.$on('$ionicView.leave', function(){
         if($scope.deregisterFunc)   $scope.deregisterFunc();
     });    
 
-    //-----------------------------------------------------------------------------------------
-    // $scope.isRegistered = false
-    //-----------------------------------------------------------------------------------------
-    // modal Want2beRegistered ?
-    $ionicModal.fromTemplateUrl('templates/modal/want2beRegistered.html', {
-        scope: $scope,
-        animation: 'slide-in-up',
-        backdropClickToClose: false,
-        hardwareBackButtonClose: false        
-    }).then(function(modal) {
-        $scope.modalWant2beRegistered = modal;
-    });      
-    
     $scope.registerDevice = function()
     {
         $scope.modalWant2beRegistered.show();

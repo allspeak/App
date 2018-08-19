@@ -1,12 +1,12 @@
 <ion-view view-title="Voice Bank">
 
     <ion-nav-bar class="bar-positive">    
-        <ion-nav-back-button class="button-clear" ui-sref="home">
-            <i class="ion-arrow-left-c"></i>Home
-        </ion-nav-back-button>    
+        <ion-nav-buttons side="left">
+            <button class="button button-header-big" ng-disabled="isBusy" ui-sref="home"><i class="ion-home"></i></button>
+        </ion-nav-buttons> 
      
         <ion-nav-buttons side="right">
-            <button class="button" ng-click="newSentence()">
+            <button class="button" ng-disabled="isBusy" ng-click="newSentence()">
                 <i class="icon ion-plus-round"></i>
             </button>        
             <button class="button" ng-disabled="isBusy" ng-click="recordAudioSequence()">REGISTRA
@@ -22,8 +22,8 @@
     
     <ion-footer-bar class="bar-positive">
         <div class="button-bar">        
-            <button class="button button-custom button-block button-positive" ng-disabled="!showOnlyTrained" ng-click="refreshAudioList()">TUTTI</button>        
-            <button class="button button-custom button-block button-positive" ng-disabled="showOnlyTrained" ng-click="refreshTrainingAudioList()">ADDESTRATI</button>        
+            <button class="button button-custom button-block button-positive text-big" ng-disabled="!showOnlyTrained || isBusy" ng-click="refreshAudioList()">TUTTI</button>        
+            <button class="button button-custom button-block button-positive text-big" ng-disabled="showOnlyTrained || isBusy" ng-click="refreshTrainingAudioList()">ADDESTRATI</button>        
         </div>             
     </ion-footer-bar>      
     
@@ -31,7 +31,7 @@
         <ion-list>
             <ion-item class="item-button-right" ng-repeat="sent in voicebankSentences track by $index"> {{sent.title}}
                 <div class="buttons">
-                    <button class="button button-clear button-balanced" ng-disabled="isBusy" ng-show="sent.nrepetitions" ng-click="playAudio(sent.files[0].label)">
+                    <button class="button button-clear button-balanced" ng-disabled="isBusy" ng-show="sent.nrepetitions" ng-click="playAudio(sent.filename)">
                         <i class="icon ion-play"></i>
                     </button>
                     <button class="button button-clear button-assertive" ng-disabled="isBusy" ng-click="recordAudio(sent.id)">

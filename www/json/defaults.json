@@ -2,11 +2,11 @@
     "defaults":
     {
         "user":{
-            "isFirstUse":false,
-            "appModality":1032,
-            "isDeviceRegistered":true,
-            "api_key":"FRLAGE",
-            "userActiveVocabularyName":"gigi",
+            "isFirstUse":true,
+            "appModality":1030,
+            "isDeviceRegistered":false,
+            "api_key":"",
+            "userActiveVocabularyName":"",
             "vad":{
                 "nSpeechDetectionThreshold":15,
                 "nSpeechDetectionAllowedDelay":400,
@@ -15,33 +15,19 @@
             }        
         },
         "runtime":{
-            "versioncode":101,
+            "versioncode":201,
             "versionnum":"0.1.1",
             "resolved_odp":"file:///storage/emulated/0/",
             "audio_devices":{
-                "type":290,"input":[
-                    {"name":"Moto G Play","type":15,"channels":"[I@1098701"},
-                    {"name":"Moto G Play","type":16,"channels":"[I@3f6f9a6"},
-                    {"name":"Moto G Play","type":18,"channels":"[I@c9d0fe7"}
-                ],
-                "output":[
-                    {"name":"Moto G Play","type":1,"channels":"[I@d625794"},
-                    {"name":"Moto G Play","type":2,"channels":"[I@a06923d"},
-                    {"name":"Moto G Play","type":18,"channels":"[I@d890a32"}
-                ]
+                "type":290,
+                "input":[],
+                "output":[]
             },
-            "device":{
-                    "model":"Moto G Play",
-                    "manufacturer":"motorola",
-                    "platform":"Android",
-                    "serial":"ZY223QB37R",
-                    "uuid":"4f976f3aabd094f",
-                    "version":"6.0.1",
-                    "cordova":"6.1.0"
-            }
+            "device":{}
         },
         "file_system":{
             "data_storage_root":"externalRootDirectory",
+            "config_storage_root":"dataDirectory",
             "data_assets_folder":"www",
             "app_folder":"AllSpeak",
             "recordings_folder":"AllSpeak/recordings",
@@ -51,7 +37,7 @@
             "vocabularies_folder":"AllSpeak/vocabularies",
             "temp_folder":"AllSpeak/temp",
             "json_folder":"AllSpeak/json",
-            "config_filerel_path":"AllSpeak/json/config.json",
+            "config_filerel_path":"config.json",
             "voicebank_commands_www_path":"./json/voicebank_commands.json",
             "voicebank_commands_filerel_path":"AllSpeak/json/voicebank_commands.json",
             "voicebank_usercommands_www_path":"./json/voicebank_usercommands.json",
@@ -98,7 +84,7 @@
                 "nConcatenateMaxChunks":10,
                 "nNormalize":true,
                 "fNormalizationFactor":32767,
-                "nDataDest":206,
+                "nDataDest":204,
                 "nDataSubSample":1,
                 "nChunkMaxLengthMS":20000,
                 "sOutputPath":""
@@ -106,13 +92,14 @@
         },
         "tf":{
             "sLabel":"controls FSC 23",
+            "nModelClass":280,
             "nModelType":273,
             "nInputParams":792,
             "nContextFrames":5,
             "nItems2Recognize":23,
             "sModelFilePath":"",
-            "sModelFileName":"controls_fsc.pb",
-            "sInputNodeName":"inputs/I",
+            "sModelFileName":"net_273_252_280",
+            "saInputNodeName":["inputs/I"],
             "sOutputNodeName":"SMO",
             "fRecognitionThreshold":0,
             "nProcessingScheme":252,

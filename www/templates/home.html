@@ -1,22 +1,22 @@
-  <ion-view view-title="ALLSPEAK HOME" align-title="center">  
+  <ion-view view-title="ALLSPEAK" align-title="center">  
         
     <ion-nav-buttons side="right">
     <button class="button button-icon icon ion-settings" ui-sref="settings.device">  </button>
     </ion-nav-buttons>       
        
     <ion-footer-bar class="bar-positive">
-        <button class="button button-full button-block button-large button-positive" ng-click="exit()">Exit</button>        
+        <button class="button button-full button-block button-large button-positive text-big" ng-click="exit()">ESCI</button>        
     </ion-footer-bar>   
     
     <ion-content class="padding">
         
-        <button class="button button-maxi button-block button-large button-positive" ui-sref="amplifier">AMPLIFICA</button>
+        <!--<button class="button button-maxi button-block button-large button-positive" ui-sref="amplifier">AMPLIFICA</button>-->
         
-        <button class="button button-maxi button-block button-large button-positive" ng-click="action()" style="text-transform:uppercase">{{labelActionButton}} VOCABOLARIO:<br>{{appStatus.userActiveVocabularyName}} </button>
+        <button class="button button-giant button-block button-large button-positive" ng-click="action()" style="text-transform:uppercase">{{labelActionButton}} VOCABOLARIO:<br>{{appStatus.userActiveVocabularyName}} </button>
  
         <div class="button-bar">        
-            <button class="button button-block button-maxi button-dark" ui-sref="vocabularies">TUTTI I<br>VOCABOLARI</button>
-            <button class="button button-block button-maxi button-calm" ui-sref="voicebank({elems2display:enum_recordsession,backState:'home'})">VOICE<br> BANK</button>
+            <button class="button button-block button-giant button-dark" ui-sref="vocabularies">GESTISCI<br>VOCABOLARI</button>
+            <button class="button button-block button-giant button-calm" ui-sref="voicebank({elems2display:enum_show_allvb, backState:'home'})">VOICE<br> BANK</button>
             <!--<button class="button button-block button-0 button-royal" ui-sref="settings.device">SETTINGS</button>-->
         </div>         
 

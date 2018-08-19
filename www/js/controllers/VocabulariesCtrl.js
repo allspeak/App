@@ -5,7 +5,7 @@
  */
 //function TrainingCtrl($scope, vocabulary)//....use resolve 
 //function TrainingCtrl($scope)  
-function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionicPlatform, $ionicModal, VocabularySrv, InitAppSrv, FileSystemSrv, RuntimeStatusSrv, EnumsSrv)  
+function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionicPlatform, $ionicModal, VocabularySrv, InitAppSrv, FileSystemSrv, RuntimeStatusSrv, EnumsSrv, StringSrv)  
 {
     $scope.vocabularies             = [];
     $scope.activeVocabulary         = null;
@@ -28,7 +28,7 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
         $scope.appStatus                = InitAppSrv.getStatus();
         $scope.activeVocabularyName     = $scope.appStatus.userActiveVocabularyName;
         
-        return $scope.refreshSessionsList()
+        return $scope.refreshVocabulariesList()
         .catch(function(error)
         {
             alert("Error in VocabulariesCtrl::$ionicView.enter " + error.toString());
@@ -46,13 +46,13 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
         {
             $scope.activeVocabulary     = status.vocabulary;
             $scope.activeVocabularyName = $scope.activeVocabulary.sLocalFolder;
-            $scope.refreshSessionsList();
+            $scope.refreshVocabulariesList();
         })
         .catch(function(error)
         {
             if(error.message)   alert(error.message);        
             else                alert("Errore durante il caricamento del nuovo modello: " + error);
-        })        
+        });      
     };
     
     $scope.editVocabulary = function(item) 
@@ -60,7 +60,7 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
         $state.go('vocabulary', {foldername:item.sLocalFolder});
     };
 
-    $scope.refreshSessionsList = function()
+    $scope.refreshVocabulariesList = function()
     {
         $scope.vocabularies = [];
         return FileSystemSrv.listDir($scope.vocabularies_relpath)    // AllSpeak/vocabularies/
@@ -71,14 +71,13 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
             for (var v=0; v<folders.length; v++) 
             {
                 // MISTERIOSAMENTE NON FUNZIONA #ISSUE# ...codice spostato in fondo al file
-                
                 var foldername = folders[v];
                 var active = (foldername == $scope.activeVocabularyName ? true : false);
                 $scope.vocabularies.push({"active": active,"inputjson":$scope.vocabularies_relpath + "/" + foldername + "/" + $scope.jsonvocfilename});
                 (function(j) 
                 {
                     var inputjson       = $scope.vocabularies[j].inputjson;
-                    var subPromise  = VocabularySrv.getTrainVocabulary(inputjson)
+                    var subPromise      = VocabularySrv.getTrainVocabulary(inputjson)
                     .then(function(voc) 
                     {
                         var tempjson    = $scope.vocabularies[j].inputjson;
@@ -92,66 +91,77 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
                     subPromises.push(subPromise);
                 })(v);           
             }
-            $q.all(subPromises)
-            .then(function(vocs)
+            return $q.all(subPromises)
+        })
+        .then(function(vocs)    // array of vocabulary.json contents
+        {
+            var subPromises = [];
+            for(var v=0; v<vocs.length; v++)
             {
-                var subPromises = [];
-                for(var v=0; v<vocs.length; v++)
+                if(vocs[v].sModelFileName != null && vocs[v].sModelFileName != "")
                 {
                     (function(voc) 
                     {
-                        
+                        var selected_net_relpath = $scope.vocabularies_relpath + "/" + voc.sLocalFolder + "/" + voc.sModelFileName + ".json";                    
+                        var subPromise = VocabularySrv.getTrainVocabulary(selected_net_relpath)
+                        subPromises.push(subPromise);
+                    })(vocs[v]);                
+                }
+                else    subPromises.push(Promise.resolve(null))
+            }        
+            return $q.all(subPromises)            
+        })
+        .then(function(nets)    // array of net_xxxxxxx.json contents
+        {
+            var subPromises = [];
+            for(var v=0; v<nets.length; v++)
+            {
+                (function(voc, v) 
+                {
+                    if(voc != null)
+                    {
                         if(voc.sModelFilePath == null || !voc.sModelFilePath.length)
                         {
-                            voc.sStatus = "NON PRONTO";
-                            return voc;                            
+                            $scope.vocabularies[v].sStatus = "NON PRONTO";
+                            subPromises.push(Promise.resolve(null))
                         }   
                         else
                         {
                             var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
                             .then(function(exist) 
                             {                            
-                                if(exist)
-                                {
-                                    voc.sStatus = "PRONTO";
-                                    return voc;
-                                }
-                                else
-                                {
-                                    voc.sStatus = "NON PRONTO";
-                                    return voc;
-                                }
+                                if(exist)   $scope.vocabularies[v].sStatus = "PRONTO";
+                                else        $scope.vocabularies[v].sStatus = "NON PRONTO";
+                                return voc;
                             })
                             .catch(function(error)
                             {
                                return $q.reject(error); 
-                            });                              
-
+                            });   
+                            subPromises.push(subPromise);
                         }
-                        subPromises.push(subPromise);
-                    })(vocs[v]);                        
-                }
-                $q.all(subPromises)
-                .then(function(vocs)
-                {                
-                    return 1;
-                })
-                .catch(function(error)
-                {
-                   return $q.reject(error); 
-                });                 
-            })
-            .catch(function(error)
-            {
-                alert("ERROR in VocabulariesCtrl::refreshSessionsList. " + error);
-                error.message = "ERROR in VocabulariesCtrl::refreshSessionsList. " + error.message;
-                return $q.reject(error);
-            }); 
+                    }
+                    else
+                    {
+                        $scope.vocabularies[v].sStatus = "NON PRONTO";
+                        subPromises.push(Promise.resolve(null));
+                    }
+                })(nets[v], v);                        
+            }
+            return $q.all(subPromises);
+       })
+        .then(function(vocs)
+        {                
+            $scope.$apply()
+            return 1;
         })
-        .catch(function(error) 
+        .catch(function(error)
         {
-            $scope._showAlert("Error", "SubjectSessionsCtrl::refreshSessionsList : " + error.message);
-        });
+            alert("ERROR in VocabulariesCtrl::refreshVocabulariesList. " + error);
+            error.message = "ERROR in VocabulariesCtrl::refreshVocabulariesList. " + error.message;
+            $scope._showAlert("Error", "SubjectSessionsCtrl::refreshVocabulariesList : " + error.message);
+            return $q.reject(error);
+        }); 
     }; 
 
     $scope.newVocabulary = function()
