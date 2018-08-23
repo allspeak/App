@@ -14,64 +14,73 @@
  * NEW USER SENTENCE ?  : both uVB & VB files/structures are updated
 */
 
-main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, FileSystemSrv, TfSrv, StringSrv, EnumsSrv, UITextsSrv, ErrorSrv, MiscellaneousSrv) 
+main_module.service('VocabularySrv', function($q, $ionicPopup, $state, VoiceBankSrv, CommandsSrv, FileSystemSrv, TfSrv, StringSrv, EnumsSrv, UITextsSrv, ErrorSrv) 
 {
-    universalJsonFileName                   = "";               // training.json
-    vocabularies_folder                     = "";               // AllSpeak/vocabularies
-    recordings_folder                       = "";               // AllSpeak/recordings
-    voicebank_folder                        = "";               // AllSpeak/voicebank
+    universalJsonFileName   = "";               // training.json
+    vocabularies_folder     = "";               // AllSpeak/vocabularies
+    recordings_folder       = "";               // AllSpeak/recordings
+    voicebank_folder        = "";               // AllSpeak/voicebank
     
-    pluginInterface                         = null;
-    plugin_enum                             = null;
+    pluginInterface         = null;
+    plugin_enum             = null;
 
     //========================================================================
     // just set inner paths
-    init = function(default_paths, plugin)
+    init = function(default_paths, plugin, initappsrv)
     {
-        voicebank_folder                        = default_paths.voicebank_folder;        
-        vocabularies_folder                     = default_paths.vocabularies_folder;
-        recordings_folder                       = default_paths.recordings_folder;
+        voicebank_folder        = default_paths.voicebank_folder;        
+        vocabularies_folder     = default_paths.vocabularies_folder;
+        recordings_folder       = default_paths.recordings_folder;
         
-        universalJsonFileName                   = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
+        universalJsonFileName   = UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
         
-        pluginInterface     = plugin;
-        plugin_enum         = pluginInterface.ENUM.PLUGIN;
+        pluginInterface         = plugin;
+        plugin_enum             = pluginInterface.ENUM.PLUGIN;
+        
+        initAppSrv              = initappsrv;
+        
     };
 
     //====================================================================================================================================================
     //  GET VOCABULARIES 
     //====================================================================================================================================================
     // read the content of a volatile vocabulary.json (given a localfoldername)
-    getTrainVocabularyName = function(localfoldername) 
+    getTrainVocabularyName = function(foldername) 
     {
-        return getExistingTrainVocabularyJsonPath(localfoldername)
-        .then(function(jsonpath)
-        {
-            return getTrainVocabulary(jsonpath)        
-        })
+        return getTrainVocabulary(getTrainVocabularyJsonPath(foldername));
     };
     
-    // read the content of a vocabulary.json
-    getTrainVocabulary = function(path, silentcheck) 
-    {
-        if(path == null || path == "" || path == false)   return Promise.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILEVARIABLE_EMPTY, message:"ERROR in VocabularySrv::getTrainVocabulary....called with null input path"});
-        var reportmissing = (silentcheck == null ? true : false);
+    // read the content of a vocabulary.json, checking if the json file exist
+    // if not exist:  - try to recover it => returning a voc 
+    //                - or reject with mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST whether it was not possible or user did not want to do it.     
+    getTrainVocabulary = function(path, ignorerecover) 
+    {       
+        if(ignorerecover == null) ignorerecover = false;
         
         return FileSystemSrv.existFile(path)            
         .then(function(exist)
         {
             if(exist)   return FileSystemSrv.readJSON(path);
-            else        
-            {
-                if(reportmissing)   alert("Error in VocabularySrv::getTrainVocabulary :  input file does not exist " + path);
-                return Promise.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"ERROR in VocabularySrv::getTrainVocabulary....input file does not exist: " + path + " !"});
-            }
+            else        return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"ERROR in VocabularySrv::getTrainVocabulary....input file does not exist: " + path + " !"});
         })
-        .catch(function(err)
+        .catch(function(error)
         {
-            console.log("Error in VocabularySrv::getTrainVocabulary : " + err.message);
-            return $q.reject(err);
-        });
+            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST && !ignorerecover)
+            {            
+                return recoverMissingVocJsonFile(StringSrv.getFileFolderName(path), StringSrv.getFileFolderName(path))             // error.mydata !exist
+                .then(function(voc)
+                {
+                    if(voc != false)    return $q.resolve(voc);     // go on with the corrected voc.
+                    else                return $q.reject(error);    // voc deleted : as user wanted it or there weren't any net
+                })              
+            }
+            else
+            {
+                error.mymsg = "Error in VocabularySrv::getTrainVocabularySelectedNet : " + error.message;
+                console.log(error.mymsg);
+                return $q.reject(error);
+            }
+        })          
     }; 
     
     // get the content of all the vocabulary.json of each vocabulary
@@ -85,75 +94,96 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                 subPromises.push(getTrainVocabulary(vocabularies_folder + "/" + folders[v] + "/" + universalJsonFileName));
             return $q.all(subPromises);
         });        
-    };    
-    // look into a folder, load the vocabulary.json and if a net is present, read also its content
+    };   
+    
+    // look into a folder, load the vocabulary.json 
+    // if a net is selected, read its content & then check if the pb file is present
     // returns{voc:vocabulary, net:selected_net | null}
-    getTrainVocabularySelectedNet = function(path, silentcheck) 
+    // or rejects : JSONFILE_NOTEXIST       => mydata = null
+    //              NETJSONFILE_NOTEXIST    => mydata = {voc:{}, net:null}
+    //              NETPBFILE_NOTEXIST      => mydata = {voc:{}, net:{}}
+    getTrainVocabularySelectedNetName = function(foldername) 
     {
-        var retvoc = {};
-        return getTrainVocabulary(path, silentcheck)
+        return getTrainVocabularySelectedNet(getTrainVocabularyJsonPath(foldername));
+    }
+    
+    getTrainVocabularySelectedNet = function(path) 
+    {
+        var retvoc = {voc:null, net:null};
+        return getTrainVocabulary(path)     // voc (possibly corrected) or reject {mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, ..}
         .then(function(voc)
         {
             retvoc.voc = voc;
             if(voc.sModelFileName != null && voc.sModelFileName != "")
             {
                 var selected_net_relpath = StringSrv.getFileFolder(path) + "/" + voc.sModelFileName + ".json";
-                return getTrainVocabulary(selected_net_relpath);
+                return getTrainVocabulary(selected_net_relpath)
+                .catch(function(error)
+                {
+                    if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST)
+                    {
+                        error.mycode = ErrorSrv.ENUMS.VOCABULARY.NETJSONFILE_NOTEXIST
+                        error.mydata = retvoc;
+                    }
+                    return $q.reject(error); 
+                })
+                .then(function(net)
+                { 
+                    retvoc.net = net;
+                    return FileSystemSrv.existFile(StringSrv.getFileFolder(path) + "/" + net.sModelFileName + ".pb")
+                })
+                .then(function(existpb)
+                { 
+                    if(!existpb)
+                    {
+                        var err = {mycode:ErrorSrv.ENUMS.VOCABULARY.NETPBFILE_NOTEXIST, mydata:retvoc, message:"selected net pb file is missing"};
+                        return $q.reject(err); 
+                    }
+                    else return retvoc;
+                })                
             }
-            else
-                return null;
-        })
-        .then(function(net)
-        {            
-            retvoc.net = net;
-            return retvoc;
+            else   return retvoc;   // assumes retvoc.net = null
         })
         .catch(function(err)
         {
-            console.log("Error in VocabularySrv::getTrainVocabularySelectedNet : " + err.message);
+            err.mymsg = "Error in VocabularySrv::getTrainVocabularySelectedNet : " + err.message;
+            console.log(err.mymsg);
             return $q.reject(err);
         });
     }; 
     
+    // ###################
+    // U N U S E D !!!
     // given a folder, returns the object of each net that can recognize
     getValidTrainVocabularies = function(dir)
     {    
         var existing_vocs           = [];
-        var existing_jsonfiles      = [];
         
         return FileSystemSrv.listFilesInDir(dir, ["json"], "net_")    // AllSpeak/vocabularies/gigi/   files: net_*
-        .then(function(jsonfiles)
+        .then(function(netjsonfiles)  // array of net file names+ext
         {
-            existing_jsonfiles = jsonfiles;
-            var subPromises = [];
-            for (var v=0; v<existing_jsonfiles.length; v++) 
+            var len = netjsonfiles.length;
+            if(len)
             {
-                var jsonfile = existing_jsonfiles[v];
-                (function(json_file) 
-                {
-                    var subPromise  = getTrainVocabulary(json_file);
-                    subPromises.push(subPromise);
-                })(dir + "/" + jsonfile);           
+                var subPromises = [];
+                for (var v=0; v<len; v++) 
+                    subPromises.push(getTrainVocabulary(dir + "/" + netjsonfiles[v]));
+                
+                return $q.all(subPromises);     // gets nets' vocabularies
             }
-            if(subPromises.length)  return $q.all(subPromises);     // gets nets' vocabularies
-            else                    return null;
+            else return null;
         })
-        .then(function(vocs)        
+        .then(function(vocs_or_null)        
         {
-            if(vocs == null || !vocs.length) return null;
+            if(vocs_or_null == null || !vocs_or_null.length) return null;
             
-            existing_vocs = vocs;       // vocs has the same ordering as: existing_jsonfiles
+            existing_vocs   = vocs_or_null;       // vocs has the same ordering as: existing_jsonfiles
+            var len         = existing_vocs.length
             var subPromises = [];
-            for(var v=0; v<existing_vocs.length; v++)
+            for(var v=0; v<len; v++)
             {
-                (function(voc) 
-                {
-                    if(voc.sModelFilePath.length)
-                    {
-                        var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath);
-                        subPromises.push(subPromise);
-                    }
-                })(existing_vocs[v]);                        
+                if(voc.sModelFilePath.length)
+                    subPromises.push(FileSystemSrv.existFileResolved(existing_vocs[v].sModelFilePath));
             }
             return $q.all(subPromises);
         })
@@ -163,47 +193,12 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
             
             for(var v=0; v<existing_vocs.length; v++)
             {
-//                existing_vocs[v].jsonpath = existing_jsonfiles[v];
                 if(trues[v])
                     existing_vocs[v].sStatus = "PRONTO";
             }
             return existing_vocs;
         });
     };
- 
- 
- 
-    // given a foldername, returns an array[2] with the netobjects of the last net of the two families (1)PURA <= (2) PUA <= (3) PU or (1) CRA (2) CA ...that can recognize
-    getExistingLastNets = function(uservocabularyname)
-    { 
-        return getExistingNets(uservocabularyname)
-        .then(function(existingnets)
-        {
-            var lastnets = [null,null];
-            // PURE USER
-            if(existingnets.pura.exist)
-                lastnets[0] = existingnets.pura.voc;
-            else
-            {
-                if(existingnets.pua.exist)
-                    lastnets[0] = existingnets.pua.voc;
-                else 
-                {
-                    if(existingnets.pu.exist)
-                        lastnets[0] = existingnets.pu.voc;                    
-                }
-            }
-            // COMMON ADAPTED
-            if(existingnets.cra.exist)
-                lastnets[1] = existingnets.cra.voc;
-            else
-            {
-                if(existingnets.ca.exist)
-                    lastnets[1] = existingnets.ca.voc;
-            }         
-            return lastnets;
-        })
-    }  
  
     //====================================================================================================================================================
     //  GET SOME COMMANDS
@@ -332,6 +327,12 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
     {
         return vocabularies_folder + "/" + localfoldername + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME; 
     };
+    
+    // returns: String, vocabulary.json full path given a voc folder name
+    getTrainVocabularyFolder = function(localfoldername)
+    {
+        return vocabularies_folder + "/" + localfoldername; 
+    };
 
     // returns: String.  determine vocabulary.json full path given a voc folder name, check if exist before returning it
     getExistingTrainVocabularyJsonPath = function(localfoldername)
@@ -451,8 +452,9 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                 return getTrainVocabularyName(oldname)
                 .then(function(oldvoc)
                 {
-                    oldvoc.sLabel       = newLabelname;
-                    oldvoc.sLocalFolder = newLocalFolder;
+                    oldvoc.sLabel           = newLabelname;
+                    oldvoc.sLocalFolder     = newLocalFolder;
+                    oldvoc.sModelFileName   = "";
                     return setTrainVocabulary(oldvoc);
                 });
             }
@@ -540,62 +542,205 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         return $q.all(promises);
     };     
 
+    // TODO: get list of nets, try to remove server versions
+    deleteTrainVocabulary = function(foldername, selectedfoldername, showresult)
+    {
+        if(showresult == null)  showresult = true;
+        
+        return FileSystemSrv.deleteDir(getTrainVocabularyFolder(foldername))
+        .then(function()
+        {
+            if(foldername == selectedfoldername)
+                return initAppSrv.setStatus({"userActiveVocabularyName":"default"});
+            else
+               return true;
+        })
+        .then(function()
+        {
+            if(showresult)
+                return $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template:UITextsSrv.VOCABULARY.DELETED})
+            else
+                return true;
+        })
+    };
+    
+    // called when vocabulary.json is missing. look for net_XX_XX_XX.json,
+    // if at least one exist, retrieve info from first one and set it as selected and a)go to vocabulary or b) return voc
+    // if no net_XXXX exist => delete voc and 1) go to vocabularies or 2) return false
+    recoverMissingVocJsonFile = function(foldername, selfoldername, okstate, cancelstate) //okstate: vocabulary, cancelstate: vocabularies
+    {
+        if(selfoldername == null)   selfoldername   = foldername;   // when not specified, if it deletes the vocabulary => select the default
+        if(okstate == null)         okstate         = "";
+        if(cancelstate == null)     cancelstate     = "";
+        
+        var relpath = getTrainVocabularyFolder(foldername);
+        
+        return $ionicPopup.confirm({title: UITextsSrv.labelAlertTitle, 
+                                    template: UITextsSrv.VOCABULARY.labelErrorMissingVocabularyJson1 + foldername + UITextsSrv.VOCABULARY.labelErrorMissingVocabularyJson2,
+                                    cancelText: UITextsSrv.labelDelete, okText: UITextsSrv.labelRecovery})
+        .then(function(res)
+        {
+            if(res)
+            {
+                return FileSystemSrv.listFilesInDir(relpath, ["json"], "net_")    // AllSpeak/vocabularies/gigi/   files: net_*
+                .then(function(jsonfiles)
+                {
+                    var subPromises = [];
+                    for (var v=0; v<jsonfiles.length; v++) 
+                            subPromises.push(getTrainVocabulary(relpath + "/" + jsonfiles[v]));
+                        
+                    if(subPromises.length)  return $q.all(subPromises);     // gets nets' vocabularies
+                    else                    return null;
+                })   
+                .then(function(nets_or_null)
+                {
+                    if(nets_or_null)
+                    {
+                        // there is at least a net, copy data from it
+                        var voc = {};
+                        voc.sLocalFolder        = foldername;
+                        voc.sLabel              = nets_or_null[0].sLabel;
+                        voc.commands            = nets_or_null[0].commands;
+                        voc.nItems2Recognize    = nets_or_null[0].nItems2Recognize;
+                        voc.sModelFileName      = nets_or_null[0].sModelFileName;
+                        return setTrainVocabulary(voc, FileSystemSrv.OVERWRITE)
+                        .then(function()
+                        {
+                            if(okstate.length)
+                            {
+                                    $state.go(okstate);
+                                    return true;
+                            } 
+                            else    return voc;
+                        })                         
+                    }
+                    else
+                    {
+                        // there isn't any net => delete the folder
+                        return deleteTrainVocabulary(foldername, selfoldername, false)
+                        .then(function()                
+                        {     
+                            return $ionicPopup.alert({title: UITextsSrv.labelAlertTitle,template: UITextsSrv.VOCABULARY.labelErrorMissingVocabularyJsonVocDeleted})                            
+                            .then(function()                
+                            {                         
+                                if(okstate.length)
+                                {                            
+                                        $state.go(cancelstate); 
+                                        return false;
+                                }
+                                else    return false;
+                            })                        
+                        })                            
+                    }
+                })       
+            }
+            else
+            {
+                return deleteTrainVocabulary(foldername, selfoldername)
+                .then(function()                
+                {                    
+                    if(okstate.length)
+                    {                            
+                            $state.go(cancelstate); 
+                            return false;
+                    }
+                    else    return false;
+                })                    
+            }
+        })
+    }
+    
+    // net's json file is missing:
+    // present solution: alert user, set to empty sModelFileName and delete the net pb whether exist. user shall select a new net
+    // TODO: try to retrieve the net from the server. 
+    recoverMissingNetJsonFile = function(foldername, net_noextension)
+    {
+        var pb_path = getTrainVocabularyFolder(foldername) + "/" + net_noextension + ".pb";
+
+        return $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, 
+                                  template: UITextsSrv.VOCABULARY.labelErrorMissingNetJson})
+        .then(function()
+        {
+            return FileSystemSrv.updateJSONFileWithObj(getTrainVocabularyJsonPath(foldername), {"sModelFileName":""}, FileSystemSrv.OVERWRITE)
+        })
+        .then(function()
+        {
+            return FileSystemSrv.deleteFile(pb_path);   // return true if existed, false if did not.
+        })
+    }
+    
+    // net's pb file is missing:
+    // present solution: set to empty sModelFileName and delete the net json. user shall select a new net
+    // TODO: try to retrieve the net from the server
+    recoverMissingNetPbFile = function (foldername, net_noextension)
+    {
+        return recoverMissingNetJsonFile(foldername)
+        .then(function ()
+        {
+            return FileSystemSrv.deleteFile(net_noextension + ".json");
+        });
+    };    
     //====================================================================================================================================================
     //  CHECK STATUS
     //====================================================================================================================================================  
     // calculate the status of a vocabulary, given a voc object (called by RuntimeStatusSrv.loadVocabulary/Default
     getUpdatedStatus = function(voc)
     {
-        if(voc.status == null)  voc.status         = {};
-        voc.net = null;
+        if(voc.status == null)  voc.status      = {};
+        voc.net                                 = null;
         
-        voc.status.vocabularyHasVoices             = false;
-        voc.status.haveValidTrainingSession        = false;
-        voc.status.haveFeatures                    = false;
-        voc.status.haveZip                         = false;
-        voc.status.isNetAvailableLocale            = false;
-        voc.status.isNetLoaded                     = false;        
+        voc.status.vocabularyHasVoices          = false;
+        voc.status.haveValidTrainingSession     = false;
+        voc.status.haveFeatures                 = false;        // this is managed in ManageTrainingCtrl page
+        voc.status.haveZip                      = false;
+        voc.status.isNetAvailableLocale         = false;
+        voc.status.isNetLoaded                  = false;        
 
-        voc.status.hasTrainVocabulary              = (voc ? voc.commands.length : false);
-        if(!voc.status.hasTrainVocabulary) return Promise.resolve(voc);        // ==> NO commands in the vocabulary (may exists but without any commands, as user deleted later all the commands)
+        voc.status.hasTrainVocabulary           = (voc ? voc.commands.length : false);
+        if(!voc.status.hasTrainVocabulary)      return Promise.resolve(voc);        // ==> NO commands in the vocabulary (may exists but without any commands, as user deleted later all the commands)
 
-        var voc_folder                  = vocabularies_folder + "/" + voc.sLocalFolder;
-        var train_folder                = recordings_folder; // + "/" + voc.sLocalFolder;
-        var zip_file                    = train_folder + "/" + "data.zip";
-        var selmodelpath                = "";
+        var voc_folder                          = vocabularies_folder + "/" + voc.sLocalFolder;
+        var train_folder                        = recordings_folder; // + "/" + voc.sLocalFolder;
+        var zip_file                            = train_folder + "/" + "data.zip";
+        var selmodelpath                        = "";
         
         return hasVoicesTrainVocabulary(voc)                  // ? vocabularyHasVoices
         .then(function(res)
         {
-            voc.status.vocabularyHasVoices = res;
+            voc.status.vocabularyHasVoices      = res;
             
             if(voc.nModelType == plugin_enum.TF_MODELTYPE_COMMON)
             {
                 // the default voc cannot be modified or retrained
-                voc.status.isNetLoaded  = TfSrv.isModelLoaded(voc.sLocalFolder);
-                return voc;     // ==> NO recordings folder                
+                voc.status.isNetLoaded          = TfSrv.isModelLoaded(voc.sLocalFolder);
+                return voc;                     // ==> NO recordings folder                
             }
             else
             {
-                return existCompleteRecordedTrainSession(train_folder, voc)  // ? haveValidTrainingSession
+                return existCompleteRecordedTrainSession(train_folder, voc, 1)  // ? haveValidTrainingSession : should be called with EnumsSrv.RECORD.SESSION_MIN_REPETITIONS
                 .then(function(existtrainsession)
                 {
-                    // TODO: should set to existtrainsession....but it's problematic
-                    voc.status.haveValidTrainingSession = true;
-                    return existFeaturesTrainSession(train_folder);   // ? haveFeatures
-                })
-                .then(function(res)
-                {
-                    voc.status.haveFeatures = res; //(!res.length ?   true    :   false);
+                    // TODO: I put 1...it's problematic
+                    voc.status.haveValidTrainingSession = existtrainsession;
                     return FileSystemSrv.existFile(zip_file);                       // ? haveZip
                 })
                 .then(function(existzip)
                 {
                     voc.status.haveZip = (existzip ? true : false);
+ 
                     if(voc.sModelFileName != null)
                         if(voc.sModelFileName.length)
                             selmodelpath = vocabularies_folder + "/" + voc.sLocalFolder  + "/" + voc.sModelFileName + ".json";
-
+                            
+                    
+                    
+//                    if(selmodelpath != "")  
+//                        return FileSystemSrv.existFile(selnetpath)    
+//                        .then(function(existnetjson)
+//                        { 
+//                            if(existnetjson)
+//                        })
+                    
                     if(selmodelpath != "")  return getTrainVocabulary(selmodelpath) 
                     else                    return null;
                     
@@ -710,42 +855,6 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });
     };    
     
-    // return: boolean
-    // check if the given train session has at least EnumsSrv.RECORD.SESSION_MIN_REPETITIONS repetitions of each command
-    existFeaturesTrainSession = function(audio_relpath) 
-    {
-        var featuresfiles   = [];
-        var audiofiles      = [];
-        
-        var missingfeatures = [];
-        
-        return FileSystemSrv.listFilesInDir(audio_relpath, ["dat"])
-        .then(function(features)
-        {
-            featuresfiles = features;
-            return FileSystemSrv.listFilesInDir(audio_relpath, ["wav"])
-        })
-        .then(function(audios)
-        {
-            audiofiles = audios;
-            var exist = false;
-            var laudio = audiofiles.length;
-            var lfeat = featuresfiles.length;
-            for(var a=0; a<laudio; a++)
-            {
-                var audioname = StringSrv.removeExtension(audiofiles[a])
-                exist = false;
-                for(var f=0; f<lfeat; f++)
-                {
-                    var featurename = StringSrv.removeExtension(featuresfiles[f]);
-                    if(audioname == featurename)    exist = true;
-                }
-                if(!exist)  missingfeatures.push(audioname)
-            }
-            return missingfeatures;
-        });
-    };    
-    
     // returns existingNets{{exist, path, voc},..,{exist, path, voc}}
     getExistingNets = function(uservocabularyname)
     {    
@@ -802,39 +911,31 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
                         return $q.reject({"message":errortxt });
                 }
             }
-            // Promises cycle !!    LEGGO CONTENUTO NETS' JSONS
+            
             var subPromises = [];
-//            for (var v=0; v<jsonnames.length; v++) 
             for (var v in existingNets) 
             {
                 if(existingNets[v].exist)
-                {
-                    (function(netpath) 
-                    {
-                        subPromises.push(getTrainVocabulary(netpath));
-                    })(existingNets[v].path);           
-                }
+                    subPromises.push(getTrainVocabulary(existingNets[v].path));
                 else
                     subPromises.push(Promise.resolve(true));
             }
-            return $q.all(subPromises)
+            return $q.all(subPromises)// Promises cycle !!    LEGGO CONTENUTO NETS' JSONS
         })
         .then(function(vocs)
         {
-            var subPromises = [];            
+            var subPromises = [];    
+            var subPromise  = null;
             var id = 0;
             for (var v in existingNets) 
             {           
                 if(existingNets[v].exist)
                 {
                     existingNets[v].voc = vocs[id];
-                    (function(voc) 
-                    {
-                        if(voc.sModelFilePath.length)
-                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
-                        subPromises.push(subPromise);
-                    })(existingNets[v].voc);                       
-                    
+                    if(vocs[id].sModelFilePath.length)
+                        subPromises.push(FileSystemSrv.existFileResolved(vocs[id].sModelFilePath));
+                    else
+                        subPromises.push(Promise.resolve(false));
                 }
                 else subPromises.push(Promise.resolve(true));
                 id++;
@@ -861,14 +962,9 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
 //            console.log(MiscellaneousSrv.printObjectArray(existingNets));
             return existingNets;
         })
-        .catch(function(error)
-        {
-           return $q.reject(error); 
-        }); 
     };      
     
-    
-    // given a foldername, returns an array[2] with the netobjects of the last net of the two families (1)PURA <= (2) PUA <= (3) PU or (1) CRA (2) CA ...that can recognize
+    // given a foldername, returns an objectarray{pu/pua/pura/ca/cra} with the netobjects of the last net of the two families (1)PURA <= (2) PUA <= (3) PU or (1) CRA (2) CA ...that can recognize
     getExistingLastNets = function(uservocabularyname)
     { 
         return getExistingNets(uservocabularyname)
@@ -915,6 +1011,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         })
     }   
     
+    // get the temp sessions list (shoulb be ONE at max) and returns it
     getTempSessions = function(temp_session_folder)     //  vocabularies/gigi/train_....
     {
         var temp_voc        = null;
@@ -950,6 +1047,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });       
     };
     
+    // get all the training wav files, given the vocabulary folder name
     getTrainVocabularyRecordingsName = function(foldername)
     {
         return getTrainVocabularyName(foldername)
@@ -959,6 +1057,7 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         });
     };
     
+    // get all the training wav files, given a voc object
     getTrainVocabularyRecordings = function(voc)
     {
         var recordings              = [];
@@ -993,26 +1092,35 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
     return {
         init                                    : init,                                 // 
         
+        // GET
         getTrainVocabulary                      : getTrainVocabulary,                   // returns promise of a train_vocabulary, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
-        getAllTrainVocabulary                   : getAllTrainVocabulary,                // returns the content of all the vocabulary.json of each vocabulary
-        getTrainVocabularySelectedNet           : getTrainVocabularySelectedNet,        // returns promise of a {voc:train_vocabulary, net:selected net}, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
         getTrainVocabularyName                  : getTrainVocabularyName,               // returns promise of a volatile train_vocabulary, given a foldername
+        getTrainVocabularySelectedNet           : getTrainVocabularySelectedNet,        // returns promise of a {voc:train_vocabulary, net:selected net}, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
+        getTrainVocabularySelectedNetName       : getTrainVocabularySelectedNetName,    // returns promise of a {voc:train_vocabulary, net:selected net}, given a foldername (AllSpeak/vocabularies/gigi/vocabulary.json)
+        getAllTrainVocabulary                   : getAllTrainVocabulary,                // returns the content of all the vocabulary.json of each vocabulary
         getValidTrainVocabularies               : getValidTrainVocabularies,            // returns the list of train vocabularies that can recognize
 
+        // SET, MODIFY
         setTrainVocabulary                      : setTrainVocabulary,                   // write train_vocabulary to file
         copyVocabularyName                      : copyVocabularyName,                   // create a copy of the given vocname, named as "newname": returns true/null or error
         copyVocabulary                          : copyVocabulary,                       // create a copy of the given voc, named as "newname": returns true/null or error
         resetVocabularyNets                     : resetVocabularyNets,                  // when commands list change, all the nets must be deleted
         resetVocabulariesNets                   : resetVocabulariesNets,                // call the above method for a list of foldername
         removeCommandFromVocabulary             : removeCommandFromVocabulary,          // remove from the given vocabulary the given command_id
-        removeCommandFromVocabularies           : removeCommandFromVocabularies,      // call the above method for a list of foldername
-
+        removeCommandFromVocabularies           : removeCommandFromVocabularies,        // call the above method for a list of foldername
+        deleteTrainVocabulary                   : deleteTrainVocabulary,                // delete a vocabulary and if selected, select default
+        recoverMissingVocJsonFile               : recoverMissingVocJsonFile,            // when vocabulary.json is missing, but nets are present. TODO: send an alert to developers
+        recoverMissingNetJsonFile               : recoverMissingNetJsonFile,            // when net_xxxxxx.json is missing, TODO: send an alert to developers
+        recoverMissingNetPbFile                 : recoverMissingNetPbFile,              // when net_xxxxxx.pb   is missing, TODO: send an alert to developers
+        
+        // get ELEMENTS, STATUS
         existsTrainVocabulary                   : existsTrainVocabulary,                // returns voc.commands.length ? 1 : 0 
         getTrainCommand                         : getTrainCommand,                      // get TV's sentence entry given its ID
         getTrainVocabularyIDs                   : getTrainVocabularyIDs,                // returns [ids] of commands within the train_vocabulary
         getTrainVocabularyIDLabels              : getTrainVocabularyIDLabels,           // returns [labels] of commands within the train_vocabulary
         getTrainCommandsByArrIDs                : getTrainCommandsByArrIDs,             // get array of commands with given IDs
         getTrainVocabularyJsonPath              : getTrainVocabularyJsonPath,           // get the vocabulary.json path given a sLocalFolder or "" if input param is empty
+        getTrainVocabularyFolder                : getTrainVocabularyFolder,             // get the rel path of the vocabulary
         getExistingTrainVocabularyJsonPath      : getExistingTrainVocabularyJsonPath,   // get the voc.json path given a sLocalFolder or "" if not existent
         getVocabulariesNamesUsingCommandId      : getVocabulariesNamesUsingCommandId,   // returns [foldername] of vocabularies containing the given command id
         
@@ -1022,7 +1130,6 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         hasVoicesTrainVocabularyName            : hasVoicesTrainVocabularyName,         // [true | false]:  check if all the to-be-recognized commands have their corresponding playback wav
         updateTrainVocabularyAudioPresence      : updateTrainVocabularyAudioPresence,   // list wav files in vb folder and updates train_vocabulary[:].nrepetitions
         existCompleteRecordedTrainSession       : existCompleteRecordedTrainSession,    // check if the given train session has at least 5 repetitions of each command
-        existFeaturesTrainSession               : existFeaturesTrainSession,            // check if in the given folder, exist one dat file for each wav one
         getTrainVocabularyVoicesPaths           : getTrainVocabularyVoicesPaths,        // get the rel paths of the to-be-recognized wav files 
         getExistingTrainVocabularyVoicesPaths   : getExistingTrainVocabularyVoicesPaths,// get the rel paths of the to-be-recognized wav files, = "" if file is absent 
         
@@ -1032,5 +1139,50 @@ main_module.service('VocabularySrv', function($q, VoiceBankSrv, CommandsSrv, Fil
         getExistingNets                         : getExistingNets,                      // get the available nets within a vocabulary folder
         getExistingLastNets                     : getExistingLastNets,                  // get the LAST (of the two families, PU & CA) available nets within a vocabulary folder,given a foldername (returns an array[2])
         getTempSessions                         : getTempSessions                       // get the temp sessions list (shoulb be ONE at max) and returns it
+        
+        
+        // REMOVED
+//        existFeaturesTrainSession               : existFeaturesTrainSession,            // check if in the given folder, exist one dat file for each wav one
+        
     };
 });
+
+
+// REMOVED
+    
+//    // return: boolean
+//    // check if the given train session has at least EnumsSrv.RECORD.SESSION_MIN_REPETITIONS repetitions of each command
+//    existFeaturesTrainSession = function(audio_relpath) 
+//    {
+//        var featuresfiles   = [];
+//        var audiofiles      = [];
+//        
+//        var missingfeatures = [];
+//        
+//        return FileSystemSrv.listFilesInDir(audio_relpath, ["dat"])
+//        .then(function(features)
+//        {
+//            featuresfiles = features;
+//            return FileSystemSrv.listFilesInDir(audio_relpath, ["wav"])
+//        })
+//        .then(function(audios)
+//        {
+//            audiofiles = audios;
+//            var exist = false;
+//            var laudio = audiofiles.length;
+//            var lfeat = featuresfiles.length;
+//            for(var a=0; a<laudio; a++)
+//            {
+//                var audioname = StringSrv.removeExtension(audiofiles[a])
+//                exist = false;
+//                for(var f=0; f<lfeat; f++)
+//                {
+//                    var featurename = StringSrv.removeExtension(featuresfiles[f]);
+//                    if(audioname == featurename)    exist = true;
+//                }
+//                if(!exist)  missingfeatures.push(audioname)
+//            }
+//            return missingfeatures;
+//        });
+//    }; 
+

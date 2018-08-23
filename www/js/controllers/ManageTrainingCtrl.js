@@ -165,8 +165,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             animation: 'slide-in-up',
             backdropClickToClose: false,
             buttons: [
-                        { text: 'Annulla', type: 'button-positive', onTap: function(e) { return false;}},
-                        { text: 'Cambia', type: 'button-positive', onTap: function(e) { return true;}}
+                        { text: UITextsSrv.labelCancel, type: 'button-positive', onTap: function(e) { return false;}},
+                        { text: UITextsSrv.labelChange, type: 'button-positive', onTap: function(e) { return true;}}
                      ]
         })
         .then(function(modal) 
@@ -264,7 +264,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.training_received_json_path      = $scope.training_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme.toString() + "_" + $scope.tfCfg.nModelClass.toString() + ".json";        
         $scope.final_vocabulary_json_path       = $scope.vocabulary_relpath + "/" + $scope.final_net_json_prefix + "_" + net_type.toString() + "_" + $scope.tfCfg.nProcessingScheme.toString() + "_" + $scope.tfCfg.nModelClass.toString() + ".json";
         $scope.vocabulary_status.haveZip        = true;
-        $scope.vocabulary_status.haveFeatures   = [];
+        $scope.vocabulary_status.haveFeatures   = true;
         $scope.isSubmitting                     = true;        
         $scope.modalSubmitSession.show();
         $scope.upLoadSession();
@@ -345,10 +345,11 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             $scope.stopMFCC = true;
         else if($scope.isUploading)
             RemoteAPISrv.cancelTransfer();
-        else if($scope.isChecking)
-            ClockSrv.removeClock($scope.timerID);
         else if($scope.isDownloading)
             RemoteAPISrv.cancelTransfer();
+        
+        if($scope.timerID != -1)
+            ClockSrv.removeClock($scope.timerID);
         
         $scope.initSessionVariables();
         $scope.modalSubmitSession.hide();
@@ -387,7 +388,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             subTitle: 'Stai per rianalizzare i dati.\nVuoi sovrascrivere i dati esistenti?',
             scope: $scope,
             buttons: [
-             {
+                {
                     text: '<b>CANCELLA</b>',
                     type: 'button-positive',
                     onTap: function() { return -1; }
@@ -482,7 +483,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.onExtractFeaturesEnd = function()
     {
         $scope.resetExtractFeatures();
-        $scope.vocabulary_status.haveFeatures   = [];
+        $scope.vocabulary_status.haveFeatures   = true;
         $scope.isCalcFeatures                   = false;
         $scope.$apply();
         if($scope.isSubmitting) $scope.zipSession();
@@ -511,7 +512,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
     $scope.createSubmitSessionJson = function(jsonpath) 
     {
         var ids = VocabularySrv.getTrainVocabularyIDLabels($scope.vocabulary);
-        return TfSrv.createSubmitDataJSON($scope.foldername, $scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelClass, $scope.tfCfg.nModelType, $scope.init_sessionid, jsonpath);
+        return TfSrv.createSubmitDataJSON("", $scope.foldername, ids, $scope.mfccCfg.nProcessingScheme, $scope.tfCfg.nModelClass, $scope.tfCfg.nModelType, $scope.init_sessionid, jsonpath);
     };
     
     // called by $scope.onExtractFeaturesEnd whether isSubmitting
@@ -579,7 +580,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         {     
             var title = "ERRORE durante l'upload dei dati" + error.toString();
             console.log(title);
-            alert(title);
+//            alert(title);
+            $ionicPopup.alert({title:UITextsSrv.labelAlertTitle, template:"ERRORE durante l'upload dei dati" + error.toString()})
         });
     };
     
@@ -610,6 +612,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         .then(function(train_obj)
         {
             $scope.isChecking       = false;
+           
             if(train_obj)
             {
                 // server responded: ok or error
@@ -651,14 +654,24 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         })
         .catch(function(error)
         {     
+            ClockSrv.removeClock($scope.timerID);       // stop checking
             var title = "ERROR in ManageTrainingCtrl::checkSession. "
             var msg = "";
             if(error.status != null)
             {
-                if(error.status == 500)             msg = error.data.error;
-                else if(error.status == 'error')    msg = UITextsSrv.REMOTE.labelUnrecoverableError;
+                switch(error.status)
+                {
+                    case 500:
+                    case 404:
+                        msg = error.data.error;
+                        break
+                        
+                    case "error":
+                        msg = UITextsSrv.REMOTE.labelUnrecoverableError;
+                        break;
+                }
             }
-            else                                    msg = error.message
+            else    msg = error.message
 
             console.log(title + msg);
             $scope.closeModalSubmit();
@@ -709,8 +722,8 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             {
                 switch(error.mycode)
                 {
-                    case ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST:
-                    case ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY:
+                    case ErrorSrv.ENUMS.VOCABULARY.NETPBFILE_NOTEXIST:
+                    case ErrorSrv.ENUMS.VOCABULARY.NETPBFILEVARIABLE_EMPTY:
                         // #ERROR_RESET#
                         break;
                     case ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL:
@@ -874,12 +887,6 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         
         var message = { title: UITextsSrv.labelAlertTitle, template: UITextsSrv.TRAINING.labelWant2SubstituteNewNet};
         return FileSystemSrv.createJSONFileFromObj($scope.final_vocabulary_json_path, $scope.temp_sess_voc, FileSystemSrv.ASK_OVERWRITE, message)
-        .then(function(created)
-        {
-            // it returns false if user did not confirm.
-            if(created)     return FileSystemSrv.createJSONFileFromObj($scope.final_vocabulary_json_path, $scope.temp_sess_voc, FileSystemSrv.OVERWRITE, message);
-            else            return false;
-        })
         .then(function(created)
         {            
             if(created)     return FileSystemSrv.updateJSONFileWithObj($scope.vocabulary_json_path, {"sModelFileName":net_name}, FileSystemSrv.OVERWRITE);

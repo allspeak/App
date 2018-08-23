@@ -20,6 +20,10 @@ function UITextsSrv()
     service.labelCriticalErrorDesc      = "L\'APPLICAZIONE VERRA\' CHIUSA PER IL SEGUENTE ERRORE:<br>";
     service.labelAdd                    = "AGGIUNGI"; 
     service.labelSubstitute             = "SOSTITUISCI"; 
+    service.labelChange                 = "CAMBIA"; 
+    service.labelCancel                 = "ANNULLA"; 
+    service.labelDelete                 = "CANCELLA"; 
+    service.labelRecovery               = "RECUPERA"; 
     service.labelSureOverWriteExistFile = 'IL FILE ESISTE GIA\'.<br>VUOI SOVRASCRIVERLO ?'; 
     
     
@@ -51,6 +55,7 @@ function UITextsSrv()
     service.TRAINING.labelToggleSentencesShowTrainVocabulary    = "VISUALIZZA I COMANDI";
     service.TRAINING.labelToggleSentencesEditTrainVocabulary    = "MODIFICA I COMANDI";    
     service.TRAINING.labelTrainCommands                         = "ADDESTRA I COMANDI";    
+    service.TRAINING.labelTestNetName                           = "TEST NUOVA: ";    
     
     service.TRAINING.labelVocTrainedWant2Download               = "IL VOCABOLARIO E\' STATO ADDESTRATO. VUOI SCARICARLO ORA ? E\' POSSIBILE FARLO IN SEGUITO";    
     service.TRAINING.labelNetDownloadedWant2TestIt              = "HAI CORRETTAMENTE SCARICATO LA RETE, VUOI ATTIVARLA E PASSARLA AL RICONOSCIMENTO ?";    
@@ -63,12 +68,16 @@ function UITextsSrv()
     service.TRAINING.labelSelTrainingMode                       = 'Seleziona la modalità di addestramento della rete';    
     service.TRAINING.labelLostConnection                        = "HAI PERSO LA CONNESSIONE INTERNET. VERRAI MANDATO ALLA PAGINA PRECEDENTE";    
     
-    service.TRAINING.models.labelC                              = "comune"
-    service.TRAINING.models.labelPU                             = "utente pura"
-    service.TRAINING.models.labelPUA                            = "utente pura adattata"
-    service.TRAINING.models.labelCA                             = "comune adattata"
-    service.TRAINING.models.labelCRA                            = "comune riadattata"
-    service.TRAINING.models.labelPURA                           = "utente pura riadattata"
+    service.TRAINING.models.labelUSER                           = "UTENTE";
+    service.TRAINING.models.labelCOMMONADAPTED                  = "COMUNE ADATTATA";
+    service.TRAINING.models.labelUNSPECIFIED                    = "NON SPECIFICATA";
+    
+    service.TRAINING.models.labelC                              = "comune";
+    service.TRAINING.models.labelPU                             = "utente pura";
+    service.TRAINING.models.labelPUA                            = "utente pura adattata";
+    service.TRAINING.models.labelCA                             = "comune adattata";
+    service.TRAINING.models.labelCRA                            = "comune riadattata";
+    service.TRAINING.models.labelPURA                           = "utente pura riadattata";
     
     
     service.TRAINING.labelNewNetSubstituting                    = "UNA RETE UGUALE ESISTE GIA\'. CONTINUANDO, POTRAI PROVARE LA NUOVA RETE, MA SE L\'ACCETTERAI, LA VECCHIA VERSIONE ORA PRESENTE VERRA\' ELIMINATA.\nVUOI PROSEGUIRE?";    
@@ -81,6 +90,7 @@ function UITextsSrv()
     service.TRAINING.MODAL_CREATE_NEWVOCABULARY                 = "SCEGLI IL NOME DEL VOCABOLARIO DI COMANDI CHE INTENDI ADDESTRARE.IL NOME \"default\" E' RISERVATO AL SISTEMA E NON PUOI UTILIZZARLO. SUGGERIMENTO: SE E' IL PRIMO VOCABOLARIO, CHIAMALO STANDARD";
     
     service.VOCABULARY.CONFIRM_DELETE                           = "VUOI VERAMENTE CANCELLARE IL VOCABOLARIO?";
+    service.VOCABULARY.DELETED                                  = "IL VOCABOLARIO E\' STATO CANCELLATO";
     service.VOCABULARY.USERCOMMAND_EXIST                        = "IL COMANDO GIÀ ESISTE <br> CAMBIAGLI IL NOME";
     service.VOCABULARY.want2registervoiceNewCommand             = "VUOI REGISTRARE LA TUA VOCE MENTRE PRONUNCI QUESTO NUOVO COMANDO ?";
     service.VOCABULARY.labelReservedVocName                     = '\" E\' RISERVATO AL SISTEMA. SCEGLI UN\'ALTRO NOME';
@@ -94,6 +104,11 @@ function UITextsSrv()
     service.VOCABULARY.labelSaveList                            = "SALVA LISTA";
     service.VOCABULARY.labelListSaved                           = "LA LISTA DEI COMANDI E\' STATA CORRETTAMENTE SALVATA";
     service.VOCABULARY.labelAskAddorSubstituteRec               = "AGGIUNGI NUOVE RIPETIZIONI AD UNA SESSIONE ESISTENTE, OPPURE SOSTITUISCI LE RIPETIZIONI PRESENTI";
+    service.VOCABULARY.labelErrorMissingVocabularyJson1         = "SI E\' VERIFICATO UN ERRORE IRREPARABILE SUL VOCABOLARIO:<br>     ";
+    service.VOCABULARY.labelErrorMissingVocabularyJson2         = "      <br>VUOI PROVARE A:<br> - RECUPERARLO<br> - CANCELLARLO";
+    service.VOCABULARY.labelErrorMissingVocabularyJsonVocDeleted= "NON E\' STATO POSSIBILE RECUPERARE IL VOCABOLARIO<br>E\' STATO RIMOSSO";
+    service.VOCABULARY.labelErrorMissingNetJson                 = "SI E\' VERIFICATO UN PROBLEMA CON LA RETE SELEZIONATA CHE VERRA\' CANCELLATA<br>DEVI SELEZIONARLA UN\'ALTRA";
+    service.VOCABULARY.labelErrorMissingNetJsonTestSession      = "SI E\' VERIFICATO UN PROBLEMA CON LA RETE APPENA ADDESTRATA, CHE VERRA\' CANCELLATA<br>DEVI RIPETERE L\'ADDESTRAMENTO";
     
     service.REMOTE.labelConnect                                 = "Connetti questo dispositivo al tuo centro SLA di riferimento";    
     service.REMOTE.labelWant2Connect                            = "Vuoi connettere questo dispositivo al tuo centro SLA di riferimento?";    

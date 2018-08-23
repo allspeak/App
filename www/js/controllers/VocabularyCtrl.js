@@ -7,12 +7,10 @@
  * - use this model
  */
 
-function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatform, InitAppSrv, EnumsSrv, VocabularySrv, TfSrv, RuntimeStatusSrv, FileSystemSrv, RemoteAPISrv, UITextsSrv, MiscellaneousSrv)
+function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatform, InitAppSrv, EnumsSrv, VocabularySrv, TfSrv, RuntimeStatusSrv, FileSystemSrv, RemoteAPISrv, UITextsSrv, MiscellaneousSrv, ErrorSrv)
 {
-    $scope.status       = 0;
     $scope.headerTitle  = "Vocabolario: ";
     $scope.vocabulary   = null;
-    $scope.modelLoaded  = false;    // model toggle
     $scope.isDefault    = false;    // if is a default NET, I cannot train it, doesn't have any recordings
                                     // I can see the commands, but cannot edit them
     
@@ -72,11 +70,10 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         $scope.isConnected              = RemoteAPISrv.hasInternet();
         window.addEventListener('connection' , $scope.onConnection); 
         
-        return VocabularySrv.getUpdatedStatusName($scope.foldername)
-        .then(function(voc) // voc:{usual_voc_fields, status:{}, net:{} | null}
+        return VocabularySrv.getTrainVocabulary(vocabulary_json_path)
+        .then(function(voc) 
         {
             $scope.vocabulary           = voc;
-            $scope.vocabulary_status    = voc.status;
             
             $scope.headerTitle          = $scope.vocabulary.sLabel;            
             
@@ -94,7 +91,6 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
                 $scope.overallNets = existing_nets;
                 $scope.updateExistingNets($scope.vocabulary.sModelFileName);
             }
-            
             return VocabularySrv.existCompleteRecordedTrainSession($scope.recordings_folder, $scope.vocabulary, 1);
         })
         .then(function(exist_min_rep)
@@ -104,11 +100,19 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         })     
         .catch(function(error)
         {
-            var msg = error.toString();
-            console.log("Error in VocabularyCtrl::$ionicView.enter ");
-            if(error.message) msg = error.message;
-            alert("Error in VocabularyCtrl::$ionicView.enter "+ msg);
-            $state.go("home");
+            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST)
+            {
+                // vocabulary could not be recovered or user did not want to do it...and was thus deleted
+                $state.go("vocabularies"); 
+            }
+            else
+            {
+                var msg = error.toString();
+                console.log("Error in VocabularyCtrl::$ionicView.enter ");
+                if(error.message) msg = error.message;
+                alert("Error in VocabularyCtrl::$ionicView.enter "+ msg);
+                $state.go("home");
+            }
         });        
     });
 
@@ -158,11 +162,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         {
             if(res)
             {
-                return FileSystemSrv.deleteDir($scope.vocabulary_relpath)
-                .then(function()
-                {
-                    return InitAppSrv.setStatus({"userActiveVocabularyName":"default"});
-                })
+                return VocabularySrv.deleteTrainVocabulary($scope.foldername, RuntimeStatusSrv.getUserVocabularyName())
                 .then(function()                
                 {                    
                     $state.go("vocabularies");    
@@ -173,15 +173,6 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
                 });
             }
         });          
-    };
-    
-    $scope.loadModel = function()    
-    {
-        RuntimeStatusSrv.loadVocabulary($scope.foldername)
-        .catch(function(error)
-        {
-            alert(error.message);
-        });        
     };
     
     // event broadcasted by RemoteAPISrv when internet connection availability changes

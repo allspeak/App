@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetectionSrv, $ionicPlatform, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, RuntimeStatusSrv, VocabularySrv, StringSrv)
+function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, SpeechDetectionSrv, $ionicPlatform, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, RuntimeStatusSrv, VocabularySrv, UITextsSrv, ErrorSrv, EnumsSrv)
 {
     //--------------------------------------------------------------------
     // debug
@@ -51,6 +51,7 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
     $scope.loadedJsonFolderName     = ""; 
     
     $scope.loadedToggleId           = 0;        // id of the enabled toggle
+    $scope.originalLoadedToggleId   = -1;        // id of the selected net (to be loaded when exiting the testing phases)
     //--------------------------------------------------------------------------                    
     $scope.$on("$ionicView.leave", function(event, data)
     {
@@ -63,7 +64,7 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
         $scope.deregisterFunc = $ionicPlatform.registerBackButtonAction(function()
         {
             if(!$scope.sessionname.length)  $state.go("home", {"isUpdated":false});
-            else                            $state.go("manage_training", {"foldername":$scope.foldername, "backState:":'vocabulary'});
+            else                            $scope.onStopTesting();
         }, 100);   
         
         //---------------------------------------------------------------------------------------------------------------------
@@ -209,6 +210,20 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
         $scope.recThreshold = (boolincrement == true ? $scope.recThreshold+5    :   $scope.recThreshold-5)
         $scope.recThreshold = Math.max($scope.recThreshold, 0);
         $scope.recThreshold = Math.min($scope.recThreshold, 50);
+    }
+    
+    $scope.onStopTesting = function()
+    {
+        return(function()
+        {
+            if($scope.originalLoadedToggleId)   return $scope.selectModel($scope.originalLoadedToggleId)    // restore the selected net if existed (originalLoadedToggleId > 0)
+            else                                return Promise.resolve(true);
+        })()
+        .then(function()
+        {
+            $state.go("manage_training", {foldername:$scope.foldername, backState:'vocabulary'})
+        })
+
     }
     //==================================================================================
     // PLUGIN CALLBACKS
@@ -385,14 +400,15 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
         // I update the vocabulary.json only when a valid net is selected 
         return (function(str) 
         {
-            if(!selLabel.startsWith("TESTING: "))
+            if(!selLabel.startsWith(UITextsSrv.TRAINING.labelTestNetName))
                 return FileSystemSrv.updateJSONFileWithObj($scope.vocabulary_json, {"sModelFileName":sModelFileName}, FileSystemSrv.OVERWRITE)
             else             
                 return Promise.resolve(true);
         })(selLabel)
         .then(function()
         {
-            return VocabularySrv.getTrainVocabulary($scope.modelsJson[index].jsonpath)
+            // try loading a net json. ignore automatic recover, as this is a net json
+            return VocabularySrv.getTrainVocabulary($scope.modelsJson[index].jsonpath, EnumsSrv.VOCABULARY.IGNORE_RECOVERY); 
         })
         .then(function(net)
         {
@@ -400,7 +416,6 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
         })        
         .then(function(res)
         {
-            console.log("selectModel success:" + (res ? res.toString() : ""));       
             $scope.loadedModel      = TfSrv.getCfg();
             $scope.recThreshold     = $scope.loadedModel.fRecognitionThreshold*100;     
 
@@ -410,13 +425,35 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
         })
         .catch(function(error)
         {
-            if(error.message)   alert(error.message);        
-            else                alert("Errore durante il caricamento del nuovo modello: " + error);
-            
-            $scope.modelsJson[index].checked = false;
-            $scope.modelsJson[currentId].checked = true;
-            console.log("selectModel ERROR:" + error.message); 
-            return $scope.selectModel(currentId);
+            return(function() 
+            {
+                if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST) //got from VocabularySrv.get Train Vocabulary($scope.modelsJson[index].jsonpath, true)
+                {
+                    return VocabularySrv.recoverMissingNetJsonFile($scope.foldername, $scope.modelsJson[index].sModelFileName)
+                    .then(function()
+                    {  
+                        $state.go("vocabulary", {"foldername": $scope.foldername});
+                        return false;       
+                    })
+                }
+                else
+                    return $ionicPopup.alert({title:UITextsSrv.labelAlertTitle, template:"Errore durante il caricamento del nuovo modello: " + (error.message != null   ? error.message : error.toString())})
+            })()            
+            .then(function(goon)
+            {            
+                if(goon)
+                {
+                    $scope.modelsJson[index].checked = false;
+                    $scope.modelsJson[currentId].checked = true;
+                    console.log("selectModel ERROR:" + error.message); 
+                    return $scope.selectModel(currentId);
+                }
+                else return true;
+            })
+            .catch(function(err)
+            {            
+                console.log("selectModel ERROR:" + err.message);
+            })
         })
     };
     
@@ -426,61 +463,10 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
         if($scope.loadedModel)      $scope.loadedJsonFolderName = $scope.loadedModel.sModelFileName;        // net_27X_25X_28X
         else                        $scope.loadedJsonFolderName   = "";
         
-        var existing_vocs           = [];
-        $scope.modelsJson           = [];
-        $scope.loadedToggleId       = 0;
-        
-//        return VocabularySrv.getValidTrainVocabularies(dir)    // AllSpeak/vocabularies/gigi/
-//        .then(function(validvocs)  // [vocs with also properties: sStatus & jsonpath]
-//        {
-//            if(validvocs)
-//            {
-//                existing_vocs   = validvocs;
-//                var len         = existing_vocs.length;
-//            
-//                for (var jf=0; jf<len; jf++)
-//                {
-////                    var jsonpath            = dir + "/" + existing_vocs[jf].jsonpath;
-////                    var sModelFileName      = StringSrv.removeExtension(existing_vocs[jf].jsonpath);
-//                    $scope.modelsJson[jf]   = {"sLabel": existing_vocs[jf].sLabel, "sModelFileName": existing_vocs[jf].sModelFileName, "jsonpath":dir + "/" + existing_vocs[jf].sModelFileName + ".json"};
-//
-//                    if(existing_vocs[jf].sModelFileName == $scope.loadedJsonFolderName)
-//                    {
-//                        $scope.modelsJson[jf].checked    = true;
-//                        $scope.loadedToggleId            = jf;
-//                    }
-//                    else $scope.modelsJson[jf].checked   = false;
-//                }
-//            }
-//            return 1;    
-//        })
-//        return VocabularySrv.getExistingLastNets($scope.foldername)    // AllSpeak/vocabularies/gigi/
-//        .then(function(validvocs)  // [vocs with also properties: sStatus & jsonpath]
-//        {
-//            if(validvocs[0] != null || validvocs[1] != null)
-//            {
-//                $scope.modelsJson   = [];
-//                existing_vocs       = validvocs;
-//                var len             = 2; //existing_vocs.length;
-//                var cnt             = -1;
-//                for (var jf=0; jf<len; jf++)
-//                {
-//                    if(existing_vocs[jf] == null) continue;
-//                    cnt++;
-////                    var jsonpath            = dir + "/" + existing_vocs[jf].jsonpath;
-////                    var sModelFileName      = StringSrv.removeExtension(existing_vocs[jf].jsonpath);
-//                    $scope.modelsJson[cnt] = {"sLabel": existing_vocs[jf].sLabel, "sModelFileName": existing_vocs[jf].sModelFileName, "jsonpath":dir + "/" + existing_vocs[jf].sModelFileName + ".json"};
-//
-//                    if($scope.modelsJson[cnt].sModelFileName == $scope.loadedJsonFolderName)
-//                    {
-//                        $scope.modelsJson[cnt].checked    = true;
-//                        $scope.loadedToggleId             = cnt;
-//                    }
-//                    else $scope.modelsJson[cnt].checked   = false;
-//                }
-//            }
-//            return 1;    
-//        })
+        var existing_vocs               = [];
+        $scope.modelsJson               = [];
+        $scope.loadedToggleId           = 0;
+        $scope.originalLoadedToggleId   = -1;
         return VocabularySrv.getExistingLastNets($scope.foldername)    // AllSpeak/vocabularies/gigi/
         .then(function(validvocs)  // [vocs with also properties: sStatus & jsonpath]
         {
@@ -492,8 +478,6 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
                 for (var net in existing_vocs)
                 {
                     cnt++;
-//                    var jsonpath            = dir + "/" + existing_vocs[jf].jsonpath;
-//                    var sModelFileName      = StringSrv.removeExtension(existing_vocs[jf].jsonpath);
                     $scope.modelsJson[cnt] = {"sLabel": existing_vocs[net].voc.sLabel2, "sModelFileName": existing_vocs[net].voc.sModelFileName, "jsonpath":dir + "/" + existing_vocs[net].voc.sModelFileName + ".json"};
 
                     if($scope.modelsJson[cnt].sModelFileName == $scope.loadedJsonFolderName)
@@ -503,6 +487,7 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
                     }
                     else $scope.modelsJson[cnt].checked   = false;
                 }
+                $scope.originalLoadedToggleId = $scope.loadedToggleId;
             }
             return 1;    
         })
@@ -516,11 +501,11 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
                 return $scope.getTestVocabulary($scope.vocabulary_relpath + $scope.sessionname)
                 .then(function(testvoc)
                 {
-//                    testvoc.checked = true;
-                    testvoc.sLabel = "TESTING: " + testvoc.sLabel;
+                    testvoc.sLabel          = UITextsSrv.TRAINING.labelTestNetName + testvoc.sLabel;
                     $scope.modelsJson.unshift({"sLabel":testvoc.sLabel, "checked":true, "sModelFileName": testvoc.sModelFileName, "jsonpath":testvoc.jsonpath});
-                    $scope.loadedToggleId = 0;
-                    var len = $scope.modelsJson.length;
+                    $scope.originalLoadedToggleId++;
+                    $scope.loadedToggleId   = 0;
+                    var len                 = $scope.modelsJson.length;
                     for (var jf=1; jf<len; jf++)
                         $scope.modelsJson[jf].checked = false;
                     return TfSrv.loadTFNet(testvoc);
@@ -531,10 +516,23 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
                     $scope.loadedJsonFolderName = $scope.loadedModel.sModelFileName;        // net_27X_25X_28X
                     return true;
                 })
-                .catch(function(error) 
+                .catch(function(error)
                 {
-                    return $q.reject(error);
-                });                
+                    if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST) //got from getTestVocabulary ...test json is absent, remove the session folder & go to vocabulary
+                    {
+                        return $ionicPopup.alert({title:UITextsSrv.labelAlertTitle, template:UITextsSrv.VOCABULARY.labelErrorMissingNetJsonTestSession})
+                        .then(function()
+                        {
+                            return FileSystemSrv.deleteDir($scope.vocabulary_relpath + $scope.sessionname)
+                        })
+                        .then(function()
+                        {  
+                            $state.go("vocabulary", {"foldername": $scope.foldername});
+                            return false;       
+                        })
+                    }  
+                    else $q.reject(error);
+                })                
             }
             else return true;
         })
@@ -545,7 +543,10 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
         })
         .catch(function(error) 
         {
-            alert("Error", "VocabularySrv::getValidTrainVocabularies : " + error.message);
+            existing_vocs           = [];
+            $scope.modelsJson       = [];
+            $scope.loadedToggleId   = 0;            
+            $scope.$apply();            
             return $q.reject(error);
         });
     };
@@ -557,7 +558,7 @@ function RecognitionCtrl($scope, $q, $state, $cordovaTextToSpeech, SpeechDetecti
         .then(function(jsonfiles)
         {
             jsonpath = jsonfiles[0];
-            return VocabularySrv.getTrainVocabulary(testnetdir + "/" + jsonpath)
+            return VocabularySrv.getTrainVocabulary(testnetdir + "/" + jsonpath, EnumsSrv.VOCABULARY.IGNORE_RECOVERY); // ignore autocorrection, manage the absence of the json in the caller
         })     
         .then(function(testvoc)
         {
@@ -737,12 +738,6 @@ controllers_module.controller('RecognitionCtrl', RecognitionCtrl)
 //        window.removeEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
 //        window.removeEventListener('pluginerror'       , $scope.onMFCCError);  
 //    };    
-
-
-
-
-        
-    
 //    $scope.refreshMonitoring = function(received_data, elapsed, npackets, bitrate, data_params, data)
 //    {    
 //        $scope.totalReceivedData    = received_data;
@@ -785,4 +780,30 @@ controllers_module.controller('RecognitionCtrl', RecognitionCtrl)
 //        $scope.selectedSSF        = selSSF;
 //        SpeechDetectionSrv.setSubSamplingFactor(parseInt($scope.selectedSSF.value));
 //    }; 
+//    
+//    
+//        return VocabularySrv.getValidTrainVocabularies(dir)    // AllSpeak/vocabularies/gigi/
+//        .then(function(validvocs)  // [vocs with also properties: sStatus & jsonpath]
+//        {
+//            if(validvocs)
+//            {
+//                existing_vocs   = validvocs;
+//                var len         = existing_vocs.length;
+//            
+//                for (var jf=0; jf<len; jf++)
+//                {
+////                    var jsonpath            = dir + "/" + existing_vocs[jf].jsonpath;
+////                    var sModelFileName      = StringSrv.removeExtension(existing_vocs[jf].jsonpath);
+//                    $scope.modelsJson[jf]   = {"sLabel": existing_vocs[jf].sLabel, "sModelFileName": existing_vocs[jf].sModelFileName, "jsonpath":dir + "/" + existing_vocs[jf].sModelFileName + ".json"};
+//
+//                    if(existing_vocs[jf].sModelFileName == $scope.loadedJsonFolderName)
+//                    {
+//                        $scope.modelsJson[jf].checked    = true;
+//                        $scope.loadedToggleId            = jf;
+//                    }
+//                    else $scope.modelsJson[jf].checked   = false;
+//                }
+//            }
+//            return 1;    
+//        })
 // ============================================================================================

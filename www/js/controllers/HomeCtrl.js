@@ -8,7 +8,7 @@
  *
  */
  
-function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, EnumsSrv, UITextsSrv, RemoteAPISrv)
+function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, InitAppSrv, RuntimeStatusSrv, EnumsSrv, UITextsSrv, ErrorSrv)
 {
     $scope.$on('$ionicView.enter', function(event, data)
     {
@@ -51,12 +51,21 @@ function HomeCtrl($scope, $ionicPlatform, $ionicPopup, $ionicHistory, $state, In
         })
         .catch(function(error)
         {
-            var msg = "Error in HomeCtrl::$ionicView.enter";
-            if(error.message)
-                msg = msg + " " + error.message;
-                
-            console.log(msg);
-            alert(msg);
+            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST)
+            {        
+                $scope.$apply();
+                // vocabulary json was not present, voc was removed and default was selected. reload the page
+                $state.go("home")
+            }
+            else
+            {
+                var msg = "Error in HomeCtrl::$ionicView.enter";
+                if(error.message)
+                    msg = msg + " " + error.message;
+
+                console.log(msg);
+                alert(msg);
+            }
         });
     });
     

@@ -4,14 +4,6 @@
         {{headerTitle}}
     </ion-header-bar>      
     
-<!--    <ion-nav-title> {{ pageTitle }} </ion-nav-title>-->
-    
-<!--    <ion-nav-bar class="bar-positive">    
-       <ion-nav-back-button ui-sref="home">
-           <i class="ion-home"></i>
-       </ion-nav-back-button>    
-     </ion-nav-bar>    -->
-       
     <ion-nav-buttons side="left">
         <button class="button button-header-big" ui-sref="home">
            <i class="ion-home"></i>
@@ -25,12 +17,11 @@
     </ion-nav-buttons>  
     
     <ion-content class="padding">
-<!--        <h1 style="text-align: center;"></h1><br/>-->
-        
+       
         <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="manage_commands({modeId:enum_showvoccommands, foldername:foldername, backState:'vocabulary'})" >{{labelEditTrainVocabulary}}</button>
         
         <button class="button button-outline button-tall button-block button-large button-positive" ng-if="!incompleteRecordings" ng-disabled="isDefault" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
-        <button class="button button-tall button-block button-large button-royal"               ng-if="incompleteRecordings" ng-disabled="isDefault" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
+        <button class="button button-tall button-block button-large button-royal"                   ng-if="incompleteRecordings" ng-disabled="isDefault" ui-sref="manage_recordings({foldername:foldername, backState:'vocabulary'})" >{{labelManageSession}}</button>
         
         <button class="button button-outline button-tall button-block button-large button-positive" ui-sref="voicebank({elems2display:enum_show_vb_voc, foldername:foldername, backState:'vocabulary'})" >{{labelRecordVoice}}</button>
         
@@ -40,20 +31,6 @@
             <div class="input-label">RETE ATTIVA</div>
             <select ng-model="selectedNet" ng-change="updateSelectedNet(selectedNet)" ng-options="item.label for item in existingNets track by item.value"></select>            
         </label>   
-        
-<!--        <ion-toggle
-            ng-disabled="!status.modelExist"
-            ng-checked="status.modelLoaded"
-            ng-click="loadModel(status.modelLoaded)"
-            ng-model="status.modelLoaded"
-            class="toggle-tall toggle-positive item item-text-wrap">
-            {{labelLoadVocabulary}}
-        </ion-toggle>  -->
-        
-        <!--<button class="button button-block button-large button-positive" ng-if="modelLoaded" ui-sref="training">{{}}</button>-->
-        
-        <br/><br/> 
-        <br/><br/> 
 
     </ion-content>
   

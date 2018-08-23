@@ -117,26 +117,28 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
     // ONLY methods allowed to modify mTfCfg
     loadTFNet = function(net)
     {
-        var localfolder = net.sLocalFolder;
         if(net.sModelFilePath == null || net.sModelFilePath == "")
-            return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY, message:"Model pb path is null"});
+            return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.NETPBFILEVARIABLE_EMPTY, message:"Model pb path is null"});
         else
         {
+            var loadnew         = true;
+            
             return FileSystemSrv.existFileResolved(net.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
             .then(function(exist)
             {
                 if(exist)   return pluginInterface.loadTFNet(net)
-                else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST, message:"Model pb is not present"} );
+                else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.NETPBFILE_NOTEXIST, message:"Model pb is not present"} );
             })
             .then(function(loaded)
             {  
-                modelLoaded = localfolder;
+                modelLoaded = net.sLocalFolder;
                 if(loaded)    mTfCfg     = net;
                 else
                 {
                     mTfCfg          = null;
                     modelJsonFile   = "";                
                 }
+                console.log("loaded model: " + net.sModelFilePath);
                 return modelLoaded;
             })
             .catch(function(error)
@@ -158,55 +160,52 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
     testNewTFModel = function(net)
     {
         if(net.sModelFilePath == null || net.sModelFilePath == "")
-            return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY, message:"Model pb path is null"});
+            return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.NETPBFILEVARIABLE_EMPTY, message:"Model pb path is null"});
+        else
+        {
+            var loadnew         = true;
 
-        var loadnew         = true;
-        var isnewmodelvalid = false;
-         
-        return FileSystemSrv.existFileResolved(net.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
-        .then(function(exist)
-        {
-            if(exist)   return pluginInterface.loadTFNet(net)
-            else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.MODELFILE_NOTEXIST, message:"Model pb is not present"} );
-        })
-        .then(function()
-        {  
-            loadnew = false;
-            if(mTfCfg)  return loadTFNet(mTfCfg);     // reload current net if exist
-            else        return true;
-        })
-        .then(function()
-        {
-            return true;
-        })            
-        .catch(function(error)
-        {
-            if(loadnew)
+            return FileSystemSrv.existFileResolved(net.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
+            .then(function(exist)
             {
-                 // error while testing the new net...reload current one and reject with the original error
-                if(mTfCfg)
+                if(exist)   return pluginInterface.loadTFNet(net);
+                else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.NETPBFILE_NOTEXIST, message:"Model pb is not present"} );
+            })
+            .then(function()
+            {  
+                loadnew = false;
+                if(mTfCfg)  return loadTFNet(mTfCfg);     // reload current net if exist
+                else        return true;
+            })
+            .catch(function(error)
+            {
+                if(loadnew)
                 {
-                    return loadTFNet(mTfCfg)
-                    .then(function()
+                     // error while testing the new net...reload current one and reject with the original error
+                    if(mTfCfg)
                     {
-                        error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
-                        return $q.reject(error);
-                    })
-                    .catch(function(error2)
-                    {                
-                        // should not happen !!!! #FLOWCRASH#
-                        error2.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
-                        return $q.reject(error2);
-                    });
+                        return loadTFNet(mTfCfg)
+                        .then(function()
+                        {
+                            error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
+                            return $q.reject(error);
+                        })
+                        .catch(function(error2)
+                        {                
+                            // should not happen !!!! #FLOWCRASH#
+                            error2.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
+                            return $q.reject(error2);
+                        });
+                    }
                 }
-            }
-            else
-            {
-                // should not happen !!!! #FLOWCRASH#
-                error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
-                return $q.reject(error);
-            }
-        })
+                else
+                {
+                    // should not happen !!!! #FLOWCRASH#
+                    error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
+                    return $q.reject(error);
+                }
+            });
+        }
     };    
     
     isModelLoaded = function(vocfolder)
@@ -219,18 +218,17 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
     // PRE-SUBMIT & POST-DOWNLOAD activity
     //=========================================================================
     // the crucial params are: sLabel, commands, nProcessingScheme (taken from default)
-    createSubmitDataJSON = function(label, localfolder, commandsids, procscheme, modelclass, modeltype, initsessid, filepath)
+    createSubmitDataJSON = function(postfixlabel, localfolder, commandsids, procscheme, modelclass, modeltype, initsessid, filepath)
     {
-        
         var train_obj = {};
-        train_obj.sLabel                = label + " " + getNetLabelByType(modeltype);
+        train_obj.sLabel                = getNetMainLabelByType(modeltype) + postfixlabel;
         train_obj.sLocalFolder          = localfolder;    
         train_obj.commands              = commandsids;
         train_obj.nProcessingScheme     = procscheme;
         train_obj.nModelClass           = modelclass;
         train_obj.nModelType            = modeltype;
         train_obj.init_sessionid        = initsessid;    
-        return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj));
+        return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj), FileSystemSrv.OVERWRITE);
     };
     
     // set device path of the downloaded net
@@ -238,7 +236,6 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
     // then, when accepted, it gets vocabularies/gigi
     // called by: ManageTrainingCtr::checkSession
     // all the downloaded model pass from here.
-
     fixTfModel = function(voc, tempsession)
     {
         if(voc.status)  delete voc.status;
@@ -251,6 +248,26 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
         return voc;
     };
  
+    // returns USER of COMMON ADAPTED
+    getNetMainLabelByType = function(modeltype)
+    {
+        switch(modeltype)
+        {
+            case plugin_enum_tf.TF_MODELTYPE_USER:
+            case plugin_enum_tf.TF_MODELTYPE_USER_ADAPTED:
+            case plugin_enum_tf.TF_MODELTYPE_USER_READAPTED:
+                return UITextsSrv.TRAINING.models.labelUSER;
+                
+            case plugin_enum_tf.TF_MODELTYPE_COMMON_ADAPTED:
+            case plugin_enum_tf.TF_MODELTYPE_COMMON_READAPTED:
+                return UITextsSrv.TRAINING.models.labelCOMMONADAPTED;
+            
+            default:
+                alert("ERROR: unexpected modeltype in TfSrv::getNetLabelByType");
+                return UITextsSrv.TRAINING.models.labelUNSPECIFIED;
+        }        
+    };
+    
     getNetLabelByType = function(modeltype)
     {
         switch(modeltype)
