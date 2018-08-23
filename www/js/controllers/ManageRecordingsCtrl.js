@@ -10,7 +10,7 @@
         ........
     ]
  */
-function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, VocabularySrv, CommandsSrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, SubjectsSrv, EnumsSrv, UITextsSrv, StringSrv)
+function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ionicPlatform, InitAppSrv, RuntimeStatusSrv, VocabularySrv, CommandsSrv, SequencesRecordingSrv, FileSystemSrv, MfccSrv, SubjectsSrv, EnumsSrv, UITextsSrv, ErrorSrv)
 {
     $scope.subject              = null;     // stay null in AllSpeak
     $scope.foldername           = "";       // standard
@@ -98,17 +98,7 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         $scope.successState         = "manage_recordings";
         $scope.cancelState          = "manage_recordings";
         
-        VocabularySrv.getTrainVocabulary($scope.vocabulary_json_path)
-        .then(function(vocabulary)
-        {
-            $scope.headerTitle      = "VOCABOLARIO :   " + vocabulary.sLabel;
-            $scope.commands         = vocabulary.commands;
-            return $scope.refreshAudioList();
-        })
-        .then(function()
-        {
-            return $ionicModal.fromTemplateUrl('templates/modal/modalSelectCmd2Record.html', {scope: $scope, animation: 'slide-in-up'});
-        })
+        return $ionicModal.fromTemplateUrl('templates/modal/modalSelectCmd2Record.html', {scope: $scope, animation: 'slide-in-up'})
         .then(function(modal) 
         {
             $scope.modalRecordSequence = modal; 
@@ -117,9 +107,25 @@ function ManageRecordingsCtrl($scope, $q, $ionicModal, $ionicPopup, $state, $ion
         .then(function(modal)
         {
             $scope.modalAskRecordMode = modal;                
-        })        
-        .catch(function(error){
-            alert("ManageRecordingsCtrl::$ionicView.enter => " + error.message);
+            return VocabularySrv.getTrainVocabulary($scope.vocabulary_json_path)
+        })         
+        .then(function(voc)
+        {
+            if(voc != false)
+            {
+                $scope.headerTitle      = "VOCABOLARIO :   " + voc.sLabel;
+                $scope.commands         = voc.commands;
+                return $scope.refreshAudioList();
+            }
+        })
+        .catch(function(error)
+        {
+            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST)
+            {
+                // vocabulary could not be recovered or user did not want to do it...and was thus deleted
+                $state.go("vocabularies"); 
+            }
+            else  alert("ManageRecordingsCtrl::$ionicView.enter => " + error.message);
         });
     });
 

@@ -1,0 +1,42 @@
+NEW RELEASE : versionCode="9", versionName="0.2.2"
+
+NEW FEATURES: created several vocabulary errors' recovery processes.
+when are missing: 
+ - vocabulary.json				=> ask user whether correcting  (retrieving info from the first net_xxxxxx) or deleting the voc (then send to vocabularies)
+ - net_xxxxx.json 				=> remove its pb
+ - net_xxxxx.pb are missing.	=> remove its json
+
+NEW BEHAVIOUR: nets' sLabel are now limited to USER or COMMON ADAPTED. several recoding to implement this
+
+BUG-FIX: when creating a new voc as a copy of an existing one.  sModelFileName is now set to "".
+BUG-FIX: when checking the training progress. did not clear timer in catch
+BUG-FIX: after testing a net, it remained the loaded one, and next loadNet failed (as it pointed to a temp dir that was deleted).
+Now, while exiting, RecognitionCtrl unload the tested one and reassign the previous one (if exist)
+
+NEW ENUM:  ENUMS.VOCABULARY.NETJSONFILE_NOTEXIST to manage when a net_xxxx.json is missing
+
+
+VocabularySrv recoded
+
+ - NEW METHOD RuntimeStatusSrv::getUserVocabularyName  returns selected voc
+ - RuntimeStatusSrv::loadVocabulary massively recoded to manage exception's recovery
+
+
+VocabularySrv massively recoded
+
+ - ADDED: 		recoverMissingVocJsonFile
+				recoverMissingNetJsonFile
+				recoverMissingNetPbFile
+				deleteTrainVocabulary
+				getTrainVocabularyFolder
+
+ - REMOVED:		existFeaturesTrainSession (since there could be more recordings [now in a common folder] than features files)
+
+ - MODIFIED:	getTrainVocabulary(path, ignorerecover): may now recover from the following error ENUMS.VOCABULARY.JSONFILE_NOTEXIST or reject it to the caller.
+
+				getTrainVocabularySelectedNet rejects { mycode:ErrorSrv.ENUMS.VOCABULARY.NETJSONFILE_NOTEXIST / NETPBFILE_NOTEXIST, 
+														mydata:retvoc, 
+														message:"....."}
+											  providing data so far obtained and helping caller to manage the recovery process.
+
+

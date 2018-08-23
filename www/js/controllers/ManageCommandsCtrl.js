@@ -128,7 +128,16 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
                 }
                 else  alert("ERROR in ManageCommandsCtrl::$ionicView.enter. unrecognized modeId: " +  $scope.mode_id.toString());                  
                 $scope.$apply();
-            });
+            })
+            .catch(function(error)
+            {
+                if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST)
+                {
+                    // vocabulary could not be recovered or user did not want to do it...and was thus deleted
+                    $state.go("vocabularies"); 
+                }
+                else  alert("ManageCommandsCtrl::$ionicView.enter => " + error.message);
+            });            
         }
         else
         {

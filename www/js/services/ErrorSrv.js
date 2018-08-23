@@ -16,15 +16,17 @@ function ErrorSrv()
     service.ENUMS.VOCABULARY.JSONFILE_NOTEXIST          = 2002;     // !exist  ../vocabulary.json
     service.ENUMS.VOCABULARY.JSONFILEVARIABLE_EMPTY     = 2003;     // ../vocabulary.json = "" or null
     
-    service.ENUMS.VOCABULARY.MODELFILE_NOTEXIST         = 2004;     // !exist  ../vocabularies/gigi/optomized_XXXX_XXX.pb 
-    service.ENUMS.VOCABULARY.MODELFILEVARIABLE_EMPTY    = 2005;     // ../vocabulary.json = "" or null
+    service.ENUMS.VOCABULARY.NETPBFILE_NOTEXIST         = 2004;     // !exist  ../vocabularies/gigi/net_XXXX_XXX.pb 
+    service.ENUMS.VOCABULARY.NETPBFILEVARIABLE_EMPTY    = 2005;     // ../vocabulary.json = "" or null
     
-    service.ENUMS.VOCABULARY.VOCVARIABLE_EMPTY          = 2006;     // vocabulary           = null
-    service.ENUMS.VOCABULARY.COMMANDSVARIABLE_NULL      = 2007;     // vocabulary.commands  = null
-    service.ENUMS.VOCABULARY.COMMANDSVARIABLE_EMPTY     = 2008;     // vocabulary.commands  = []
+    service.ENUMS.VOCABULARY.NETJSONFILE_NOTEXIST       = 2006;     // !exist  ../vocabularies/gigi/net_XXXX_XXX.json 
     
-    service.ENUMS.VOCABULARY.TRAINFOLDER_NOTEXIST       = 2009;
-    service.ENUMS.VOCABULARY.TRAINFOLDERVARIABLE_EMPTY  = 2010;    
+    service.ENUMS.VOCABULARY.VOCVARIABLE_EMPTY          = 2007;     // vocabulary           = null
+    service.ENUMS.VOCABULARY.COMMANDSVARIABLE_NULL      = 2008;     // vocabulary.commands  = null
+    service.ENUMS.VOCABULARY.COMMANDSVARIABLE_EMPTY     = 2009;     // vocabulary.commands  = []
+    
+    service.ENUMS.VOCABULARY.TRAINFOLDER_NOTEXIST       = 2010;
+    service.ENUMS.VOCABULARY.TRAINFOLDERVARIABLE_EMPTY  = 2011;    
     
     service.ENUMS.VOCABULARY.LOADTFMODEL                = 2015;     // vocabulary.commands  = []
     

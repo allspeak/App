@@ -11,6 +11,7 @@ function EnumsSrv()
     service.MODALITY    = {};
     service.TRAINING    = {};
     service.VOICEBANK   = {};
+    service.VOCABULARY   = {};
     
     service.RECORD.BY_SENTENCE              = 1001;
     service.RECORD.BY_REPETITIONS           = 1002;
@@ -41,6 +42,8 @@ function EnumsSrv()
     
     service.VOICEBANK.SHOW_ALL              = 1050;
     service.VOICEBANK.SHOW_TRAINED          = 1051;
+    
+    service.VOCABULARY.IGNORE_RECOVERY      = true;
     //==========================================================================
     return service;
 }

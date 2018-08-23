@@ -53,7 +53,6 @@
 *             
  */
 
-
 function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, MfccSrv, VocabularySrv, RemoteAPISrv, FileSystemSrv, RuntimeStatusSrv, EnumsSrv)
 {
     var service                     = {}; 
@@ -246,7 +245,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         MfccSrv.init(service.config.defaults.mfcc, service.plugin);
         RemoteAPISrv.init(service.config.appConfig.user.api_key, service.config.appConfig.remote, service.plugin, service);    // I pass the current appConfig values (not the defauls ones)
         RuntimeStatusSrv.init(service.config.defaults.file_system.vocabularies_folder, service.config.defaults.file_system.recordings_folder, service);
-        VocabularySrv.init(service.config.defaults.file_system, service.plugin);
+        VocabularySrv.init(service.config.defaults.file_system, service.plugin, service);
     };
     
     //====================================================================================================================

@@ -3,7 +3,7 @@
     <ion-nav-bar class="bar-positive">    
         <ion-nav-buttons side="left">
             <button class="button button-header-big" ng-if="!sessionname.length" ui-sref="home"><i class="ion-home"></i>
-            <button class="button button-header-big" ng-if="sessionname.length"  ui-sref="manage_training({foldername:foldername, backState:'vocabulary'})"></i>Back</button>
+            <button class="button button-header-big" ng-if="sessionname.length" ng-click="onStopTesting()"></i>Back</button>
         </ion-nav-buttons> 
 
         <ion-nav-buttons side="right">

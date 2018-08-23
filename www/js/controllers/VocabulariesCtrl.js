@@ -5,7 +5,7 @@
  */
 //function TrainingCtrl($scope, vocabulary)//....use resolve 
 //function TrainingCtrl($scope)  
-function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionicPlatform, $ionicModal, VocabularySrv, InitAppSrv, FileSystemSrv, RuntimeStatusSrv, EnumsSrv, StringSrv)  
+function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionicPlatform, $ionicModal, VocabularySrv, InitAppSrv, FileSystemSrv, RuntimeStatusSrv, EnumsSrv, ErrorSrv)  
 {
     $scope.vocabularies             = [];
     $scope.activeVocabulary         = null;
@@ -70,7 +70,6 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
             var subPromises = [];
             for (var v=0; v<folders.length; v++) 
             {
-                // MISTERIOSAMENTE NON FUNZIONA #ISSUE# ...codice spostato in fondo al file
                 var foldername = folders[v];
                 var active = (foldername == $scope.activeVocabularyName ? true : false);
                 $scope.vocabularies.push({"active": active,"inputjson":$scope.vocabularies_relpath + "/" + foldername + "/" + $scope.jsonvocfilename});
@@ -87,6 +86,14 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
                         $scope.vocabularies[j].active           = isactive;
                         if(isactive) $scope.activeVocabulary    = $scope.vocabularies[j];
                         return $scope.vocabularies[j];
+                    })
+                    .catch(function(error)
+                    {
+                        if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST)
+                        {
+                            // vocabulary could not be recovered or user did not want to do it...and was thus deleted
+                            $state.go("vocabularies"); 
+                        }                        
                     })
                     subPromises.push(subPromise);
                 })(v);           
@@ -177,33 +184,3 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
     };    
 }
 controllers_module.controller('VocabulariesCtrl', VocabulariesCtrl)
-
-
-
-/*
-//                var foldername = folders[v].name;
-//                var active = (foldername == $scope.activeVocabularyName ? true : false);
-//                $scope.vocabularies.push({"active": active,"sLocalFolder":foldername});
-//                (function(j) 
-//                {
-//                    var localfolder = $scope.vocabularies[j].sLocalFolder;
-//                    var subPromise  = VocabularySrv.getUpdatedStatusName(localfolder)
-//                    .then(function(status) 
-//                    {
-//                        var voc         = status.vocabulary;
-//                        var vocstatus   = status.vocabulary.status;                          
-//                        
-//                        var folder      = $scope.vocabularies[j].sLocalFolder;
-//                        var isactive    = $scope.vocabularies[j].active;
-//                        
-//                        $scope.vocabularies[j]                  = status.vocabulary;
-//                        
-//                        $scope.vocabularies[j].sLocalFolder     = folder;
-//                        $scope.vocabularies[j].active           = isactive;
-//                        $scope.vocabularies[j].sStatus          = vocstatus.label;
-//                        if(isactive) $scope.activeVocabulary    = $scope.vocabularies[j]
-//                    });
-//                    subPromises.push(subPromise);
-//                })(v);
-
- */
