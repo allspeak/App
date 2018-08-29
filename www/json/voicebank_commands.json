@@ -111,6 +111,6 @@
 		{ "title": "Non funziona",                  "id": 1618, "filename":"vb_1618.wav", "nrepetitions": 0, "editable":false},
 		{ "title": "Ti voglio bene",                "id": 1619, "filename":"vb_1619.wav", "nrepetitions": 0, "editable":false},
                 
-		{ "title": "noise",                         "id": 1700, "filename":"vb_1700.wav", "nrepetitions": 0, "editable":false}
+		{ "title": "RUMORE",                         "id": 1700, "filename":"vb_1700.wav", "nrepetitions": 0, "editable":false}
     ]
 }

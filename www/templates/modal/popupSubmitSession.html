@@ -11,12 +11,12 @@
             <div class="item item-divider">STATUS</div>
 
             <!--FEATURES-->
-            <ion-item class="item-icon-right" ng-if="(!isCalcFeatures && vocabulary_status.haveFeatures)">Features<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
-            <label class="item" ng-if="isCalcFeatures">Features : <span class="badge">{{percFiles}} %</span></label> 
-
-            <!--ZIP-->
+            <ion-item class="item-icon-right" ng-if="(!isCalcFeatures && vocabulary_status.haveFeatures)">Estrazione parametri vocali<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
+            <label class="item" ng-if="isCalcFeatures">Estrazione parametri vocali : <span class="badge">{{percFiles}} %</span></label> 
+<!--
+            ZIP
             <ion-item class="item-icon-right" ng-if="vocabulary_status.haveZip">ZIP features<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    
-            <ion-item class="item-icon-right" ng-if="!vocabulary_status.haveZip">ZIP features</ion-item>    
+            <ion-item class="item-icon-right" ng-if="!vocabulary_status.haveZip">ZIP features</ion-item>    -->
 
             <!--UPLOAD RETE-->
             <ion-item class="item-icon-right" ng-if="(!isUploading && isTraining)">Upload Dati<span><i class="icon ion-checkmark-circled"></i></span></ion-item>    

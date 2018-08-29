@@ -1,10 +1,10 @@
 {
     "sLocalFolder":"default",
-    "sLabel":"default fsc",
+    "sLabel":"DEFAULT",
     "nItems2Recognize":24,
     "sModelFileName":"net_273_252_280",
     "commands":[
-        {"title": "noise", "id": 1700},
+        {"title": "RUMORE", "id": 1700},
         {"title": "Chiama ...", "id": 1305},
         {"title": "Ciao", "id": 1404},
         {"title": "Ci vediamo domani", "id": 1405},

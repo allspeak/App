@@ -35,6 +35,10 @@
     font-size:26px !important;
 }  
 
+.button-wide{
+    width:90px !important;
+}
+
 .button-tall{
     height:90px !important;
 }  
