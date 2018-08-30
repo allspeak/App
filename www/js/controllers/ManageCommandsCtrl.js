@@ -101,14 +101,14 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         {
             // TRAINING.EDIT_TV || TRAINING.SHOW_TV
             return VocabularySrv.getTrainVocabularySelectedNet($scope.vocabulary_json_path)
-            .then(function(retvoc)
+            .then(function(voc_and_net)
             {
-                $scope.vocabulary               = retvoc.voc;
+                $scope.vocabulary               = voc_and_net.voc;
                 $scope.commands                 = $scope.vocabulary.commands;
                 
                 $scope.isDefault                = false;
-                if(retvoc.net != null)
-                    if(retvoc.net.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
+                if(voc_and_net.net != null)
+                    if(voc_and_net.net.nModelType == $scope.plugin_enums.TF_MODELTYPE_COMMON)
                         $scope.isDefault = true;                
                 
                 if($scope.mode_id == EnumsSrv.TRAINING.EDIT_TV) 
