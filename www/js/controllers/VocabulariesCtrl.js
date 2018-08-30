@@ -73,101 +73,46 @@ function VocabulariesCtrl($scope, $q, $state, $ionicPopup, $ionicHistory, $ionic
                 var foldername = folders[v];
                 var active = (foldername == $scope.activeVocabularyName ? true : false);
                 $scope.vocabularies.push({"active": active,"inputjson":$scope.vocabularies_relpath + "/" + foldername + "/" + $scope.jsonvocfilename});
+
                 (function(j) 
                 {
                     var inputjson       = $scope.vocabularies[j].inputjson;
-                    var subPromise      = VocabularySrv.getTrainVocabulary(inputjson)
-                    .then(function(voc) 
+                    var subPromise      = VocabularySrv.getTrainVocabularySelectedNet(inputjson)
+                    .then(function(retvoc) 
                     {
                         var tempjson    = $scope.vocabularies[j].inputjson;
                         var isactive    = $scope.vocabularies[j].active;
-                        $scope.vocabularies[j] = voc;
+                        $scope.vocabularies[j] = retvoc.voc;
                         $scope.vocabularies[j].inputjson        = tempjson;
                         $scope.vocabularies[j].active           = isactive;
+                        
+                        if(retvoc.net == null)  $scope.vocabularies[j].sStatus = "NON PRONTO";
+                        else                    $scope.vocabularies[j].sStatus = "PRONTO";
+                        
                         if(isactive) $scope.activeVocabulary    = $scope.vocabularies[j];
                         return $scope.vocabularies[j];
-                    })
-                    .catch(function(error)
-                    {
-                        if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST)
-                        {
-                            // vocabulary could not be recovered or user did not want to do it...and was thus deleted
-                            $state.go("vocabularies"); 
-                        }                        
-                    })
+                    });
                     subPromises.push(subPromise);
                 })(v);           
             }
-            return $q.all(subPromises)
-        })
-        .then(function(vocs)    // array of vocabulary.json contents
-        {
-            var subPromises = [];
-            for(var v=0; v<vocs.length; v++)
-            {
-                if(vocs[v].sModelFileName != null && vocs[v].sModelFileName != "")
-                {
-                    (function(voc) 
-                    {
-                        var selected_net_relpath = $scope.vocabularies_relpath + "/" + voc.sLocalFolder + "/" + voc.sModelFileName + ".json";                    
-                        var subPromise = VocabularySrv.getTrainVocabulary(selected_net_relpath)
-                        subPromises.push(subPromise);
-                    })(vocs[v]);                
-                }
-                else    subPromises.push(Promise.resolve(null))
-            }        
-            return $q.all(subPromises)            
-        })
-        .then(function(nets)    // array of net_xxxxxxx.json contents
-        {
-            var subPromises = [];
-            for(var v=0; v<nets.length; v++)
-            {
-                (function(voc, v) 
-                {
-                    if(voc != null)
-                    {
-                        if(voc.sModelFilePath == null || !voc.sModelFilePath.length)
-                        {
-                            $scope.vocabularies[v].sStatus = "NON PRONTO";
-                            subPromises.push(Promise.resolve(null))
-                        }   
-                        else
-                        {
-                            var subPromise  = FileSystemSrv.existFileResolved(voc.sModelFilePath)
-                            .then(function(exist) 
-                            {                            
-                                if(exist)   $scope.vocabularies[v].sStatus = "PRONTO";
-                                else        $scope.vocabularies[v].sStatus = "NON PRONTO";
-                                return voc;
-                            })
-                            .catch(function(error)
-                            {
-                               return $q.reject(error); 
-                            });   
-                            subPromises.push(subPromise);
-                        }
-                    }
-                    else
-                    {
-                        $scope.vocabularies[v].sStatus = "NON PRONTO";
-                        subPromises.push(Promise.resolve(null));
-                    }
-                })(nets[v], v);                        
-            }
             return $q.all(subPromises);
-       })
-        .then(function(vocs)
+        })
+        .then(function()
         {                
             $scope.$apply()
             return 1;
         })
         .catch(function(error)
         {
-            alert("ERROR in VocabulariesCtrl::refreshVocabulariesList. " + error);
-            error.message = "ERROR in VocabulariesCtrl::refreshVocabulariesList. " + error.message;
-            $scope._showAlert("Error", "SubjectSessionsCtrl::refreshVocabulariesList : " + error.message);
-            return $q.reject(error);
+            if(error.mycode == ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST)
+                return $scope.refreshVocabulariesList();
+            else
+            {
+                alert("ERROR in VocabulariesCtrl::refreshVocabulariesList. " + error);
+                error.message = "ERROR in VocabulariesCtrl::refreshVocabulariesList. " + error.message;
+                $scope._showAlert("Error", "SubjectSessionsCtrl::refreshVocabulariesList : " + error.message);
+                return $q.reject(error);
+            }
         }); 
     }; 
 

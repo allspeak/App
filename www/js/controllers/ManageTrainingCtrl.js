@@ -155,7 +155,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         $scope.vocabulary_relpath       = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername;
         $scope.vocabulary_json_path     = $scope.vocabulary_relpath + "/" + UITextsSrv.TRAINING.DEFAULT_TV_JSONNAME;
 
-        $scope.recordings_folder       = InitAppSrv.getAudioFolder();
+        $scope.recordings_folder        = InitAppSrv.getAudioFolder();
         
         $scope.isConnected              = RemoteAPISrv.hasInternet();
         window.addEventListener('connection' , $scope.onConnection);
@@ -172,10 +172,16 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         .then(function(modal) 
         {
             $scope.modalSubmitSession = modal;         
-            return $scope.refresh($scope.foldername);
+            return VocabularySrv.getFullTrainVocabularyName($scope.foldername);  // returns {voc:{..,.., status:{}, ..., ..}, net: {} }
         })
-        .then(function()
+        .then(function(fullvoc)
         {
+            $scope.vocabulary           = fullvoc.voc;
+            $scope.vocabulary_status    = $scope.vocabulary.status;
+            
+            $scope.updateProcScheme(MiscellaneousSrv.selectObjByValue($scope.plugin_enum.MFCC_PROCSCHEME_F_S, $scope.aProcScheme));
+            $scope.updateModelType(MiscellaneousSrv.selectObjByValue($scope.plugin_enum.TF_MODELTYPE_USER, $scope.aNetType));
+        
             return $scope.checkTempSessions();
         })
         .then(function()
@@ -185,10 +191,11 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         .then(function(existing_net_sobj)
         {
             $scope.existingNets = existing_net_sobj;
+//            $scope.$apply();
         })     
         .catch(function(error)
         {     
-            var title = "ERRORE: in ManageTrainingCtrl::checkSession"
+            var title = "ERRORE: in ManageTrainingCtrl::checkSession";
             alert(error.message);
         });        
     });
@@ -197,27 +204,6 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         if($scope.deregisterFunc)   $scope.deregisterFunc();
         window.removeEventListener('connection'  , $scope.onConnection);
     });     
-
-    $scope.refresh = function(folder)
-    {
-        return VocabularySrv.getUpdatedStatusName(folder)
-        .then(function(voc)
-        {
-            $scope.vocabulary           = voc;
-            $scope.vocabulary_status    = voc.status;
-            
-            $scope.updateProcScheme(MiscellaneousSrv.selectObjByValue($scope.plugin_enum.MFCC_PROCSCHEME_F_S, $scope.aProcScheme));
-            $scope.updateModelType(MiscellaneousSrv.selectObjByValue($scope.plugin_enum.TF_MODELTYPE_USER, $scope.aNetType));
-        
-            $scope.$apply();
-            return true;
-        })
-        .catch(function(error)
-        {
-            alert("_ManageTrainingCtrl::$ionicView.enter => " + error.message);
-        });        
-    };
- 
     //==============================================================================================================================
     // GUI ELEMENTS
     //==============================================================================================================================
@@ -616,7 +602,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
             if(train_obj)
             {
                 // server responded: ok or error
-                ClockSrv.removeClock($scope.timerID);       // stop checking
+                ClockSrv.removeClock($scope.timerID);       // stop checking    
                 if(train_obj.status == "complete")
                 {
                     // ready 2 download
@@ -628,7 +614,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
 
 
                     // save "net_modeltype_procscheme.json" and delete vocabulary.json
-                    return FileSystemSrv.createJSONFileFromObj($scope.training_received_json_path, $scope.temp_sess_voc, 2)    // return 1 or reject
+                    return FileSystemSrv.createJSONFileFromObj($scope.training_received_json_path, $scope.temp_sess_voc, FileSystemSrv.OVERWRITE)    // return 1 or reject
                     .then(function()
                     {
                         return FileSystemSrv.deleteFile($scope.training_submitted_json_path);
@@ -707,7 +693,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         {
             if(resp)
             {
-                // force loadVocabulary (I may retrain the same active voc, without the force, loadVocabulary could exit immediately)
+                // WANT 2 TEST NEW VOC: force loadVocabulary (I may retrain the same active voc, without the force, loadVocabulary could exit immediately)
                 return RuntimeStatusSrv.loadVocabulary($scope.foldername, true)
                 .then(function()
                 {

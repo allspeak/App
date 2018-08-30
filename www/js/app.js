@@ -134,7 +134,7 @@ main_module.config(function($stateProvider, $urlRouterProvider)
         }
     })
     .state('settings.recognition', {
-        url: '/recognition_settings',
+        url: '/recognition_settings/:modeid/:foldername',
         views: 
         {
         'recognition-settings' : 
