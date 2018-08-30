@@ -19,17 +19,13 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     
     $scope.vocabulary               = null;
     $scope.vocabulary_status        = null;
-    $scope.selnet_jsonpath          = "";       // path of the net that should be loaded.
     
     $scope.vocabularies_relpath     = "";     // AllSpeak/vocabularies
     $scope.voicebank_relpath        = "";    // AllSpeak/voicebank
     $scope.voicebank_resolved_root  = "";       // 
     $scope.vocabulary_json          = "";       // AllSpeak/vocabularies/gigi/vocabulary.json
     $scope.recThreshold             = 0;        // data threshold is below 0-1. Displayed threshold is 0-100.
-    $scope.recDistance              = 0;        // data threshold is below 0-1. Displayed threshold is 0-100.
     $scope.pluginInterface          = null; 
-    
-    $scope.isDefault                = false;
     //--------------------------------------------------------------------------
     // INITIALIZATIONS    
     //--------------------------------------------------------------------------
@@ -56,9 +52,6 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     
     $scope.loadedToggleId           = 0;        // id of the enabled toggle
     $scope.originalLoadedToggleId   = -1;        // id of the selected net (to be loaded when exiting the testing phases)
-    
-    $scope.selectedNoise            = 0;
-    $scope.noiseLevels              = [15, 20, 25];
     //--------------------------------------------------------------------------                    
     $scope.$on("$ionicView.leave", function(event, data)
     {
@@ -93,8 +86,7 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         $scope.voicebank_resolved_root          = FileSystemSrv.getResolvedOutDataFolder() + $scope.voicebank_relpath;   // FileSystemSrv.getResolvedOutDataFolder() ends with a slash: "file:///storage/emulated/0/"
         $scope.vocabulary_relpath               = $scope.vocabularies_relpath     + "/" + $scope.foldername;     // AllSpeak/vocabularies/gigi
         $scope.vocabulary_json                  = VocabularySrv.getTrainVocabularyJsonPath($scope.foldername);
-
-        $scope.isDefault                        = ($scope.foldername == EnumsSrv.VOCABULARY.DEFAULT_FOLDERNAME  ?   true    : false);
+        
         // get standard capture params + overwrite some selected
         $scope.Cfg.captureCfg                   = $scope.initCaptureParams;
         $scope.Cfg.vadCfg                       = $scope.initVadParams;
@@ -109,8 +101,6 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         $scope.selectedSF                       = $scope.Cfg.captureCfg.nSampleRate;
         $scope.selectedCBS                      = $scope.Cfg.captureCfg.nBufferSize;
 
-        $scope.speech_status_label              = EnumsSrv.VAD.SPEECH_STATUS_LABELS;
-
         window.addEventListener('headsetstatus', $scope.onHSStatusChange);
 
         return RuntimeStatusSrv.loadVocabulary($scope.foldername, true)
@@ -119,13 +109,11 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
             $scope.vocabulary_status    = status;
             $scope.vocabulary           = status.vocabulary;
             
-            $scope.selnet_jsonpath      = VocabularySrv.getNetJsonPath($scope.vocabulary);  // json path of the selected net or "" if sModelFileName is empty.
-            
             // OVERRIDE LOADED VOC
             for(var item in $scope.initTfParams)        $scope.vocabulary[item] = $scope.initTfParams[item];
             return VocabularySrv.getExistingTrainVocabularyVoicesPaths($scope.vocabulary);  // get the path of the wav to playback once a sentence is recognized            
         })
-        .then(function(voicefiles)  // [{id,filepath}]
+        .then(function(voicefiles)
         {
             $scope.saAudioPath = voicefiles;
             return $scope.refreshModelsList($scope.vocabulary_relpath);      // look for existing nets
@@ -150,6 +138,27 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
 
     $scope.subsampling_factors  = [{label: "%4", value:4},{label: "%8", value:8},{label: "%16", value:16},{label: "%32", value:32}];
 
+    $scope.speech_status_codes = {
+        CAPTURE_STATUS_STARTED      : 11,
+        CAPTURE_STATUS_STOPPED      : 13,
+        CAPTURE_ERROR               : 110,
+        SPEECH_STATUS_STARTED       : 20,
+        SPEECH_STATUS_STOPPED       : 21,
+        SPEECH_STATUS_SENTENCE      : 22,
+        SPEECH_STATUS_MAX_LENGTH    : 23,
+        SPEECH_STATUS_MIN_LENGTH    : 24,        
+        VAD_ERROR                   : 120
+    };
+    $scope.speech_status_label=[];
+    $scope.speech_status_label[$scope.speech_status_codes.CAPTURE_STATUS_STARTED]   = "CAPTURE_STATUS_STARTED";
+    $scope.speech_status_label[$scope.speech_status_codes.CAPTURE_STATUS_STOPPED]   = "CAPTURE_STATUS_STOPPED";
+    $scope.speech_status_label[$scope.speech_status_codes.SPEECH_STATUS_SENTENCE]   = "SPEECH_STATUS_SENTENCE";
+    $scope.speech_status_label[$scope.speech_status_codes.CAPTURE_ERROR]            = "CAPTURE_ERROR";
+    $scope.speech_status_label[$scope.speech_status_codes.SPEECH_STATUS_STARTED]    = "SPEECH_STATUS_STARTED";
+    $scope.speech_status_label[$scope.speech_status_codes.SPEECH_STATUS_STOPPED]    = "SPEECH_STATUS_STOPPED";
+    $scope.speech_status_label[$scope.speech_status_codes.SPEECH_STATUS_MAX_LENGTH] = "SPEECH_STATUS_MAX_LENGTH";
+    $scope.speech_status_label[$scope.speech_status_codes.SPEECH_STATUS_MIN_LENGTH] = "SPEECH_STATUS_MIN_LENGTH";
+
     // monitoring
     $scope.isSpeaking               = "OFF";
     $scope.isvoicemonitoring        = 0;
@@ -158,11 +167,16 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     $scope.totalNoOfSpeechCaptured  = 0;
     $scope.chunksList               = [];    
         
-    $scope.totalNoOfSpeechCaptured  = 0;       
+    $scope.initMonitoring = function()
+    {
+        $scope.totalNoOfSpeechCaptured = 0;       
+    };
+    
+    $scope.initMonitoring();
 
-    $scope.vm_voice_label_start     = UITextsSrv.RECOGNITION.labelStartRecognition;
-    $scope.vm_voice_label_stop      = UITextsSrv.RECOGNITION.labelStopRecognition;
-    $scope.vm_voice_label           = $scope.vm_voice_label_start;
+    $scope.vm_voice_label_start = "AVVIA RICONOSCIMENTO";
+    $scope.vm_voice_label_stop  = "INTERROMPI RICONOSCIMENTO";
+    $scope.vm_voice_label       = $scope.vm_voice_label_start;
 
     // ====================================================================================================
     // ====================================================================================================
@@ -171,8 +185,8 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     {
         if (!$scope.isvoicemonitoring)
         {
-            $scope.loadedModel.fRecognitionThreshold    = ($scope.recThreshold/100);
-            $scope.totalNoOfSpeechCaptured              = 0;
+            $scope.loadedModel.fRecognitionThreshold = ($scope.recThreshold/100);
+            $scope.initMonitoring();
             if($scope.saveSentences)
             {
                 return $scope.emptyFolder()
@@ -188,15 +202,15 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     
     $scope.go2settings = function()
     {
-        $state.go('settings.recognition', {modeid:EnumsSrv.RECOGNITION.PARAMS_MOD_VOC, foldername:$scope.foldername}); 
+        $state.go('settings.recognition'); 
     };
 
-//    $scope.changeThreshold = function(boolincrement)
-//    {
-//        $scope.recThreshold = (boolincrement == true ? $scope.recThreshold+5    :   $scope.recThreshold-5)
-//        $scope.recThreshold = Math.max($scope.recThreshold, 0);
-//        $scope.recThreshold = Math.min($scope.recThreshold, 50);
-//    }
+    $scope.changeThreshold = function(boolincrement)
+    {
+        $scope.recThreshold = (boolincrement == true ? $scope.recThreshold+5    :   $scope.recThreshold-5)
+        $scope.recThreshold = Math.max($scope.recThreshold, 0);
+        $scope.recThreshold = Math.min($scope.recThreshold, 50);
+    }
     
     $scope.onStopTesting = function()
     {
@@ -211,26 +225,6 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         })
 
     }
-    
-    $scope.resetVADThreshold = function()
-    {
-        return TfSrv.adjustVADThreshold()
-        .then(function()
-        {
-            var a = 1;
-        });
-    }
-    
-    $scope.selectNoise = function(selnoise)
-    {
-        $scope.selectedNoise = selnoise;
-        
-        return TfSrv.adjustVADThreshold($scope.noiseLevels[selnoise])
-        .then(function()
-        {
-            var a = 1;
-        });        
-    };
     //==================================================================================
     // PLUGIN CALLBACKS
     //==================================================================================
@@ -308,60 +302,34 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     //--------------------------------------------------------------------------
     // RECOGNITION EVENTS
     // called by plugin interface _pluginEvent::cordova.fireWindowEvent("recognitionresult",...
-    // event.items[i].id : IS NOT the command id, but the index/position within the vocabulary.commands array
     $scope.onRecognitionResults = function(event)
     {    
         $scope.recognizedItems = event.items;
+        var recognized_index    = parseInt($scope.recognizedItems[0].id);   // IS NOT the command id, but the index/position within the vocabulary.commands array
         
-        if(!$scope.filterResults($scope.recognizedItems.map(function(item) { return parseInt(item.confidence.substring(0, item.confidence.length-1)); })))
+        var audiofilename       = $scope.saAudioPath[recognized_index];
+        
+        if(audiofilename == "")
         {
+            var text = $scope.vocabulary.commands[recognized_index].title;
+            cordova.plugin.pDialog.dismiss(); 
             $scope.isPlaying = 1;
-            return $cordovaTextToSpeech.speak({"text":UITextsSrv.RECOGNITION.labelUncertainResults, "locale":"it-IT"})
+            $scope.$apply();            
+            return $cordovaTextToSpeech.speak({"text":text, "locale":"it-IT"})
             .then(function()
             {
                 $scope.OnPlaybackCompleted();
-            })
-            .catch(function(error)
-            {
-                $scope.OnPlaybackCompleted();
-            })
+            });
         }
         else
         {
-        
-            var recognized_index    = parseInt($scope.recognizedItems[0].id);   
-            $scope.$apply();        
-
-            if($scope.saAudioPath[recognized_index].id == EnumsSrv.VOCABULARY.NOISE_ID)
-            {
-                $scope.OnPlaybackCompleted();
-                return;
-            }
-
-            var audiofilename       = $scope.saAudioPath[recognized_index].filepath;
-
-            if(audiofilename == "")
-            {
-                var text = $scope.vocabulary.commands[recognized_index].title;
-                cordova.plugin.pDialog.dismiss(); 
-                $scope.isPlaying = 1;
-                return $cordovaTextToSpeech.speak({"text":text, "locale":"it-IT"})
-                .then(function()
-                {
-                    $scope.OnPlaybackCompleted();
-                })
-                .catch(function(error)
-                {
-                    $scope.OnPlaybackCompleted();
-                })                
-            }
-            else
-            {
-                var wav_resolved_path   = FileSystemSrv.getResolvedOutDataFolder() + $scope.saAudioPath[recognized_index].filepath;
-                var volume              = 1; //$scope.volume/100;
-                $scope.playAudio(wav_resolved_path, volume);
-                cordova.plugin.pDialog.dismiss();        
-            }
+            var wav_resolved_path   = FileSystemSrv.getResolvedOutDataFolder() + $scope.saAudioPath[recognized_index];
+    //        var command_label       = $scope.vocabulary.commands[recognized_index].id;
+    //        var wav_resolved_path   = $scope.voicebank_resolved_root + "/vb_" + $scope.commandsList[recognized_index] + ".wav";
+            var volume              = 1; //$scope.volume/100;
+            $scope.playAudio(wav_resolved_path, volume);
+            cordova.plugin.pDialog.dismiss();        
+            $scope.$apply();
         }
     };
     
@@ -369,15 +337,7 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     { 
         cordova.plugin.pDialog.dismiss();
     };  
-   
-    // SIMPLE METHOD:
-    // when the 1st and 2nd commands have % difference < net.nRecognitionDistance => I ask user to repeat the sentence.
-    $scope.filterResults = function(confidences)
-    {
-        var delta12 = confidences[0]-confidences[1];
-        if(delta12 < $scope.recDistance)    return false;
-        else                                return true;
-    };
+       
     //--------------------------------------------------------------------------
     // PLAYBACK AUDIO    
     $scope.playAudio = function(resolvedfilename, vol)
@@ -454,12 +414,12 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         {
             return TfSrv.loadTFNet(net);
         })        
-        .then(function()
+        .then(function(res)
         {
             $scope.loadedModel      = TfSrv.getCfg();
             $scope.recThreshold     = $scope.loadedModel.fRecognitionThreshold*100;     
 
-            $scope.commandsList     = $scope.loadedModel.commands.map(function(item) { return item.id;});
+            $scope.commandsList     = $scope.loadedModel.commands.map(function(item) { return item.id});
             $scope.loadedToggleId   = index;
             $scope.$apply();
         })
@@ -474,10 +434,10 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
                     {  
                         $state.go("vocabulary", {"foldername": $scope.foldername});
                         return false;       
-                    });
+                    })
                 }
                 else
-                    return $ionicPopup.alert({title:UITextsSrv.labelAlertTitle, template:"Errore durante il caricamento del nuovo modello: " + (error.message != null   ? error.message : error.toString())});
+                    return $ionicPopup.alert({title:UITextsSrv.labelAlertTitle, template:"Errore durante il caricamento del nuovo modello: " + (error.message != null   ? error.message : error.toString())})
             })()            
             .then(function(goon)
             {            
@@ -493,50 +453,21 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
             .catch(function(err)
             {            
                 console.log("selectModel ERROR:" + err.message);
-            });
-        });
+            })
+        })
     };
     
     $scope.refreshModelsList = function(dir)
     {    
-        $scope.loadedModel  = TfSrv.getCfg();
-        var existing_vocs   = [];
+        $scope.loadedModel          = TfSrv.getCfg();
+        if($scope.loadedModel)      $scope.loadedJsonFolderName = $scope.loadedModel.sModelFileName;        // net_27X_25X_28X
+        else                        $scope.loadedJsonFolderName   = "";
         
-        return (function(net) 
-        {
-            if(net)
-            {
-                // a net is loaded
-                $scope.loadedJsonFolderName = net.sModelFileName;      // net_27X_25X_28X
-                return Promise.resolve(true);
-            }   
-            else         
-            {
-                // no net is loaded. check whether a net should be loaded...do it !
-                if($scope.selnet_jsonpath.length) 
-                {
-                    return TfSrv.loadTFNetPath(selnet_jsonpath)  
-                    .then(function()
-                    {
-                        $scope.loadedJsonFolderName   = net.sModelFileName;
-                        return true;
-                    })
-                }
-                else
-                {
-                    $scope.loadedJsonFolderName = ""; 
-                    return Promise.resolve(true);
-                }
-            }            
-        
-        })($scope.loadedModel)
-        .then(function()
-        {        
-            $scope.modelsJson               = [];
-            $scope.loadedToggleId           = 0;
-            $scope.originalLoadedToggleId   = -1;
-            return VocabularySrv.getExistingLastNets($scope.foldername)    // AllSpeak/vocabularies/gigi/
-        })
+        var existing_vocs               = [];
+        $scope.modelsJson               = [];
+        $scope.loadedToggleId           = 0;
+        $scope.originalLoadedToggleId   = -1;
+        return VocabularySrv.getExistingLastNets($scope.foldername)    // AllSpeak/vocabularies/gigi/
         .then(function(validvocs)  // [vocs with also properties: sStatus & jsonpath]
         {
             if(JSON.stringify(validvocs) !== "{}")
@@ -608,7 +539,6 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         .then(function()
         {
             $scope.recThreshold         = $scope.loadedModel.fRecognitionThreshold*100;     
-            $scope.recDistance          = $scope.loadedModel.nRecognitionDistance;     
             $scope.$apply();
         })
         .catch(function(error) 

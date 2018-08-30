@@ -6,8 +6,7 @@
             "appModality":1030,
             "isDeviceRegistered":false,
             "api_key":"",
-            "userActiveVocabularyName":"default",
-            "nRecognitionDistance":1,
+            "userActiveVocabularyName":"",
             "vad":{
                 "nSpeechDetectionThreshold":15,
                 "nSpeechDetectionAllowedDelay":400,

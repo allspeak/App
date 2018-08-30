@@ -3,7 +3,7 @@
  */
 
 
-function MfccSrv(ErrorSrv, MiscellaneousSrv)
+function MfccSrv(ErrorSrv)
 {
     // Management of default values:
     // each time I call : init (mfccCfg)
@@ -41,7 +41,7 @@ function MfccSrv(ErrorSrv, MiscellaneousSrv)
     // called by any controller pretending to get an overriden copy of the standard model params
     getUpdatedStandardCfgCopy = function (ctrlcfg)
     {
-        var cfg = MiscellaneousSrv.cloneObj(standardMfccCfg);
+        var cfg = cloneObj(standardMfccCfg);
         
         if (ctrlcfg != null)
             for (item in ctrlcfg)
@@ -58,7 +58,7 @@ function MfccSrv(ErrorSrv, MiscellaneousSrv)
             return null;
         }
         
-        var cfg = MiscellaneousSrv.cloneObj(mMfccCfg);
+        var cfg = cloneObj(mMfccCfg);
         
         if (ctrlcfg != null)
             for (item in ctrlcfg)
@@ -85,7 +85,7 @@ function MfccSrv(ErrorSrv, MiscellaneousSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg         = MiscellaneousSrv.cloneObj(mMfccCfg);
+            var currCfg         = cloneObj(mMfccCfg);
             currCfg.nDataType   = data_type;
             currCfg.nDataDest   = data_dest;
             currCfg.nDataOrig   = pluginInterface.ENUM.PLUGIN.MFCC_DATAORIGIN_JSONDATA;            
@@ -112,7 +112,7 @@ function MfccSrv(ErrorSrv, MiscellaneousSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN)*_checkParams(proc_scheme, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg                 = MiscellaneousSrv.cloneObj(mMfccCfg);
+            var currCfg                 = cloneObj(mMfccCfg);
             currCfg.nDataType           = data_type;
             currCfg.nDataDest           = data_dest;
             currCfg.nProcessingScheme   = proc_scheme;
@@ -140,7 +140,7 @@ function MfccSrv(ErrorSrv, MiscellaneousSrv)
         
         if(_checkParams(data_type, pluginInterface.ENUM.PLUGIN)*_checkParams(data_dest, pluginInterface.ENUM.PLUGIN)*_checkParams(proc_scheme, pluginInterface.ENUM.PLUGIN))
         {
-            var currCfg                 = MiscellaneousSrv.cloneObj(mMfccCfg);
+            var currCfg                 = cloneObj(mMfccCfg);
             currCfg.nDataType           = data_type;
             currCfg.nDataDest           = data_dest;
             currCfg.nProcessingScheme   = proc_scheme;

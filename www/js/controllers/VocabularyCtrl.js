@@ -70,7 +70,7 @@ function VocabularyCtrl($scope, $state, $ionicPopup, $ionicHistory, $ionicPlatfo
         $scope.isConnected              = RemoteAPISrv.hasInternet();
         window.addEventListener('connection' , $scope.onConnection); 
         
-        return VocabularySrv.getTrainVocabulary($scope.vocabulary_json_path)
+        return VocabularySrv.getTrainVocabulary(vocabulary_json_path)
         .then(function(voc) 
         {
             $scope.vocabulary           = voc;

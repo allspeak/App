@@ -56,8 +56,8 @@
       "cordova-plugin-device": {},
       "cordova-plugin-app-version": {},
       "cordova-plugin-tts": {},
-      "cordova-plugin-app-update": {},
-      "cordova-plugin-speechrecognition": {}
+      "cordova-plugin-speechrecognition": {},
+      "cordova-plugin-app-update": {}
     }
   }
 }

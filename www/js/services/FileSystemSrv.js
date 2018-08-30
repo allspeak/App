@@ -77,12 +77,15 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     {
         var res_root = (alternative_resolved_root   ?   alternative_resolved_root   :   service.resolved_data_storage_root);
         
-        if(fileslist == null || !fileslist.length) return Promise.reject({message:"input fileslist is empty"});
-        
         var subPromises = [];
         for (var f=0; f<fileslist.length; f++) 
-            subPromises.push(service.existFile(fileslist[f], res_root));
-
+        {
+            (function(fpath, arr) 
+            {
+                var subPromise  = service.existFile(fpath, arr);
+                subPromises.push(subPromise);
+            })(fileslist[f], res_root);
+        }
         return $q.all(subPromises);
     };      
     //--------------------------------------------------------------------------
@@ -334,31 +337,31 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
         });
     };
     
-    // delete all files fullfilling valid_extensions/contains and returns their path
     service.deleteFilesInFolder = function(relative_path, valid_extensions, filecontains, alternative_resolved_root)
     {
-        var res_root            = (alternative_resolved_root   ?   alternative_resolved_root   :   service.resolved_data_storage_root);
-        var filepaths2delete    = [];
+        var res_root = (alternative_resolved_root   ?   alternative_resolved_root   :   service.resolved_data_storage_root);
         
         return service.listFilesInDir(relative_path, valid_extensions, filecontains, res_root)
         .then(function(files)
         {
-            if(files.length)
+            var subPromises = [];
+            for (var f=0; f<files.length; f++) 
             {
-                var subPromises = [];
-                for (var f=0; f<files.length; f++) 
+                (function(fname, arr) 
                 {
-                    filepaths2delete.push(relative_path + "/" + files[f]);
-                    subPromises.push(service.deleteFile(relative_path + "/" + files[f], res_root));
-                }
-                return $q.all(subPromises);
+                    var subPromise  = service.deleteFile(fname, arr)
+                    subPromises.push(subPromise);
+                })(relative_path + "/" + files[f], res_root);
             }
-            else return false;
+            return $q.all(subPromises);
         })
-        .then(function(res)
+        .then(function()
         {
-            if(res == false)    return [];
-            else                return filepaths2delete;
+            return $q.defer().resolve(1);
+        })
+        .catch(function(error)
+        {
+            $q.reject(error);
         });
     };
     //--------------------------------------------------------------------------
@@ -392,7 +395,6 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
                 {
                     return service.deleteFile(relative_dest_path, res_root)
                     .then(function(){
-                        console.log("created file " + res_root + relative_dest_path);  
                         return $cordovaFile.copyFile(service.resolved_assets_folder, relative_src_path, res_root, relative_dest_path); // copyFile(path, fileName, newPath, newFileName)
                     });
                 }

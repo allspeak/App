@@ -3,7 +3,7 @@
  */
 
 
-function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q, MiscellaneousSrv)
+function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q)
 {
     LOCK_TYPES = {
         FREE    : 0,
@@ -89,11 +89,11 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q, MiscellaneousSrv)
     init = function(jsonArrayCaptureCfg, jsonVadCfg, plugin, initappserv)
     {   
         // stores the three capture configurations (record, playback, recognition)
-        captureConfigurations   = MiscellaneousSrv.cloneObjs(jsonArrayCaptureCfg);
+        captureConfigurations   = cloneObjs(jsonArrayCaptureCfg);
         
-        standardCfg             = {"captureCfg":MiscellaneousSrv.cloneObj(captureConfigurations[captureProfile]), "vadCfg": MiscellaneousSrv.cloneObj(jsonVadCfg)};
-        mCfg                    = {"captureCfg":MiscellaneousSrv.cloneObj(captureConfigurations[captureProfile]), "vadCfg": MiscellaneousSrv.cloneObj(jsonVadCfg)};
-        oldCfg                  = {"captureCfg":MiscellaneousSrv.cloneObj(captureConfigurations[captureProfile]), "vadCfg": MiscellaneousSrv.cloneObj(jsonVadCfg)};
+        standardCfg             = {"captureCfg":cloneObj(captureConfigurations[captureProfile]), "vadCfg": cloneObj(jsonVadCfg)};
+        mCfg                    = {"captureCfg":cloneObj(captureConfigurations[captureProfile]), "vadCfg": cloneObj(jsonVadCfg)};
+        oldCfg                  = {"captureCfg":cloneObj(captureConfigurations[captureProfile]), "vadCfg": cloneObj(jsonVadCfg)};
         pluginInterface         = plugin;
         
         initAppSrv              = initappserv;
@@ -138,11 +138,11 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q, MiscellaneousSrv)
                 speechChunksFolderRoot      = "audio_sentences/temp";
                 speechChunksFilenameRoot    = "chunk_";          
             }             
-            standardCfg.captureCfg          = MiscellaneousSrv.cloneObj(captureConfigurations[captureProfile]);
+            standardCfg.captureCfg          = cloneObj(captureConfigurations[captureProfile]);
             
             var cfg = {};
-            cfg.captureCfg  = MiscellaneousSrv.cloneObj(mCfg.captureCfg);
-            cfg.vadCfg      = MiscellaneousSrv.cloneObj(mCfg.vadCfg);        // TODO: verify this !
+            cfg.captureCfg  = cloneObj(mCfg.captureCfg);
+            cfg.vadCfg      = cloneObj(mCfg.vadCfg);        // TODO: verify this !
 
             if (ctrlcfg != null)
             {
@@ -613,22 +613,54 @@ function SpeechDetectionSrv(FileSystemSrv, ErrorSrv, $q, MiscellaneousSrv)
         
         return [MIN_ACL_BS, MAX_ACL_BS];
      };
-
-
+    //=============================================   
+    // convert  a = {gigi:aaa, bimbo:bbb}  ->  b = [{label:gigi, value:aaa}, {label:bimbo, value:bbb}]
+    Obj2ArrJSON = function(obj)
+    {
+        var arr = [];
+        for (item in obj)
+            arr.push({label: item, value:obj[item]});
+        return arr; 
+    };
+    
+    cloneObj = function(obj)
+    {
+        var clone = {};
+        for(var field in obj)
+            clone[field] = obj[field];
+        return clone;
+    };
+    
+    // valid for {"a":{}, "b":{}, "c":{}}
+    cloneObjs = function(obj)
+    {
+        var clone = {};
+        for(var field in obj)
+            clone[field] = cloneObj(obj[field]);
+        return clone;
+    };
+    
+    cloneObjArray = function(objarr)
+    {
+        var clone = [];
+        for(var e=0; e<objarr.length; e++)
+            clone[e] = cloneObj(objarr[e]);
+        return clone;
+    };
     // =========================================================================
     // ==  G E T   A U D I O I N P U T     C O N S T A N T S ===================
     // =========================================================================
     getInputSources = function()
     {
-        return MiscellaneousSrv.Obj2ArrJSON(pluginInterface.ENUM.capture.AUDIOSOURCE_TYPE);
+        return Obj2ArrJSON(pluginInterface.ENUM.capture.AUDIOSOURCE_TYPE);
     };
     getSamplingFrequencies = function()
     {
-        return MiscellaneousSrv.Obj2ArrJSON(pluginInterface.ENUM.capture.SAMPLERATE);        
+        return Obj2ArrJSON(pluginInterface.ENUM.capture.SAMPLERATE);        
     };   
     getCaptureBuffers = function()
     {
-        return MiscellaneousSrv.Obj2ArrJSON(pluginInterface.ENUM.capture.BUFFER_SIZES);        
+        return Obj2ArrJSON(pluginInterface.ENUM.capture.BUFFER_SIZES);        
     };   
     
     //==========================================================================

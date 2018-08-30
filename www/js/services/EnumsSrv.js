@@ -11,9 +11,7 @@ function EnumsSrv()
     service.MODALITY    = {};
     service.TRAINING    = {};
     service.VOICEBANK   = {};
-    service.VOCABULARY  = {};
-    service.RECOGNITION = {};
-    service.VAD         = {};
+    service.VOCABULARY   = {};
     
     service.RECORD.BY_SENTENCE              = 1001;
     service.RECORD.BY_REPETITIONS           = 1002;
@@ -44,35 +42,8 @@ function EnumsSrv()
     
     service.VOICEBANK.SHOW_ALL              = 1050;
     service.VOICEBANK.SHOW_TRAINED          = 1051;
-
-    service.RECOGNITION.PARAMS_MOD_GENERAL  = 1060;     // recognition_settings/modeid = show general settings
-    service.RECOGNITION.PARAMS_MOD_VOC      = 1061;     // recognition_settings/modeid = show vocabulary settings
     
     service.VOCABULARY.IGNORE_RECOVERY      = true;
-    service.VOCABULARY.DEFAULT_FOLDERNAME   = "default";
-    service.VOCABULARY.NOISE_ID             = 1700;
-    
-    service.VAD.SPEECH_STATUS_CODES         = {
-        CAPTURE_STATUS_STARTED              : 11,
-        CAPTURE_STATUS_STOPPED              : 13,
-        CAPTURE_ERROR                       : 110,      
-        SPEECH_STATUS_STARTED               : 20,
-        SPEECH_STATUS_STOPPED               : 21,
-        SPEECH_STATUS_SENTENCE              : 22,
-        SPEECH_STATUS_MAX_LENGTH            : 23,
-        SPEECH_STATUS_MIN_LENGTH            : 24,        
-        VAD_ERROR                           : 120};    
-    
-    service.VAD.SPEECH_STATUS_LABELS        = [];
-    service.VAD.SPEECH_STATUS_LABELS[service.VAD.SPEECH_STATUS_CODES.CAPTURE_STATUS_STARTED]   = "CAPTURE_STATUS_STARTED";
-    service.VAD.SPEECH_STATUS_LABELS[service.VAD.SPEECH_STATUS_CODES.CAPTURE_STATUS_STOPPED]   = "CAPTURE_STATUS_STOPPED";
-    service.VAD.SPEECH_STATUS_LABELS[service.VAD.SPEECH_STATUS_CODES.SPEECH_STATUS_SENTENCE]   = "SPEECH_STATUS_SENTENCE";
-    service.VAD.SPEECH_STATUS_LABELS[service.VAD.SPEECH_STATUS_CODES.CAPTURE_ERROR]            = "CAPTURE_ERROR";
-    service.VAD.SPEECH_STATUS_LABELS[service.VAD.SPEECH_STATUS_CODES.SPEECH_STATUS_STARTED]    = "SPEECH_STATUS_STARTED";
-    service.VAD.SPEECH_STATUS_LABELS[service.VAD.SPEECH_STATUS_CODES.SPEECH_STATUS_STOPPED]    = "SPEECH_STATUS_STOPPED";
-    service.VAD.SPEECH_STATUS_LABELS[service.VAD.SPEECH_STATUS_CODES.SPEECH_STATUS_MAX_LENGTH] = "SPEECH_STATUS_MAX_LENGTH";
-    service.VAD.SPEECH_STATUS_LABELS[service.VAD.SPEECH_STATUS_CODES.SPEECH_STATUS_MIN_LENGTH] = "SPEECH_STATUS_MIN_LENGTH";    
-    
     //==========================================================================
     return service;
 }

@@ -4,22 +4,14 @@
  * and open the template in the editor.
  */
 
-function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, $ionicPopup, SpeechDetectionSrv, InitAppSrv, VocabularySrv, FileSystemSrv, ErrorSrv, MiscellaneousSrv, UITextsSrv, EnumsSrv)
+function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, $ionicPopup, SpeechDetectionSrv, InitAppSrv, ErrorSrv, MiscellaneousSrv, UITextsSrv)
 {
     $scope.captureProfile   = "recognition";
 //    $scope.captureParams    = null;
     
 //    $scope.captureParams    = {"sampleRate": 8000,
 //                               "bufferSize": 1024};
-    $scope.MODE_VOC             = -1;   // enum mapping EnumSrv.RECOGNITION.PARAMS_MOD_VOC ....used by html
-    $scope.modeVoc              = -1;
-    $scope.modeId               = -1;
-    $scope.currentNet           = null;
-    $scope.currentNetJsonPath   = null;
-    
-    $scope.recThreshold     = 0;
-    $scope.recDistance      = 0;
-    
+               
     $scope.initVadParams    = null;
 //    $scope.initVadParams    = {"nAnalysisChunkLength": 64};
     
@@ -27,8 +19,7 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
 //    $scope.captureCfg       = null;
     $scope.vadCfg           = null;  
     
-    $scope.has_changed_glob = false;
-    $scope.has_changed_net  = false;
+    $scope.has_changed      = false;
     
 //    $scope.ACL_limits       = [];
     
@@ -39,28 +30,6 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
         {
             $state.go("home");
         }, 100);    
-        
-        //---------------------------------------------------------------------------------------------------------------------
-        // manage input params
-        //---------------------------------------------------------------------------------------------------------------------      
-        $scope.MODE_VOC     = EnumsSrv.RECOGNITION.PARAMS_MOD_VOC;
-        
-        $scope.modeId       = EnumsSrv.RECOGNITION.PARAMS_MOD_GENERAL;       
-        $scope.foldername   = "";               
-        
-        if(data.stateParams.modeid != "")
-        {
-            $scope.modeId = parseInt(data.stateParams.modeid);
-        
-            if($scope.modeId == EnumsSrv.RECOGNITION.PARAMS_MOD_VOC && data.stateParams.foldername == "") 
-            {
-                alert("SettingsRecognitionCtrl::$ionicView.enter. error : foldername is empty");
-                $state.go("home");
-            }   
-            else $scope.foldername = data.stateParams.foldername;
-        }
-
-        //---------------------------------------------------------------------------------------------------------------------       
         
         pluginInterface             = InitAppSrv.getPlugin();            
         
@@ -89,22 +58,8 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
         $scope.mic_threshold        = $scope.vadCfg.nSpeechDetectionThreshold;      // TODO: set limits !
         
 //        $scope.priceSlider          = {value:200, options:{floor: 0, ceil: 500 }};
-        $scope.has_changed_glob     = false;
-        $scope.has_changed_net      = false;
-        
+        $scope.has_changed          = false;
         $scope.$apply();
-        if($scope.modeId == EnumsSrv.RECOGNITION.PARAMS_MOD_VOC)
-        {
-            return VocabularySrv.getTrainVocabularySelectedNetName($scope.foldername)
-            .then(function(voc_and_net)
-            {
-                $scope.currentNet           = voc_and_net.net; // net or null
-                $scope.currentNetJsonPath   = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername + "/" + $scope.currentNet.sModelFileName + ".json";
-                $scope.recThreshold         = $scope.currentNet.fRecognitionThreshold*100;
-                $scope.recDistance          = $scope.currentNet.nRecognitionDistance;
-                $scope.$apply();
-            });
-        }
     });      
 
     $scope.$on('$ionicView.leave', function(){
@@ -115,96 +70,49 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
 
     $scope.checkIFChanged = function()
     {
-        $scope.has_changed_glob = false;
+        if($scope.countMIL      != $scope.vadCfg.nSpeechDetectionMinimum)       return true;
+        if($scope.countMXL      != $scope.vadCfg.nSpeechDetectionMaximum)       return true;
+        if($scope.countAD       != $scope.vadCfg.nSpeechDetectionAllowedDelay)  return true;
+        if($scope.mic_threshold != $scope.vadCfg.nSpeechDetectionThreshold)     return true;
         
-        if($scope.countMIL      != $scope.vadCfg.nSpeechDetectionMinimum)       $scope.has_changed_glob = true;
-        if($scope.countMXL      != $scope.vadCfg.nSpeechDetectionMaximum)       $scope.has_changed_glob = true;
-        if($scope.countAD       != $scope.vadCfg.nSpeechDetectionAllowedDelay)  $scope.has_changed_glob = true;
-        if($scope.mic_threshold != $scope.vadCfg.nSpeechDetectionThreshold)     $scope.has_changed_glob = true;
-        
-        return $scope.has_changed_glob;
-    };
+        return false;
+    }
     // ============================================================================================
     // ============================================================================================
 
-    $scope.changeRecThreshold = function(boolincrement)
+    $scope.onChangeMicThreshold = function(thresh)
     {
-        $scope.recThreshold = (boolincrement == true ? $scope.recThreshold+5    :   $scope.recThreshold-5);
-        $scope.recThreshold = Math.max($scope.recThreshold, 0);
-        $scope.recThreshold = Math.min($scope.recThreshold, 50);
-        
-        var newthresh = $scope.recThreshold/100;
-        if(newthresh != $scope.currentNet.fRecognitionThreshold)    $scope.has_changed_net = true;
-        else                                                        $scope.has_changed_net = false;
+        thresh = parseInt(thresh);
+        $scope.mic_threshold = thresh;
+        if(thresh != $scope.mic_threshold)        
+            $scope.has_changed = true;
     };
-    
-
-    $scope.changeRecDistance = function(boolincrement)
-    {
-        $scope.recDistance = (boolincrement == true ? $scope.recDistance+5    :   $scope.recDistance-5);
-        $scope.recDistance = Math.max($scope.recDistance, 0);
-        $scope.recDistance = Math.min($scope.recDistance, 50);
-        
-        var newthresh = $scope.recDistance/100;
-        if(newthresh != $scope.currentNet.nRecognitionDistance)     $scope.has_changed_net = true;
-        else                                                        $scope.has_changed_net = false;
-    };
-    
-//    $scope.onChangeMicThreshold = function(thresh)
-//    {
-//        thresh = parseInt(thresh);
-//        $scope.mic_threshold = thresh;
-//        if(thresh != $scope.mic_threshold)        
-//            $scope.has_changed = true;
-//    };
     
     // updates local object and send only the user params to InitAppSrv
     $scope.save = function(doexit)
     {
-        return (function(change_glob) 
-        {
-            if(change_glob)
-            {
-                $scope.vadCfg.nSpeechDetectionMinimum       = $scope.countMIL;
-                $scope.vadCfg.nSpeechDetectionMaximum       = $scope.countMXL;
-                $scope.vadCfg.nSpeechDetectionAllowedDelay  = $scope.countAD;
-                $scope.vadCfg.nSpeechDetectionThreshold     = $scope.mic_threshold;
-
-                var obj2pass2configuser = {"nSpeechDetectionMinimum":       $scope.vadCfg.nSpeechDetectionMinimum,
-                                           "nSpeechDetectionMaximum":       $scope.vadCfg.nSpeechDetectionMaximum,
-                                           "nSpeechDetectionAllowedDelay":  $scope.vadCfg.nSpeechDetectionAllowedDelay,
-                                           "nSpeechDetectionThreshold":     $scope.vadCfg.nSpeechDetectionThreshold};
-
-                return SpeechDetectionSrv.setVadCfg(obj2pass2configuser);
-            }            
-            else    return Promise.resolve(true);
-            
-        })($scope.checkIFChanged())        
-        .then(function()
-        {        
-            if($scope.has_changed_net)
-            {
-                $scope.currentNet.fRecognitionThreshold = ($scope.recThreshold/100);
-                $scope.currentNet.nRecognitionDistance  = $scope.recDistance;
-                return FileSystemSrv.createJSONFileFromObj($scope.currentNetJsonPath, $scope.currentNet, FileSystemSrv.OVERWRITE);
-            }
-            else return true;
-        })
-        .then(function()
-        {        
+        $scope.vadCfg.nSpeechDetectionMinimum       = $scope.countMIL;
+        $scope.vadCfg.nSpeechDetectionMaximum       = $scope.countMXL;
+        $scope.vadCfg.nSpeechDetectionAllowedDelay  = $scope.countAD;
+        $scope.vadCfg.nSpeechDetectionThreshold     = $scope.mic_threshold;
+        
+        var obj2pass2configuser = {"nSpeechDetectionMinimum":       $scope.vadCfg.nSpeechDetectionMinimum,
+                                   "nSpeechDetectionMaximum":       $scope.vadCfg.nSpeechDetectionMaximum,
+                                   "nSpeechDetectionAllowedDelay":  $scope.vadCfg.nSpeechDetectionAllowedDelay,
+                                   "nSpeechDetectionThreshold":     $scope.vadCfg.nSpeechDetectionThreshold}
+        
+        return SpeechDetectionSrv.setVadCfg(obj2pass2configuser)
+        .then(function(){        
             if(doexit)  $ionicHistory.goBack(); // back ! 
         })
-        .catch(function(error)
-        {
+        .catch(function(error){
             ErrorSrv.raiseError(null, "Save config error", error);
         });
     };
     
     $scope.cancel = function()
     {
-        $scope.has_changed_glob = $scope.checkIFChanged();
-        
-        if($scope.has_changed_glob || $scope.has_changed_net)
+        if($scope.checkIFChanged())
         {
             $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: UITextsSrv.SETUP.labelSaveSettings})
             .then(function(res) 
@@ -229,7 +137,7 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
                 $scope.countAD -= $scope.acl_ms_step;
                 break;
         }
-        $scope.checkIFChanged();
+        $scope.has_changed      = true;
     };
     
     $scope.incrementCounter = function(item)
@@ -246,8 +154,9 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
                 $scope.countAD += $scope.acl_ms_step;
                 break;
         }
-        $scope.checkIFChanged();
+        $scope.has_changed      = true;
     };
+    
     
     // ============================================================================================
 

@@ -35,7 +35,7 @@ VocabularySrv massively recoded
  - MODIFIED:	getTrainVocabulary(path, ignorerecover): may now recover from the following error ENUMS.VOCABULARY.JSONFILE_NOTEXIST or reject it to the caller.
 
 				getTrainVocabularySelectedNet rejects { mycode:ErrorSrv.ENUMS.VOCABULARY.NETJSONFILE_NOTEXIST / NETPBFILE_NOTEXIST, 
-														mydata:voc_and_net, 
+														mydata:retvoc, 
 														message:"....."}
 											  providing data so far obtained and helping caller to manage the recovery process.
 

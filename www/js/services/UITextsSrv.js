@@ -11,7 +11,6 @@ function UITextsSrv()
     service.REMOTE      = {};
     service.SETUP       = {};
     service.VOCABULARY  = {};
-    service.RECOGNITION = {};
     
     service.TRAINING.models = {};
     
@@ -128,10 +127,6 @@ function UITextsSrv()
     service.SETUP.specifyGenderText                             = "AI FINI DI POTER RIPRODURRE LA TUA VOCE IN MANIERA SINTETICA, INDICA SE SEI MASCHIO O FEMMINA";    
     service.SETUP.labelSaveSettings                             = 'Stai uscendo senza salvare i nuovi parametri, sei sicuro ?';    
 
-    service.RECOGNITION.labelUncertainResults                   = "ripeti il comando";
-    service.RECOGNITION.labelStartRecognition                   = "AVVIA RICONOSCIMENTO";
-    service.RECOGNITION.labelStopRecognition                    = "INTERROMPI RICONOSCIMENTO";
-    
     //==========================================================================
     return service;
 }

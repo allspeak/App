@@ -3,7 +3,7 @@
  * accessory functions
  */
 
-main_module.service('MiscellaneousSrv', function() 
+main_module.service('MiscellaneousSrv', function($q) 
 {
 
     selectObjByValue = function(value, objarray)
@@ -75,59 +75,12 @@ main_module.service('MiscellaneousSrv', function()
     {
         return obj === Object(obj);
     };
-    
-    //=============================================   
-    // convert  a = {gigi:aaa, bimbo:bbb}  ->  b = [{label:gigi, value:aaa}, {label:bimbo, value:bbb}]
-    Obj2ArrJSON = function(obj)
-    {
-        var arr = [];
-        if(obj == null) return arr;
-        
-        for (item in obj)
-            arr.push({label: item, value:obj[item]});
-        return arr; 
-    };
-    
-    cloneObj = function(obj)
-    {
-        var clone = {};
-        if(obj == null) return clone;
-        
-        for(var field in obj)
-            clone[field] = obj[field];
-        return clone;
-    };
-    
-    // valid for {"a":{}, "b":{}, "c":{}}
-    cloneObjs = function(obj)
-    {
-        var clones = {};
-        if(obj == null) return clones;
-        
-        for(var field in obj)
-            clones[field] = cloneObj(obj[field]);
-        return clones;
-    };
-    
-    cloneObjArray = function(objarr)
-    {
-        var clone = [];
-        if(objarr == null) return clone;
-        
-        for(var e=0; e<objarr.length; e++)
-            clone[e] = cloneObj(objarr[e]);
-        return clone;
-    };    
     //---------------------------------------------------------------------------
     // public methods      
     return {
         selectObjByValue    : selectObjByValue,
         selectObjByLabel    : selectObjByLabel,
         selectObjByMsValue  : selectObjByMsValue,
-        printObjectArray    : printObjectArray,
-        Obj2ArrJSON         : Obj2ArrJSON,
-        cloneObj            : cloneObj,
-        cloneObjs           : cloneObjs,
-        cloneObjArray       : cloneObjArray
+        printObjectArray  : printObjectArray
     };
 });

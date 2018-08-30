@@ -3,7 +3,7 @@
     <ion-nav-bar class="bar-positive">    
         <ion-nav-buttons side="left">
             <button class="button button-header-big" ng-if="!sessionname.length" ui-sref="home"><i class="ion-home"></i>
-            <button class="button" ng-if="sessionname.length" ng-click="onStopTesting()"></i>Back</button>
+            <button class="button button-header-big" ng-if="sessionname.length" ng-click="onStopTesting()"></i>Back</button>
         </ion-nav-buttons> 
 
         <ion-nav-buttons side="right">
@@ -20,22 +20,16 @@
 
     <ion-content>
         <div class="list">
-            
-            <ion-item class="item-button-right">VOCE : Intensità/soglia...RESET >
-                <button class="button text-big text-center button-wide" ng-class="isSpeaking == 'ON' ? 'button-balanced' : 'button-positive'" ng-click="resetVADThreshold(true);">{{voiceDB}}/{{thresholdDB}}</button>
-            </ion-item>
-            
-            <div class="card">    
-                <ion-item class="item item-divider item-button-right">Rumore di fondo</ion-item> 
-                <div class="button-bar">         
-                    <button class="button button-block button"  ng-class="selectedNoise == 0 ? 'button-balanced' : 'button-positive'" ng-disabled="selectedNoise == 0 || !isvoicemonitoring" ng-click="selectNoise(0)">normale</button>
-                    <button class="button button-block button"  ng-class="selectedNoise == 1 ? 'button-balanced' : 'button-positive'" ng-disabled="selectedNoise == 1 || !isvoicemonitoring" ng-click="selectNoise(1)">medio</button>
-                    <button class="button button-block button"  ng-class="selectedNoise == 2 ? 'button-balanced' : 'button-positive'" ng-disabled="selectedNoise == 2 || !isvoicemonitoring" ng-click="selectNoise(2)">alto</button>
-                </div>            
-                               
-            </div>
+            <label class="item">Voice Intensity : <span class="badge" ng-class="isSpeaking == 'ON' ? 'color-green' : 'color-red'">{{voiceDB}}/{{thresholdDB}}</span></label>        
             
             <ion-toggle class="item" ng-model="headsetSelected" ng-disabled="isvoicemonitoring || !headsetAvailable" ng-click="useHS(headsetSelected)">Attiva Microfono esterno</ion-toggle>             
+            
+            <div class="item item-input">
+                <div class="input-label">Soglia di riconoscimento</div>
+                <button type="button button-right" ng-click="changeThreshold(false);">-</button>
+                <button type="button button-right" ng-click="changeThreshold(true);">+</button></span>
+                 <span class="badge">{{recThreshold}} %    
+            </div>            
             
             <ion-list>
                 <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}
@@ -60,7 +54,7 @@
                 </ion-list>         
             </div>                
 
-            <div class="card" ng-if="!isDefault">
+            <div class="card">
                 <div class="item item-divider">
                     MODELLI UTILIZZABILI
                 </div>

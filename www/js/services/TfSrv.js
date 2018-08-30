@@ -3,13 +3,13 @@
  * mTfCfg is set only when the TF model loading process was successfull
  * 
  * I receive from InitAppSrv the defaults values
- * controllers can only load a new model. if successfull mTfCfg & modelJsonFile are updated. 
+ * controllers can only load a new model. if successfull mTfCfg is updated. 
  * ctrl cannot modify it otherwise => this Service have the isModelLoaded methods
  * ctrl can only have a clone copy of mTfCfg
  * 
  */
 
-function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
+function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv)
 {
     mTfCfg              = null;     // hold current configuration (got from json file)
     standardTfCfg       = null;     // hold standard  Configuration (obtained from App json, if not present takes them from window.audioinput & window.speechcapture
@@ -17,20 +17,19 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
     pluginInterface     = null;
     plugin_enum_tf      = null;
     plugin_tf           = null;
-    
-    initAppSrv          = null;    
 
     vocabulariesFolder  = "";       // AllSpeak/vocabularies
 
     modelLoaded         = false;
-    modelJsonFile       = "";       // json file containing model info
+    modelFolder         = ""        // default - standard - gigi etc...
+    modelJsonFile       = ""        // json file containing model info
     
     //==========================================================================
     // DEFAULT CONFIG VALUES MANAGEMENT
     //==========================================================================
     //
     // PUBLIC ********************************************************************************************************
-    init = function(jsonCfg, vocabulariesfolder, plugin, initappserv)
+    init = function(jsonCfg, vocabulariesfolder, plugin)
     {  
         standardTfCfg       = jsonCfg;
         mTfCfg              = null;
@@ -41,8 +40,6 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
         plugin_enum_tf      = pluginInterface.ENUM.PLUGIN;
         
         vocabulariesFolder  = vocabulariesfolder;
-        
-        initAppSrv          = initappserv;        
     };
     
     //=========================================================================
@@ -50,13 +47,13 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
     //=========================================================================
     getCfg = function()
     {
-        return MiscellaneousSrv.cloneObj(mTfCfg);   // returns null if mTfCfg is null
+        return cloneObj(mTfCfg);
     };    
 
     // called by any controller pretending to get an overriden copy of the standard model params
     getUpdatedStandardCfgCopy = function (ctrlcfg)
     {
-        var cfg = MiscellaneousSrv.cloneObj(standardTfCfg);
+        var cfg = cloneObj(standardTfCfg);
         
         if (ctrlcfg != null)
             for (item in ctrlcfg)
@@ -73,7 +70,7 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
             return null;
         }
         
-        var cfg = MiscellaneousSrv.cloneObj(mTfCfg);
+        var cfg = cloneObj(mTfCfg);
         
         if (ctrlcfg != null)
             for (item in ctrlcfg)
@@ -100,10 +97,18 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
                 if(existfile)       return FileSystemSrv.readJSON(json_relpath);
                 else                return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.JSONFILE_NOTEXIST, message:"TfSrv::loadTFNetPath : NO_FILE " + json_relpath});
             })
-            .then(function(net)
+            .then(function(voc)
             {
-                return loadTFNet(net);
+                modelJsonFile = json_relpath;
+                return loadTFNet(voc);
             })
+            .catch(function(error)
+            {
+                modelLoaded     = false;
+                mTfCfg          = null;
+                modelJsonFile   = "";            
+                return $q.reject(error);
+            });          
         }
     }
     
@@ -112,55 +117,39 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
     // ONLY methods allowed to modify mTfCfg
     loadTFNet = function(net)
     {
-        var loadnew         = true;
         if(net.sModelFilePath == null || net.sModelFilePath == "")
             return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.NETPBFILEVARIABLE_EMPTY, message:"Model pb path is null"});
         else
         {
-            return FileSystemSrv.existFileResolved(net.sModelFilePath)
+            var loadnew         = true;
+            
+            return FileSystemSrv.existFileResolved(net.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
             .then(function(exist)
             {
-                if(exist)   return pluginInterface.loadTFNet(net);  // returns string or reject
-                else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.NETPBFILE_NOTEXIST, message:"Model pb is not present"});
+                if(exist)   return pluginInterface.loadTFNet(net)
+                else        return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.NETPBFILE_NOTEXIST, message:"Model pb is not present"} );
             })
-            .then(function()
+            .then(function(loaded)
             {  
-                mTfCfg          = net;
-                modelLoaded     = net.sLocalFolder;
-                modelJsonFile   = vocabulariesFolder + "/" + net.sLocalFolder + "/" + net.sModelFileName + ".json";
-                
+                modelLoaded = net.sLocalFolder;
+                if(loaded)    mTfCfg     = net;
+                else
+                {
+                    mTfCfg          = null;
+                    modelJsonFile   = "";                
+                }
                 console.log("loaded model: " + net.sModelFilePath);
                 return modelLoaded;
             })
             .catch(function(error)
             {
-                error.mycode    = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
-                if(loadnew && mTfCfg) 
-                {
-                    // error loading the net net...reload current one
-                    return pluginInterface.loadTFNet(mTfCfg)
-                    .then(function(){return $q.reject(error);})    // I correctly reloaded the current one, can reject the error related to the new one.
-                    .catch(function(error2)
-                    {                
-                        // should not happen !!!! also the old net crash ..... #FLOWCRASH#
-                        mTfCfg          = null;
-                        modelLoaded     = false;
-                        modelJsonFile   = "";                             
-                        error2.mycode    = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
-                        return $q.reject(error2);
-                    });                 
-                }
-                else if(!loadnew)
-                {
-                    // should not happen !!!! the currently loaded net crash ..... #FLOWCRASH#
-                    mTfCfg          = null;
-                    modelLoaded     = false;
-                    modelJsonFile   = "";                             
-                    error.mycode    = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
-                    return $q.reject(error);                    
-                }
-                else return $q.reject(error);   // 
-            });
+                if(error.mycode == null)    error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL
+                
+                modelLoaded     = false;
+                mTfCfg          = null;
+                modelJsonFile   = "";  
+                return $q.reject(error);
+            });     
         }
     };    
     
@@ -170,12 +159,12 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
     // returns: string or reject
     testNewTFModel = function(net)
     {
-        var loadnew         = true;        
-        
         if(net.sModelFilePath == null || net.sModelFilePath == "")
             return $q.reject({mycode:ErrorSrv.ENUMS.VOCABULARY.NETPBFILEVARIABLE_EMPTY, message:"Model pb path is null"});
         else
         {
+            var loadnew         = true;
+
             return FileSystemSrv.existFileResolved(net.sModelFilePath)      // #ISSUE# if there is an error in existFileResolved, the catch below is not triggered
             .then(function(exist)
             {
@@ -184,64 +173,45 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
             })
             .then(function()
             {  
-                // test net is ok !, reload current one if exists
                 loadnew = false;
-                if(mTfCfg)  return pluginInterface.loadTFNet(mTfCfg);
+                if(mTfCfg)  return loadTFNet(mTfCfg);     // reload current net if exist
                 else        return true;
             })
             .catch(function(error)
             {
-                error.mycode    = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
-                if(loadnew && mTfCfg) 
+                if(loadnew)
                 {
-                    // error loading the test net...reload current one
-                    return pluginInterface.loadTFNet(mTfCfg)
-                    .then(function(){return $q.reject(error);})    // I correctly reloaded the current one, can reject the error related to the tested one.
-                    .catch(function(error2)
-                    {                
-                        // should not happen !!!! also the old net crash ..... #FLOWCRASH#
-                        mTfCfg          = null;
-                        modelLoaded     = false;
-                        modelJsonFile   = "";                             
-                        error2.mycode    = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
-                        return $q.reject(error2);
-                    });                 
+                     // error while testing the new net...reload current one and reject with the original error
+                    if(mTfCfg)
+                    {
+                        return loadTFNet(mTfCfg)
+                        .then(function()
+                        {
+                            error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
+                            return $q.reject(error);
+                        })
+                        .catch(function(error2)
+                        {                
+                            // should not happen !!!! #FLOWCRASH#
+                            error2.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
+                            return $q.reject(error2);
+                        });
+                    }
                 }
-                else if(!loadnew)
+                else
                 {
-                    // should not happen !!!! the currently loaded net crash ..... #FLOWCRASH#
-                    mTfCfg          = null;
-                    modelLoaded     = false;
-                    modelJsonFile   = "";                             
-                    error.mycode    = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
-                    return $q.reject(error);                    
+                    // should not happen !!!! #FLOWCRASH#
+                    error.mycode = ErrorSrv.ENUMS.VOCABULARY.LOADTFMODEL;
+                    return $q.reject(error);
                 }
-                else return $q.reject(error);   // 
             });
         }
     };    
-    
-    // called when a net_xxxxx.json/pb is deleted. check whether it was the loaded one. if so => reset
-    checkDeletedNet = function(netpath)
-    {
-        if(netpath == modelJsonFile)
-        {
-            mTfCfg          = null;
-            modelLoaded     = false;
-            modelJsonFile   = "";                 
-        }
-    };
     
     isModelLoaded = function(vocfolder)
     {
         if(modelLoaded && mTfCfg.sLocalFolder == vocfolder) return true;
         else                                                return false;
-    };
-    
-    isNetLoaded = function(netpath)
-    {
-        if(modelLoaded && modelJsonFile == netpath) return true;
-        else                                        return false;
     };
     
     //=========================================================================
@@ -261,24 +231,21 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
         return FileSystemSrv.createFile(filepath, JSON.stringify(train_obj), FileSystemSrv.OVERWRITE);
     };
     
-    // - set the default nRecognitionDistance value
-    // - set device path of the downloaded net
-    //      first is in a temp session (e.g : vocabularies/gigi/train_XXXXXX)
-    //      then, when accepted, it gets vocabularies/gigi
+    // set device path of the downloaded net
+    // first is in a temp session (e.g : vocabularies/gigi/train_XXXXXX)
+    // then, when accepted, it gets vocabularies/gigi
     // called by: ManageTrainingCtr::checkSession
     // all the downloaded model pass from here.
-    fixTfModel = function(net, tempsession)
+    fixTfModel = function(voc, tempsession)
     {
-        if(net.status) delete net.status;
-        net.nDataDest               = standardTfCfg.nDataDest;   
-        net.nRecognitionDistance    = initAppSrv.getDefaultRecognitionDistance();
+        if(voc.status)  delete voc.status;
+        voc.nDataDest               = standardTfCfg.nDataDest;   
         
         if(tempsession)
-            net.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + net.sLocalFolder + "/" + tempsession + "/" + net.sModelFileName + ".pb";  
+            voc.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + tempsession + "/" + voc.sModelFileName + ".pb";  
         else
-            net.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + net.sLocalFolder + "/" + net.sModelFileName + ".pb";  
-        
-        return net;
+            voc.sModelFilePath      = FileSystemSrv.getResolvedOutDataFolder() + vocabulariesFolder + "/" + voc.sLocalFolder + "/" + voc.sModelFileName + ".pb";  
+        return voc;
     };
  
     // returns USER of COMMON ADAPTED
@@ -324,11 +291,6 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
     };
     
     //=========================================================================
-    adjustVADThreshold = function(threshold)
-    {
-        return pluginInterface.adjustVADThreshold(threshold);
-    };
-    //=========================================================================
     // returns ENUMS
     //=========================================================================
     getNetTypes = function()
@@ -340,6 +302,16 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
                 {"label": "RI-ADATTA COMUNE"    ,"label2": "COMUNE ADATTATA", "value": plugin_enum_tf.TF_MODELTYPE_COMMON_READAPTED}];
     };
    
+    //==========================================================================
+    // PRIVATE
+    //==========================================================================
+    cloneObj = function(obj)
+    {
+        var clone = {};
+        for(var field in obj)
+            clone[field] = obj[field];
+        return clone;
+    };    
     
     //==========================================================================
     // public interface
@@ -355,8 +327,7 @@ function TfSrv(FileSystemSrv, $q, ErrorSrv, UITextsSrv, MiscellaneousSrv)
         loadTFNet                   : loadTFNet,
         fixTfModel                  : fixTfModel,
         testNewTFModel              : testNewTFModel,
-        createSubmitDataJSON        : createSubmitDataJSON,
-        adjustVADThreshold          : adjustVADThreshold
+        createSubmitDataJSON        : createSubmitDataJSON
     };    
 }
 main_module.service('TfSrv', TfSrv);

@@ -34,7 +34,7 @@
  *      isConnected 
  */
 
-main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, EnumsSrv, FileSystemSrv, RemoteAPISrv, UITextsSrv, ErrorSrv, MiscellaneousSrv) 
+main_module.service('RuntimeStatusSrv', function($q, $timeout, TfSrv, VocabularySrv, EnumsSrv, FileSystemSrv, RemoteAPISrv, UITextsSrv, ErrorSrv) 
 {
     service                         = this;
     initAppSrv                      = null;
@@ -51,12 +51,10 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     waitServerTime                  = 5000;
     
     vocabulary                      = null;
-    sel_net                         = null;
     
     _resetVoc = function()
     {
         vocabulary                      = {};
-        sel_net                         = null;
         vocabulary_old                  = null;
         userVocabularyName              = "";
 
@@ -86,7 +84,6 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         AppStatus   = calculateAppStatus();        
         
         return  {"vocabulary"                    :vocabulary,
-                 "selected_net"                  :sel_net,
                  "AppStatus"                     :AppStatus,
                  "isLogged"                      :isLogged,  
                  "isConnected"                   :isConnected,  
@@ -170,7 +167,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
     getUserVocabularyName = function()
     {
         return userVocabularyName;
-    };
+    }
     //==============================================================================================================================
     // MANAGE LOADED VOCABULARY
     //==============================================================================================================================
@@ -214,14 +211,22 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
                     return $q.reject(error);
             }
         })        
-        .then(function(voc_and_net)
+        .then(function(retvoc)
         {
-            vocabulary  = voc_and_net.voc;
-            sel_net     = voc_and_net.net;
-            
-            if(sel_net == null) return false;
-            else                return TfSrv.loadTFNet(sel_net);
+            vocabulary        = retvoc.voc;
+            if(retvoc.net == null)  return false;
+            else                    return TfSrv.loadTFNet(retvoc.net);
         })
+        .catch(function(error)
+        {
+            switch(error.mycode)
+            {
+                case ErrorSrv.ENUMS.VOCABULARY.NETPBFILEVARIABLE_EMPTY: // returned by TfSrv.loadTFNet(retvoc.net)..it's not an error..simply return $q.resolve(false)
+                    return $q.resolve(false);
+                default:
+                    return $q.reject(error);
+            }
+        })        
         .then(function()
         {
             userVocabularyName = "default";
@@ -229,11 +234,11 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         })
         .then(function()
         {
-            return VocabularySrv.getStatus(vocabulary, sel_net);
+            return VocabularySrv.getUpdatedStatus(vocabulary);
         })
-        .then(function(vocstatus)
+        .then(function(voc)
         {
-            vocabulary.status = vocstatus;
+            vocabulary = voc;
             return getStatus();
         });        
     };
@@ -251,7 +256,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         var doforce = (force == null ? true : force);
         if(userVocabularyName == uservocabularyname && !doforce)  return Promise.resolve(getStatus(vocabulary));
         
-        vocabulary_old = MiscellaneousSrv.cloneObj(vocabulary);
+        vocabulary_old = cloneObj(vocabulary);
         
         if(uservocabularyname == "" || uservocabularyname == null)  
             return $q.reject({mycode: ErrorSrv.ENUMS.VOCABULARY.VOCFOLDERVARIABLE_EMPTY, message:"Error in RuntimeStatusSrv::loadVocabulary : input voc folder (" + userVocabularyName + ") is not valid"});
@@ -282,7 +287,7 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
                     .then(function()
                     {
                         return $q.resolve(error.mydata);    // {voc:{}, net:null}
-                    });
+                    })
                     break;
                 
                 case ErrorSrv.ENUMS.VOCABULARY.NETPBFILE_NOTEXIST:      
@@ -290,22 +295,30 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
                     return VocabularySrv.recoverMissingNetPbFile(uservocabularyname, error.mydata.net.sModelFileName)
                     .then(function()
                     {
-                        return $q.resolve({voc:error.mydata.voc, net:null});    // {voc:{}, net:null} after correction I reset the net
-                    });
+                        return $q.resolve(error.mydata);    // {voc:{}, net:{}}
+                    })
                     break;
                 
                 default:
                     return $q.reject(error);
             }
         })        
-        .then(function(voc_and_net)
+        .then(function(retvoc)
         {
-            vocabulary  = voc_and_net.voc;
-            sel_net     = voc_and_net.net;
-            
-            if(sel_net == null) return false;
-            else                return TfSrv.loadTFNet(sel_net);    // now sModelFilePath && sModelFileName cannot be invalid
+            vocabulary        = retvoc.voc;
+            if(retvoc.net == null)  return false;
+            else                    return TfSrv.loadTFNet(retvoc.net);
         })
+        .catch(function(error)
+        {
+            switch(error.mycode)
+            {
+                case ErrorSrv.ENUMS.VOCABULARY.NETPBFILEVARIABLE_EMPTY: // returned by TfSrv.loadTFNet(retvoc.net)..it's not an error..simply return $q.resolve(false)
+                    return $q.resolve(false);
+                default:
+                    return $q.reject(error);
+            }
+        })        
         .then(function()
         {
             userVocabularyName = uservocabularyname;
@@ -313,11 +326,11 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         })
         .then(function()
         {
-            return VocabularySrv.getStatus(vocabulary, sel_net);
+            return VocabularySrv.getUpdatedStatus(vocabulary);
         })
-        .then(function(vocstatus)
+        .then(function(voc)
         {
-            vocabulary.status = vocstatus;
+            vocabulary = voc;
             return getStatus();
         });
     };
@@ -349,6 +362,16 @@ main_module.service('RuntimeStatusSrv', function($q, TfSrv, VocabularySrv, Enums
         });        
     };
  
+    //==========================================================================
+    // PRIVATE
+    //==========================================================================
+    cloneObj = function(obj)
+    {
+        var clone = {};
+        for(var field in obj)
+            clone[field] = obj[field];
+        return clone;
+    };  
     //======================================================================================================================================
     //======================================================================================================================================
     return {

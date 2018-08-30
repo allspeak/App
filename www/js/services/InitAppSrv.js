@@ -170,7 +170,6 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
     };     
     //====================================================================================================================
     // if config.json is not present in file:/// , create it from asset folder
-    // caveat: fRecognitionThreshold & nRecognitionDistance of the default net may have been modified by the user.
     service.loadConfigFile = function()
     {
         var localConfigJson = service.config.defaults.file_system.config_filerel_path;
@@ -242,7 +241,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
             vadCfg[item] = service.config.appConfig.user.vad[item];
 
         SpeechDetectionSrv.init(service.config.defaults.capture_configurations, vadCfg, service.plugin, service);
-        TfSrv.init(service.config.defaults.tf, service.config.defaults.file_system.vocabularies_folder, service.plugin, service);
+        TfSrv.init(service.config.defaults.tf, service.config.defaults.file_system.vocabularies_folder, service.plugin);
         MfccSrv.init(service.config.defaults.mfcc, service.plugin);
         RemoteAPISrv.init(service.config.appConfig.user.api_key, service.config.appConfig.remote, service.plugin, service);    // I pass the current appConfig values (not the defauls ones)
         RuntimeStatusSrv.init(service.config.defaults.file_system.vocabularies_folder, service.config.defaults.file_system.recordings_folder, service);
@@ -298,7 +297,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
                 vocs[f].sModelFilePath = FileSystemSrv.getResolvedOutDataFolder() + dest_dataroot_folder + "/" +  vocs[f].sModelFileName + ".pb";
                 (function(relpath, obj) 
                 {
-                    var subPromise = FileSystemSrv.createJSONFileFromObj(relpath, obj, FileSystemSrv.OVERWRITE);
+                    var subPromise = FileSystemSrv.createJSONFileFromObj(relpath, obj, FileSystemSrv.OVERWRITE)
                     subPromises.push(subPromise);
                 })(dest_dataroot_folder + "/" + jsonfiles[f], vocs[f]);
             }
@@ -355,14 +354,12 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         service.config.appConfig.runtime.device             = HWSrv.getDevice();
         service.config.appConfig.runtime.resolved_odp       = FileSystemSrv.getResolvedOutDataFolder();  // ends with '/'
         
-        var user = {};
+        var user = {}
         user.isFirstUse                 = true;
         user.appModality                = EnumsSrv.MODALITY.SOLO;
         user.isDeviceRegistered         = false;
         user.api_key                    = "";
-        user.userActiveVocabularyName   = service.config.defaults.user.userActiveVocabularyName;
-        user.nRecognitionDistance       = service.config.defaults.user.nRecognitionDistance;
-        
+        user.userActiveVocabularyName   = "default";
         //user.isMale                     = "";
         
         user.vad = {};
@@ -574,11 +571,6 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         return service.config.defaults.file_system.default_vocabulary_name;
     }; 
 
-    //==========================================================================
-    service.getDefaultRecognitionDistance = function()
-    {
-        return service.config.defaults.user.nRecognitionDistance;
-    };
     //==========================================================================
     return service;
 }
