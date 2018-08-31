@@ -1,7 +1,6 @@
 {
     "commands_categories":
     [
-		{ "title": "ecomode"        			,"id": 0, "short_title": "EM", "icon": "stat_pers.ico"},
 		{ "title": "stato personale"        ,"id": 1, "short_title": "SP", "icon": "stat_pers.ico"},
 		{ "title": "richieste fisiologiche" ,"id": 2, "short_title": "RF", "icon": "rich_fisio.ico"},
 		{ "title": "richieste"              ,"id": 3, "short_title": "R", "icon": "richieste.ico"},
@@ -12,28 +11,6 @@
     ],    
     "voicebank_commands":
     [
-
-		{"title":"Seleziona"									,"id":1001,"filename":"vb_1001.wav","editable":false,"nrepetitions":0},
-		{"title":"Vai avanti"								,"id":1002,"filename":"vb_1002.wav","editable":false,"nrepetitions":0},
-		{"title":"Basta"										,"id":1003,"filename":"vb_1003.wav","editable":false,"nrepetitions":0},
-		{"title":"Vai alla schermata prima"				,"id":1004,"filename":"vb_1004.wav","editable":false,"nrepetitions":0},
-		{"title":"Vai giù"									,"id":1005,"filename":"vb_1005.wav","editable":false,"nrepetitions":0},
-		{"title":"Esci"										,"id":1006,"filename":"vb_1006.wav","editable":false,"nrepetitions":0},
-		{"title":"Vai a sinistra"							,"id":1007,"filename":"vb_1007.wav","editable":false,"nrepetitions":0},
-		{"title":"Vai su"										,"id":1008,"filename":"vb_1008.wav","editable":false,"nrepetitions":0},
-		{"title":"Applica"									,"id":1009,"filename":"vb_1009.wav","editable":false,"nrepetitions":0},
-		{"title":"Successivo"								,"id":1010,"filename":"vb_1010.wav","editable":false,"nrepetitions":0},
-		{"title":"Torna indietro"							,"id":1011,"filename":"vb_1011.wav","editable":false,"nrepetitions":0},
-		{"title":"Precedente"								,"id":1012,"filename":"vb_1012.wav","editable":false,"nrepetitions":0},
-		{"title":"Vai a destra"								,"id":1013,"filename":"vb_1013.wav","editable":false,"nrepetitions":0},
-		{"title":"Apri"										,"id":1014,"filename":"vb_1014.wav","editable":false,"nrepetitions":0},
-		{"title":"Chiudi"										,"id":1015,"filename":"vb_1015.wav","editable":false,"nrepetitions":0},
-		{"title":"Vai indietro"								,"id":1016,"filename":"vb_1016.wav","editable":false,"nrepetitions":0},
-		{"title":"Scorri in su"								,"id":1017,"filename":"vb_1017.wav","editable":false,"nrepetitions":0},
-		{"title":"Scorri in giu"							,"id":1018,"filename":"vb_1018.wav","editable":false,"nrepetitions":0},
-		{"title":"Torna alla schermata precedente"	,"id":1019,"filename":"vb_1019.wav","editable":false,"nrepetitions":0},
-		{"title":"DUMMY"										,"id":1020,"filename":"vb_1020.wav","editable":false,"nrepetitions":0},
-
 		{ "title": "Sono felice",                   "id": 1101, "filename":"vb_1101.wav", "nrepetitions": 0, "editable":false},
 		{ "title": "Sono arrabbiato",               "id": 1102, "filename":"vb_1102.wav", "nrepetitions": 0, "editable":false},
 		{ "title": "Sono triste",                   "id": 1103, "filename":"vb_1103.wav", "nrepetitions": 0, "editable":false},
@@ -111,6 +88,6 @@
 		{ "title": "Non funziona",                  "id": 1618, "filename":"vb_1618.wav", "nrepetitions": 0, "editable":false},
 		{ "title": "Ti voglio bene",                "id": 1619, "filename":"vb_1619.wav", "nrepetitions": 0, "editable":false},
                 
-		{ "title": "noise",                         "id": 1700, "filename":"vb_1700.wav", "nrepetitions": 0, "editable":false}
+		{ "title": "RUMORE",                         "id": 1700, "filename":"", "nrepetitions": 0, "editable":false}
     ]
 }

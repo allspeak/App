@@ -1,64 +1,99 @@
 
-<ion-view view-title="Voice Detection">
+<ion-view view-title="Parametri riconoscimento">
     
     <ion-nav-buttons side="left">
         <button class="button button-header-big" ui-sref="home"><i class="ion-home"></i></button>
     </ion-nav-buttons> 
     
     <ion-content>
-        <div class="list">
-<!--            <label class="item item-input item-select">
-                <div class="input-label">Sample Rate [Hz]</div>
-                <select ng-model="selectedSR" ng-change="updateSR(selectedSR)" ng-options="item.label for item in aSR track by item.value"></select>            
-            </label>     
- 
-            <label class="item item-input item-select">
-                <div class="input-label">Capture Buffer Size</div>
-                <select ng-model="selectedCBS" ng-change="updateCBS(selectedCBS)" ng-options="item.label for item in aCBS track by item.value"></select>            
-            </label>   
+        
+        
+        <div class="card">
+            <div class="item item-divider">parametri estrazione voce</div>
+            <ion-list>
+    <!--            <label class="item item-input item-select">
+                    <div class="input-label">Sample Rate [Hz]</div>
+                    <select ng-model="selectedSR" ng-change="updateSR(selectedSR)" ng-options="item.label for item in aSR track by item.value"></select>            
+                </label>     
 
-            <label class="item item-input item-select">
-                <div class="input-label">Analysis Chunk length [ms]</div>
-                <select ng-model="selectedACL" ng-change="updateACL(selectedACL)" ng-options="item.label for item in aACL track by item.value"></select>            
-            </label>              -->
+                <label class="item item-input item-select">
+                    <div class="input-label">Capture Buffer Size</div>
+                    <select ng-model="selectedCBS" ng-change="updateCBS(selectedCBS)" ng-options="item.label for item in aCBS track by item.value"></select>            
+                </label>   
 
-            <div class="item item-input">
-                <div class="input-label">Minimum Length [ms]</div>
-                 <span class="badge">{{countMIL}}    
-                <button type="button" ng-click="decrementCounter('MIL');">-</button>
-                <button type="button" ng-click="incrementCounter('MIL');">+</button></span>
-            </div>
+                <label class="item item-input item-select">
+                    <div class="input-label">Analysis Chunk length [ms]</div>
+                    <select ng-model="selectedACL" ng-change="updateACL(selectedACL)" ng-options="item.label for item in aACL track by item.value"></select>            
+                </label>              -->
 
-            <div class="item item-input">
-                <div class="input-label">Maximum Length [ms]</div>
-                 <span class="badge">{{countMXL}}   
-              <button type="button" ng-click="decrementCounter('MXL');">-</button>
-              <button type="button" ng-click="incrementCounter('MXL');">+</button></span>
-            </div>
+                <div class="item item-input">
+                    <div class="input-label">Lunghezza minima [ms]</div>
+                    <span class="badge">{{countMIL}}    
+                        <button type="button" ng-click="decrementCounter('MIL');">-</button>
+                        <button type="button" ng-click="incrementCounter('MIL');">+</button>
+                    </span>
+                </div>
 
-            <div class="item item-input">
-                <div class="input-label">Allowed Delay [ms]</div>
-                 <span class="badge">{{countAD}}  
-              <button type="button" ng-click="decrementCounter('AD');">-</button>
-              <button type="button" ng-click="incrementCounter('AD');">+</button></span>
-            </div>
+                <div class="item item-input">
+                    <div class="input-label">Lunghezza massima [ms]</div>
+                    <span class="badge">{{countMXL}}   
+                        <button type="button" ng-click="decrementCounter('MXL');">-</button>
+                        <button type="button" ng-click="incrementCounter('MXL');">+</button>
+                    </span>
+                </div>
 
-<!--        ISSUE ..... the slider position is correctly set only the first time I see the page
-                        once modified...it is not updated anymore
-                        currently removed
+                <div class="item item-input">
+                    <div class="input-label">Ritardo massimo [ms]</div>
+                    <span class="badge">{{countAD}}  
+                        <button type="button" ng-click="decrementCounter('AD');">-</button>
+                        <button type="button" ng-click="incrementCounter('AD');">+</button>
+                    </span>
+                </div>
 
-            <div class="item range">
-                Soglia Microfono: {{mic_threshold.toString()}} % 
-                <input type="range" ng-model="mic_threshold" ng-change="onChangeMicThreshold(mic_threshold)">
-            </div>-->
+    <!--        ISSUE ..... the slider position is correctly set only the first time I see the page
+                            once modified...it is not updated anymore
+                            currently removed
 
+                <div class="item range">
+                    Soglia Microfono: {{mic_threshold.toString()}} % 
+                    <input type="range" ng-model="mic_threshold" ng-change="onChangeMicThreshold(mic_threshold)">
+                </div>-->
+            </ion-list>         
+        </div>         
+        
+        
+        
+        <div class="card" ng-if="modeId == MODE_VOC">
+            <div class="item item-divider">parametri riconoscimento rete</div>
+            <ion-list>
                 
-             <div class="button-bar">        
-                 <button class="button button-block button-round button-balanced" ng-disabled="!has_changed" ng-click="save(1)">Save & Back</button>       
-                <button class="button button-block button-round button-energized" ng-disabled="!has_changed" ng-click="save(0)">Save</button>       
-                <button class="button button-block button-round button-assertive" ng-click="cancel()">Back</button>       
-            </div>               
-            
-        </div>      
+                <div class="item item-input">
+                    <div class="input-label">Soglia di riconoscimento</div>
+                    <div class="badge">{{recThreshold}} %
+                        <button type="button" ng-click="changeRecThreshold(false);">-</button>
+                        <button type="button" ng-click="changeRecThreshold(true);">+</button>
+                    </div>
+                </div>
+                
+                <div class="item item-input">
+                    <div class="input-label">Distanza dal secondo</div>
+                    <div class="badge">{{recDistance}} %
+                        <button type="button" ng-click="changeRecDistance(false);">-</button>
+                        <button type="button" ng-click="changeRecDistance(true);">+</button>
+                    </div>
+                </div>
+               
+            </ion-list>         
+        </div>         
     </ion-content>
+    
+    <ion-footer-bar class="bar-positive">
+        <div class="button-bar">        
+            <button class="button button-block button-round button-balanced text-big" ng-disabled="!has_changed_glob && !has_changed_net" ng-click="save(1)">Save & Back</button>       
+            <button class="button button-block button-round button-energized text-big" ng-disabled="!has_changed_glob && !has_changed_net" ng-click="save(0)">Save</button>       
+            <button class="button button-block button-round button-assertive text-big" ng-click="cancel()">Back</button>       
+         </div>             
+    </ion-footer-bar>  
+
+    
 </ion-view>
