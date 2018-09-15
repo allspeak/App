@@ -21,7 +21,7 @@
     <ion-content>
         <div class="list">
             
-            <ion-item class="item-button-right">VOCE : Intensità/soglia...RESET >
+            <ion-item class="item-button-right">VOCE : Intensità/soglia...RESET:
                 <button class="button text-big text-center button-wide" ng-class="isSpeaking == 'ON' ? 'button-balanced' : 'button-positive'" ng-click="resetVADThreshold(true);">{{voiceDB}}/{{thresholdDB}}</button>
             </ion-item>
             
@@ -34,8 +34,12 @@
                 </div>            
                                
             </div>
+
+            <ion-item class="item-button-right">{{mActiveHeadSetName}}
+                <button class="button button-larger" ng-disabled="!mExistHeadsetConnected || isvoicemonitoring" ng-class="mIsOnHeadsetSco ? 'button-assertive' : 'button-balanced'" ng-click="toogleHeadSet(true);">{{mIsOnHeadsetSco ? 'STOP' : 'USA'}}</button>
+            </ion-item>
             
-            <ion-toggle class="item" ng-model="headsetSelected" ng-disabled="isvoicemonitoring || !headsetAvailable" ng-click="useHS(headsetSelected)">Attiva Microfono esterno</ion-toggle>             
+            <!--<ion-toggle class="item" ng-model="mIsOnHeadsetSco" ng-disabled="isvoicemonitoring || !mExistHeadsetConnected" ng-click="useHS(mIsOnHeadsetSco)">MIC: {{mActiveHeadSetName}}</ion-toggle>-->             
             
             <ion-list>
                 <ion-item class="item-button-right" ng-repeat="chunk in chunksList"> {{chunk}}

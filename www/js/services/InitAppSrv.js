@@ -12,7 +12,6 @@
  * 5)   INIT SERVICES               : initialize SpeechDetectionSrv, TfSrv, MfccSrv, RemoteAPISrv
  * 6)   LOAD VOCABULARIES           : prepare VB & UVB voc, check if VB vocabulary items have their audio files, update json
  * 7)   COPY DEFAULT NET            : copy default NET to AllSpeak/models
- * 8)   FIND AUDIO DEVICES          : find bluetooth input, set it TODO
  *
  *
  * AUDIO PARAMS MANAGEMENT
@@ -53,7 +52,7 @@
 *             
  */
 
-function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, MfccSrv, VocabularySrv, RemoteAPISrv, FileSystemSrv, RuntimeStatusSrv, EnumsSrv)
+function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDetectionSrv, TfSrv, MfccSrv, VocabularySrv, RemoteAPISrv, FileSystemSrv, BluetoothSrv, RuntimeStatusSrv, EnumsSrv)
 {
     var service                     = {}; 
     service.default_json_www_path   = "./json/defaults.json";
@@ -87,9 +86,6 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         .then( function() {     
             return service.manageTFModels();        // copy def net
         })      
-        .then( function() {
-            return service.setupAudioDevices();     // setup audio
-        })           
         .catch(function(error){
             return $q.reject(error);
         });
@@ -233,7 +229,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
     };
     
     //====================================================================================================================
-    // init the main 6 data services
+    // init the main 7 data services
     service.initServices = function()
     {
         // merge default vad params with user ones
@@ -247,6 +243,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         RemoteAPISrv.init(service.config.appConfig.user.api_key, service.config.appConfig.remote, service.plugin, service);    // I pass the current appConfig values (not the defauls ones)
         RuntimeStatusSrv.init(service.config.defaults.file_system.vocabularies_folder, service.config.defaults.file_system.recordings_folder, service);
         VocabularySrv.init(service.config.defaults.file_system, service.plugin, service);
+        BluetoothSrv.init(service.config.appConfig.user.bluetooth, service.plugin, service);
     };
     
     //====================================================================================================================
@@ -313,25 +310,6 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
             return $q.reject(error);              
         });         
     };
-    //====================================================================================================================
-    // get audiodevice list. find BTHS & BT SPEAKER, if found .. ready to be connected
-    // is the first call to the plugin...check if
-    service.setupAudioDevices = function()
-    {
-        return service.plugin.getAudioDevices()// returns : {input:[{"name": , "types":  , channels: }], output:[{"name": , "types":  , channels: }]}
-        .then(function(ad){
-            service.config.appConfig.runtime.audio_devices = ad;
-            return 1;
-        })
-        .then(function() 
-        {
-            return service._connectBluetoothDevices(service.config.appConfig.blt_devices); // TODO:
-        })        
-        .catch(function(error){ 
-            return $q.reject(error);              
-        });
-    }; 
-
    //====================================================================================================================================================
    //====================================================================================================================================================
    // PRIVATE
@@ -365,6 +343,8 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
         
         //user.isMale                     = "";
         
+        user.bluetooth                  = service.config.defaults.bluetooth;
+        
         user.vad = {};
         user.vad.nSpeechDetectionThreshold      = service.config.appConfig.vad.nSpeechDetectionThreshold;
         user.vad.nSpeechDetectionAllowedDelay   = service.config.appConfig.vad.nSpeechDetectionAllowedDelay;
@@ -377,17 +357,20 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
    // called when a config.json exist 
     service._updateAppConfig =  function(user)
     {
-        service._createFirstAppConfig()
-        service.config.appConfig.user   = user;
+        service._createFirstAppConfig();
+        var newuser = service.checkNewConfigElements(user);
+        service.config.appConfig.user   = newuser;
     };
-
-    // try to connect the registered devices
-    service._connectBluetoothDevices = function(blt_devices)
-    {
-        return Promise.resolve(1); // ********************* TODO *****************
-        return HWSrv.connectBluetoothDevices(blt_devices);
-    }; 
     
+    // routine that adapt existing config.json to changes in its standard structure
+    // 0.3.0    : added   user.bluetooth = {"autoconnect":bool, "devices_list":[]}
+    service.checkNewConfigElements = function(userobj)
+    {
+        if(userobj.bluetooth == null)
+            userobj.bluetooth = service.config.defaults.bluetooth;
+        
+        return userobj;
+    };
     //====================================================================================================================
     //====================================================================================================================
     // GET INTERNAL INFO

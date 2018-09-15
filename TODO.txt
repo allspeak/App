@@ -1,0 +1,20 @@
+
+TODO:
+
+Importare file wav
+Levare alert, catch inutili
+
+FATTI:
+
+•	Creare un nuovo vocabolario come copia di uno esistente….durante :
+o	il crea nuovo 
+o	il salva comandi di uno esistente
+•	Quando cancello il voc selezionato, seleziono il default
+•	cancellare reti derivate quando riregistro la prima
+•	quando cancello un custom commando=> cancellare tutte le reti di tutti i vocabolari che lo contengono
+•	disattivare tasto training se non ci sono registrazioni a sufficienza e colorare divers quello delle registrazioni
+•	quando modifico lista commandi in un voc=> cancellare tutte le sue reti 
+•	In managetraining e in vocabulary sente se perdo la connessione e, rispettivamente, torno in vocabulary e disabliita il “addestra“
+•	Screenshot sessione da cancellare
+•	Mettere testi popup in UITextSrv
+•	Verificare procedura headset

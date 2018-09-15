@@ -1,4 +1,6 @@
 /* 
+ * 
+ * ISSUE :  voice bank singolo comando comando gia esistente....tasto play non acceso all'inizio ma funzionante
 there are 3  modalities:
     EnumsSrv.RECORD.MODE_SINGLE_BANK         = 10;
     EnumsSrv.RECORD.MODE_SEQUENCE_BANK       = 11;
@@ -20,7 +22,7 @@ audio files are automatically saved after captured, in order to may listen to th
 - the save button thus simply go back
 - the cancel button, first delete the file then go back
  */
-function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicLoading, $ionicHistory, $ionicModal, SpeechDetectionSrv, InitAppSrv, VoiceBankSrv, FileSystemSrv, StringSrv, IonicNativeMediaSrv, SequencesRecordingSrv, MfccSrv, EnumsSrv, UITextsSrv, SubjectsSrv)
+function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicLoading, $ionicHistory, $ionicModal, SpeechDetectionSrv, InitAppSrv, VoiceBankSrv, FileSystemSrv, StringSrv, IonicNativeMediaSrv, SequencesRecordingSrv, MfccSrv, BluetoothSrv, EnumsSrv, UITextsSrv, SubjectsSrv)
 {
     // calling params
     $scope.mode_id          = -1;        // ctrl modality MODE_SINGLE_RECORD, MODE_SEQUENCE_RECORD, MODE_SINGLE_TRAINING, MODE_SEQUENCE_TRAINING
@@ -35,7 +37,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
 
     // over-ride params
     $scope.captureProfile       = "record";
-    $scope.initCaptureParams    = {nDataDest:204};
+    $scope.initCaptureParams    = {nDataDest:206};  // file & DB
     $scope.initMfccParams       = {nDataType: 251, nDataDest: 235};     // calculate MFFILTERS and use them internally
     
     $scope.Cfg                  = {};
@@ -69,6 +71,16 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     // OT
     $scope.volume           = 50;
     $scope.popUpAlertOn     = false;    
+    
+    // headset
+    $scope.mExistHeadsetConnected   = false;
+    $scope.mIsOnHeadsetSco          = false;
+    $scope.mActiveHeadSetName       = "";
+    $scope.mActiveHeadSetAddress    = "";
+    $scope.isclosingrecognition     = false;    // indicates whether a stoprecognition has been issued but onStopCallback still has not been called.
+    
+    // DB meter
+    $scope.voiceDB                  = 0;
     
     // buttons init functions
     $scope.resetFlags = function()
@@ -159,7 +171,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
 
                  // sentence.filename is a file name (e.g. "ho_sete.wav")
                 $scope.sentence             = VoiceBankSrv.getVoiceBankCommand($scope.sentence_id);
-                
+                $scope.labelSeqOrder        = "";
                 if ($scope.sentence)
                 {
                     $scope.filename         = $scope.sentence.filename;                 // "vb_1102.wav"
@@ -180,7 +192,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 $scope.exitButtonLabel      = UITextsSrv.RECORD.BTN_EXIT_SEQUENCE;         
                 $scope.skipButtonLabel      = UITextsSrv.RECORD.BTN_SKIP_VOICEBANK;
                 
-                $scope.labelSeqOrder        = ($scope.sentence_id+1) + " di " + SequencesRecordingSrv.getSequenceLength();
+                $scope.labelSeqOrder        = ": " + ($scope.sentence_id+1) + " di " + SequencesRecordingSrv.getSequenceLength();
                 
                 // sentence.filename is a rel path (AllSpeak/voicebank/filename.wav or AllSpeakVoiceRecorder/audio_files/SUBJ_LABEL/training_XXXX/filename.wav
                 $scope.sentence             = SequencesRecordingSrv.getSentenceBySequenceId($scope.sentence_id);
@@ -205,7 +217,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 $scope.exitButtonLabel      = UITextsSrv.RECORD.BTN_EXIT_SEQUENCE;                   
                 $scope.skipButtonLabel      = UITextsSrv.RECORD.BTN_SKIP_TRAIN;                
                 
-                $scope.labelSeqOrder        = ($scope.sentence_id+1) + " di " + SequencesRecordingSrv.getSequenceLength();
+                $scope.labelSeqOrder        = ": " + ($scope.sentence_id+1) + " di " + SequencesRecordingSrv.getSequenceLength();
                 
                 // sentence.filename is a rel path (AllSpeak/voicebank/filename.wav or AllSpeakVoiceRecorder/audio_files/SUBJ_LABEL/training_XXXX/filename.wav
                 //                               or(AllSpeak/recordings/temp_XXXXX/filename.wav or AllSpeak/recordings/filename.wav
@@ -231,9 +243,17 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
 
         $scope.Cfg.mfccCfg          = MfccSrv.getUpdatedCfgCopy($scope.initMfccParams);
 
-        //-------------------------------------------------------------------------------
-        // may exists only when substituting a voicebank command, otherwise in training mode is always new
-        return FileSystemSrv.existFile($scope.rel_filepath)
+        window.addEventListener('headsetstatus', $scope.onHSStatusChange);
+        $scope.mActiveHeadSetName       = UITextsSrv.RECOGNITION.labelHeadsetAbsent;
+        
+        return BluetoothSrv.getBluetoothStatus()
+        .then(function(bluetooth_status)
+        {
+            $scope.onHSStatusChange(bluetooth_status);  // a $scope.$apply(); is inside onHSStatusChange
+            //-------------------------------------------------------------------------------
+            // may exists only when substituting a voicebank command, otherwise in training mode is always new
+            return FileSystemSrv.existFile($scope.rel_filepath);
+        })
         .then(function(exist)
         {
             if(exist)   $scope.existOriginalFile    = true;
@@ -258,6 +278,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
 
     $scope.$on('$ionicView.leave', function(){
         if($scope.deregisterFunc) $scope.deregisterFunc();
+        window.removeEventListener('headsetstatus', $scope.onHSStatusChange);
     });    
     //===================================================================================================================================================
     //===================================================================================================================================================
@@ -285,16 +306,19 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     $scope.onStartCapture = function()
     {
         $scope.isRecording          = true; 
-        $scope.recButtonLabel       = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);         
+        $scope.recButtonLabel       = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);  
+        window.addEventListener('audiometer', $scope.onDBMETER);
         $scope.$apply();
     };
     
     $scope.onStopCapture = function()
     {
-        $scope.isRecording      = false;        
+        $scope.isRecording      = false;  
+        
         $scope.recButtonLabel   = ($scope.isRecording ? $scope.bLabelStop : $scope.bLabelStart);     
         $ionicLoading.hide();  
-        $scope.existNewFile   = true;        
+        $scope.existNewFile   = true;     
+        window.removeEventListener('audiometer', $scope.onDBMETER);
         $scope.$apply();
     };
     
@@ -319,6 +343,12 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
         });
     };    
     
+    // called by plugin interface _pluginEvent::cordova.fireWindowEvent("audiometer",...
+    $scope.onDBMETER = function(event)
+    {    
+        $scope.voiceDB      = event.decibels;
+        if (!$scope.$$phase) $scope.$apply();
+    };    
     //=====================================================================
     // MFCC actions
     //=====================================================================
@@ -585,9 +615,9 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 })
                 break;
             
-            case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:                
-               
-                $scope.modalText = "VUOI CANCELLARE TUTTA QUESTA NUOVA SESSIONE O SOSTIUIRE QUANTO REGISTRATO FIN QUI?"
+            case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:  
+                
+                $scope.modalText    = "VUOI CANCELLARE TUTTA QUESTA NUOVA SESSIONE O SOSTIUIRE QUANTO REGISTRATO FIN QUI?"
                 $scope.labelActionA = "CANCELLA TUTTO"
                 $scope.labelActionB = "SOSTUISCI"
                 $scope.labelActionC = "ANNULLA"
@@ -605,7 +635,8 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 return FileSystemSrv.deleteDir(session_folder)
                 .then(function()
                 {
-                    if($scope.cancelState != "")
+                    $scope.modalAskAbortReplaceSession.hide();
+                    if($scope.successState != "")
                         $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
                     else
                         $ionicHistory.goBack();                                
@@ -621,9 +652,39 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                 break;
         }
         $scope.modalAskAbortReplaceSession.hide();        
-    }
+    };
+    //=====================================================================================
+    // HEADSET
+    //=====================================================================================
+    // plugin callback
+    $scope.onHSStatusChange = function(event)
+    {   
+        // if the HS suddenly disconnects during recognition....stop it (if is on) and playback an alert.
+        if($scope.isvoicemonitoring && $scope.mIsOnHeadsetSco) // && !event.data.mExistHeadsetConnected)
+            SpeechDetectionSrv.stopCapture();
+        
+        $scope.mExistHeadsetConnected   = event.data.mExistHeadsetConnected;
+        $scope.mIsOnHeadsetSco          = event.data.mIsOnHeadsetSco;
+        $scope.mActiveHeadSetName       =(event.data.mActiveHeadSetName.toString().length ? event.data.mActiveHeadSetName : UITextsSrv.RECOGNITION.labelHeadsetAbsent);
+        $scope.mActiveHeadSetAddress    = event.data.mActiveHeadSetAddress;
+        $scope.mAutoConnect             = event.data.mAutoConnect;
+        
+        if(event.data.type == pluginInterface.ENUM.PLUGIN.HEADSET_DISCONNECTED)
+        {
+            $scope.mActiveHeadSetName = UITextsSrv.RECOGNITION.labelHeadsetAbsent;
+            $scope.mActiveHeadSetAddress = "";
+        }
+        
+        console.log("RecognitionCtrl::onHSStatusChange => mAutoConnect: " + $scope.mAutoConnect.toString() + " SCO:" + $scope.mIsOnHeadsetSco.toString() + ", exisths: " + $scope.mExistHeadsetConnected.toString());
+        $scope.$apply();
+    };
+   
+    $scope.toogleHeadSet = function()
+    {    
+        $scope.mIsOnHeadsetSco = !$scope.mIsOnHeadsetSco;
+        BluetoothSrv.enableHeadSet($scope.mIsOnHeadsetSco);
+    };    
     //=====================================================================
-
     $scope.showAlert = function(title, text) 
     {
         if($scope.popUpAlertOn == false)

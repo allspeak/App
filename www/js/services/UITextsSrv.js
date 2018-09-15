@@ -131,6 +131,8 @@ function UITextsSrv()
     service.RECOGNITION.labelUncertainResults                   = "ripeti il comando";
     service.RECOGNITION.labelStartRecognition                   = "AVVIA RICONOSCIMENTO";
     service.RECOGNITION.labelStopRecognition                    = "INTERROMPI RICONOSCIMENTO";
+    service.RECOGNITION.labelHSDisconnectedWhileRecognizing     = "IL MICROFONO SI E\' DISCONNESSO";
+    service.RECOGNITION.labelHeadsetAbsent                      = "Microfono assente";
     
     //==========================================================================
     return service;
