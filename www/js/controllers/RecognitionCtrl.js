@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, SpeechDetectionSrv, $ionicPlatform, IonicNativeMediaSrv, FileSystemSrv, MfccSrv, TfSrv, InitAppSrv, RuntimeStatusSrv, VocabularySrv, UITextsSrv, ErrorSrv, EnumsSrv)
+function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, SpeechDetectionSrv, $ionicPlatform, IonicNativeMediaSrv, FileSystemSrv, BluetoothSrv, MfccSrv, TfSrv, InitAppSrv, RuntimeStatusSrv, VocabularySrv, RemoteAPISrv, UITextsSrv, ErrorSrv, EnumsSrv)
 {
     //--------------------------------------------------------------------
     // debug
@@ -48,8 +48,10 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     $scope.Cfg.mfccCfg          = {};
 //    $scope.Cfg.tfCfg            = {};
                     
-    $scope.headsetAvailable         = true;
-    $scope.headsetSelected          = false;
+    $scope.mExistHeadsetConnected   = false;
+    $scope.mIsOnHeadsetSco          = false;
+    $scope.mActiveHeadSetName       = "";
+    $scope.mActiveHeadSetAddress    = "";
     
     $scope.modelsList               = [];
     $scope.loadedModel              = null;
@@ -60,10 +62,14 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     
     $scope.selectedNoise            = 0;
     $scope.noiseLevels              = [15, 20, 25];
+    
+    $scope.isConnected              = false;  // store whether there is an internet connection. used for TTS operation.
     //--------------------------------------------------------------------------                    
     $scope.$on("$ionicView.leave", function(event, data)
     {
         window.removeEventListener('headsetstatus', $scope.onHSStatusChange);
+        window.removeEventListener('connection'  , $scope.onConnection);
+        
         if($scope.deregisterFunc)   $scope.deregisterFunc();
     });
     
@@ -112,7 +118,12 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
 
         $scope.speech_status_label              = EnumsSrv.VAD.SPEECH_STATUS_LABELS;
 
+
+        $scope.isConnected                      = RemoteAPISrv.hasInternet();
+        window.addEventListener('connection' , $scope.onConnection);
         window.addEventListener('headsetstatus', $scope.onHSStatusChange);
+        
+        $scope.mActiveHeadSetName       = UITextsSrv.RECOGNITION.labelHeadsetAbsent;
 
         return RuntimeStatusSrv.loadVocabulary($scope.foldername, true)
         .then(function(status)
@@ -133,7 +144,11 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         })
         .then(function()
         {
-            $scope.$apply();
+            return BluetoothSrv.getBluetoothStatus()
+        })
+        .then(function(bluetooth_status)
+        {
+            $scope.onHSStatusChange(bluetooth_status);  // a $scope.$apply(); is inside onHSStatusChange
             if($scope.saveSentences)
             {
                 $scope.relpath_root                     = InitAppSrv.getAudioTempFolder();
@@ -145,7 +160,7 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         })        
         .catch(function(error)
         {
-            alert("_ManageTrainingCtrl::$ionicView.enter => " + error.message);
+            alert("RecognitionCtrl::$ionicView.enter => " + error.message);
         });  
     });    
 
@@ -153,7 +168,8 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
 
     // monitoring
     $scope.isSpeaking               = "OFF";
-    $scope.isvoicemonitoring        = 0;
+    $scope.isvoicemonitoring        = false;
+    $scope.isclosingrecognition     = false;    // indicates whether a stoprecognition has been issued but onStopCallback still has not been called.
     $scope.voiceDB                  = 0;
     $scope.thresholdDB              = 0;
     $scope.totalNoOfSpeechCaptured  = 0;
@@ -184,7 +200,11 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
             }
             else    SpeechDetectionSrv.startSpeechRecognition($scope.Cfg.captureCfg, $scope.Cfg.vadCfg, $scope.Cfg.mfccCfg, $scope.loadedModel, $scope.onStartCapture, $scope.onStopCapture, $scope.onSpeechCaptured, $scope.onSpeechError, $scope.onSpeechStatus, false); // recording is performed in the plugin 
         }
-        else SpeechDetectionSrv.stopSpeechRecognition();
+        else
+        {
+            SpeechDetectionSrv.stopSpeechRecognition();
+            $scope.isclosingrecognition = true;
+        }
     };
     
     $scope.go2settings = function()
@@ -252,7 +272,8 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         window.removeEventListener('audiometer', $scope.onDBMETER);
         window.removeEventListener('recognitionresult', $scope.onRecognitionResults);
         
-        $scope.isvoicemonitoring        = false;        
+        $scope.isvoicemonitoring        = false;   
+        $scope.isclosingrecognition     = false;
         $scope.vm_voice_label           = $scope.vm_voice_label_start;    
         $scope.voiceDB                  = 0;        
         $scope.$apply();
@@ -269,7 +290,7 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     {    
         $scope.voiceDB      = event.decibels;
         $scope.thresholdDB  = event.threshold;
-        $scope.$apply();
+        if (!$scope.$$phase) $scope.$apply();
     };
         
     //--------------------------------------------------------------------------
@@ -317,19 +338,10 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         if(!$scope.filterResults($scope.recognizedItems.map(function(item) { return parseInt(item.confidence.substring(0, item.confidence.length-1)); })))
         {
             $scope.isPlaying = 1;
-            return $cordovaTextToSpeech.speak({"text":UITextsSrv.RECOGNITION.labelUncertainResults, "locale":"it-IT"})
-            .then(function()
-            {
-                $scope.OnPlaybackCompleted();
-            })
-            .catch(function(error)
-            {
-                $scope.OnPlaybackCompleted();
-            })
+            return $scope.playbackTTS(UITextsSrv.RECOGNITION.labelUncertainResults);
         }
         else
         {
-        
             var recognized_index    = parseInt($scope.recognizedItems[0].id);   
             $scope.$apply();        
 
@@ -346,15 +358,7 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
                 var text = $scope.vocabulary.commands[recognized_index].title;
                 cordova.plugin.pDialog.dismiss(); 
                 $scope.isPlaying = 1;
-                return $cordovaTextToSpeech.speak({"text":text, "locale":"it-IT"})
-                .then(function()
-                {
-                    $scope.OnPlaybackCompleted();
-                })
-                .catch(function(error)
-                {
-                    $scope.OnPlaybackCompleted();
-                })                
+                return $scope.playbackTTS(text)
             }
             else
             {
@@ -392,12 +396,13 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
         }
     }; 
     
-    // send resumeRecognition command to plugin
+    // send resumeRecognition command to plugin whether: 1) is recognizing AND 2) is not waiting for stoprecognition (as when the HS suddenly disconnected)
     $scope.OnPlaybackCompleted = function(success)
     {
         $scope.isPlaying    = 0;
-        SpeechDetectionSrv.resumeSpeechRecognition();
-        $scope.$apply();
+        if (!$scope.$$phase) $scope.$apply();
+
+        if($scope.isvoicemonitoring && !$scope.isclosingrecognition) SpeechDetectionSrv.resumeSpeechRecognition();
     };
     
     $scope.OnPlaybackError = function(error)
@@ -409,22 +414,76 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     };
     //--------------------------------------------------------------------------
 
+    $scope.playbackTTS = function(text, locale)
+    {
+        if(!$scope.isConnected)
+        {
+            $scope.OnPlaybackCompleted();
+            return Promise.resolve(false);
+        }
+        
+        if(locale == null) locale = "it-IT";
+        
+        return $cordovaTextToSpeech.speak({"text":text, "locale":locale})
+        .then(function()
+        {
+            $scope.OnPlaybackCompleted();
+            return true;
+        })
+        .catch(function(error)
+        {
+            $scope.OnPlaybackCompleted();
+            return false;
+        });
+    };
     //=====================================================================================
     // HEADSET
     //=====================================================================================
     // plugin callback
     $scope.onHSStatusChange = function(event)
     {   
-        var res                 = (event.datatype == $scope.pluginInterface.ENUM.PLUGIN.HEADSET_CONNECTED ? true : false);
-        $scope.headsetAvailable = res;
-        $scope.headsetSelected  = res;
+        // if the HS suddenly disconnects during recognition....stop it (if is on) and playback an alert.
+        if($scope.isvoicemonitoring && $scope.mIsOnHeadsetSco) // && !event.data.mExistHeadsetConnected)
+            $scope.onSuddenHeadSetDisconnection(); 
+        
+        $scope.mExistHeadsetConnected   = event.data.mExistHeadsetConnected;
+        $scope.mIsOnHeadsetSco          = event.data.mIsOnHeadsetSco;
+        $scope.mActiveHeadSetName       = (event.data.mActiveHeadSetName.toString().length ? event.data.mActiveHeadSetName : UITextsSrv.RECOGNITION.labelHeadsetAbsent);
+        $scope.mActiveHeadSetAddress    = event.data.mActiveHeadSetAddress;
+        $scope.mAutoConnect             = event.data.mAutoConnect;
+        
+        if(event.data.type == pluginInterface.ENUM.PLUGIN.HEADSET_DISCONNECTED)
+        {
+            $scope.mActiveHeadSetName = UITextsSrv.RECOGNITION.labelHeadsetAbsent;
+            $scope.mActiveHeadSetAddress = "";
+        }
+        
+        console.log("RecognitionCtrl::onHSStatusChange => mAutoConnect: " + $scope.mAutoConnect.toString() + " SCO:" + $scope.mIsOnHeadsetSco.toString() + ", exisths: " + $scope.mExistHeadsetConnected.toString());
         $scope.$apply();
     };
-    
-    $scope.useHS = function(bool)
-    {    
-        $scope.pluginInterface.startSCOConnection(bool);
+   
+    $scope.onSuddenHeadSetDisconnection = function()
+    {
+        SpeechDetectionSrv.stopSpeechRecognition();
+        $scope.isclosingrecognition = true;
+//        return $scope.playbackTTS();        
     };
+    
+   
+    $scope.toogleHeadSet = function()
+    {    
+        $scope.mIsOnHeadsetSco = !$scope.mIsOnHeadsetSco;
+        BluetoothSrv.enableHeadSet($scope.mIsOnHeadsetSco);
+        if($scope.mIsOnHeadsetSco)    $scope.selectNoise(2);
+    };
+    //=====================================================================================
+    //
+    // event broadcasted by RemoteAPISrv when internet connection availability changes
+    $scope.onConnection = function(event)
+    {
+        $scope.isConnected = event.value;
+    };    
+    //=====================================================================================
     //=====================================================================================
     // MODEL CHANGE
     //=====================================================================================
@@ -675,206 +734,3 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     };        
 };
 controllers_module.controller('RecognitionCtrl', RecognitionCtrl)   
-    
-    
-    //=============================================================================================================================================================================
-    // ---------- here starts the DEBUG section -----------------------------------------------------------------------------------------------------------------------------------
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    //=============================================================================================================================================================================
-    // PLAYBACK CHUNKS
-    //=====================================================================================
-//    $scope.deleteAudio = function(filename)
-//    {
-//        var training_relpath = $scope.relpath_root;        
-//        if (!$scope.isPlaying)
-//        {        
-//            FileSystemSrv.deleteFile($scope.relpath_root + "/" + filename)
-//            .then(function(success){
-//               $scope.refreshAudioList(training_relpath);
-//            })
-//            .catch(function(error){
-//                alert(error.message);
-//            });
-//        }
-//    };    
-
-//    
-
-//    //=====================================================================================       
-//    // DEBUG 
-//    //=====================================================================================        
-//    $scope.debugActionA = function(filename)
-//    {      
-//        if(StringSrv.getExtension(filename) == "dat")
-//        {
-//                cordova.exec($scope.onRecognitionResults, $scope.onRecognitionError,"SpeechRecognitionPlugin", "recognizeCepstraFile", [$scope.relpath_root + "/" + filename]);
-//                cordova.plugin.pDialog.init({
-//                    theme : 'HOLO_DARK',
-//                    progressStyle : 'HORIZONTAL',
-//                    cancelable : false,
-//                    title : 'Please Wait...',
-//                    message : 'Recognizing Cepstra file...'
-//                });                
-//        }
-//        else
-//            $scope.playAudio(filename);
-//    };
-//    
-//    $scope.debugActionB = function(filename)
-//    {      
-//        if(StringSrv.getExtension(filename) == "dat")
-//        {
-//            if(filename.substring(0,3) != "ctx")
-//                var a;//create context file : $scope.chunkSaveParams.output_relpath + "/" + filename]);
-//            else
-//                alert("error while trying to calculate context file: dat file is already a ctx file");
-//        }
-//        else
-//            $scope.extractFeatures(filename);   // create cepstra.dat from wav
-//    };
-//
-//    //==============================================================================================================================
-//    $scope.extractFeatures = function(filename) 
-//    {  
-//        $scope.nCurFile             = 0;
-//        $scope.nFiles               = 1;
-//        var overwrite_existing_files= true;
-//        
-//        return $ionicPopup.confirm({ title: UITextsSrv.labelAlertTitle, template: 'Vuoi sovrascrivere i file esistenti?'})
-//        .then(function(res) 
-//        {
-//            if (res) overwrite_existing_files=true; 
-//        
-//            window.addEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
-//            window.addEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
-//            window.addEventListener('pluginError'       , $scope.onMFCCError);
-//
-//            if(MfccSrv.getMFCCFromFile( $scope.relpath_root + "/" + filename, 
-//                                        $scope.mfccCfg.nDataType,
-//                                        $scope.pluginInterface.ENUM.PLUGIN.MFCC_DATADEST_FILE,
-//                                        overwrite_existing_files))     // does not overwrite existing (and valid) mfcc files
-//            {
-//                cordova.plugin.pDialog.init({
-//                    theme : 'HOLO_DARK',
-//                    progressStyle : 'HORIZONTAL',
-//                    cancelable : true,
-//                    title : 'Please Wait...',
-//                    message : 'Extracting CEPSTRA filters from folder \'s files...',
-//                    max : $scope.nFiles
-//                });
-//                cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
-//            }
-//        });
-//
-//    };    
-//    
-//    $scope.onMFCCError = function(error){
-//        alert(error.message);
-//        $scope.resetExtractFeatures();
-//        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
-//    };
-//    
-//    $scope.onMFCCProgressFile = function(res){
-//        $scope.nCurFile++;
-//        if($scope.nCurFile < $scope.nFiles) cordova.plugin.pDialog.setProgress({value:$scope.nCurFile});
-//        else
-//        {
-//            $scope.resetExtractFeatures();
-//            if($scope.saveSentences) $scope.refreshAudioList($scope.relpath_root);
-//            $scope.$apply();            
-//        }
-//        
-//        console.log("ManageRecordingsCtrl::onMFCCProgressFile : " + res);
-//    };
-//    
-//    $scope.resetExtractFeatures = function()
-//    {
-//        cordova.plugin.pDialog.dismiss();
-//        window.removeEventListener('mfccprogressfile'  , $scope.onMFCCProgressFile);
-//        window.removeEventListener('mfccprogressfolder', $scope.onMFCCProgressFolder);
-//        window.removeEventListener('pluginerror'       , $scope.onMFCCError);  
-//    };    
-//    $scope.refreshMonitoring = function(received_data, elapsed, npackets, bitrate, data_params, data)
-//    {    
-//        $scope.totalReceivedData    = received_data;
-//        $scope.elapsedTime          = elapsed;
-//        $scope.packetsNumber        = npackets;
-//        $scope.bitRate              = bitrate;
-//        
-//        $scope.chart.min_data       = data_params[0];
-//        $scope.chart.max_data       = data_params[1];
-//        $scope.chart.mean_data      = data_params[2];
-//        $scope.chart.data           = data;
-//
-//        $scope.scaleData($scope.chart, 1, $scope.chart.top_value);  // scale chart to fit into its window
-//       
-//        $scope.$apply();
-//    };    
-    // ============================================================================================
-    // ============================================================================================
-    // callback from ng-DOM
-//    $scope.updateSourceType = function(selDevice)
-//    {
-//        $scope.selectedSourceType           = selDevice;
-//        $scope.Cfg.captureCfg.audioSourceType   = parseInt($scope.selectedSourceType.value);
-//    };
-//
-//    $scope.updateFrequency = function(selFreq)
-//    {
-//        $scope.selectedFrequency            = selFreq;
-//        $scope.Cfg.captureCfg.sampleRate        = parseInt($scope.selectedFrequency.value);
-//    };    
-//    
-//    $scope.updateCaptureBuffer = function(selCaptBuf)
-//    {
-//        $scope.selectedCaptureBuffer        = selCaptBuf;
-//        $scope.Cfg.captureCfg.bufferSize        = parseInt($scope.selectedCaptureBuffer.value);
-//    };    
-//
-//    $scope.updateSubsamplingFactor = function(selSSF)
-//    {
-//        $scope.selectedSSF        = selSSF;
-//        SpeechDetectionSrv.setSubSamplingFactor(parseInt($scope.selectedSSF.value));
-//    }; 
-//    
-//    
-//        return VocabularySrv.getValidTrainVocabularies(dir)    // AllSpeak/vocabularies/gigi/
-//        .then(function(validvocs)  // [vocs with also properties: sStatus & jsonpath]
-//        {
-//            if(validvocs)
-//            {
-//                existing_vocs   = validvocs;
-//                var len         = existing_vocs.length;
-//            
-//                for (var jf=0; jf<len; jf++)
-//                {
-////                    var jsonpath            = dir + "/" + existing_vocs[jf].jsonpath;
-////                    var sModelFileName      = StringSrv.removeExtension(existing_vocs[jf].jsonpath);
-//                    $scope.modelsJson[jf]   = {"sLabel": existing_vocs[jf].sLabel, "sModelFileName": existing_vocs[jf].sModelFileName, "jsonpath":dir + "/" + existing_vocs[jf].sModelFileName + ".json"};
-//
-//                    if(existing_vocs[jf].sModelFileName == $scope.loadedJsonFolderName)
-//                    {
-//                        $scope.modelsJson[jf].checked    = true;
-//                        $scope.loadedToggleId            = jf;
-//                    }
-//                    else $scope.modelsJson[jf].checked   = false;
-//                }
-//            }
-//            return 1;    
-//        })
-// ============================================================================================

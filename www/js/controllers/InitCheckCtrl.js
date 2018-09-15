@@ -18,7 +18,7 @@
  * finally, before sending to home, load the active vocabulary (if exists)
  */
  
-function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPopup, $cordovaSplashscreen, InitAppSrv, RuntimeStatusSrv, RemoteAPISrv, EnumsSrv, UITextsSrv)
+function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPopup, $cordovaSplashscreen, InitAppSrv, RuntimeStatusSrv, RemoteAPISrv, BluetoothSrv, EnumsSrv, UITextsSrv)
 {
     $scope.want2beAssistedText              = "";
     $scope.want2beAssistedText2             = "";
@@ -69,27 +69,24 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         .then(function(modal) 
         {
             $scope.modalInsertApiKey = modal;
-            // setup modal insert api key
-//            return $ionicModal.fromTemplateUrl('templates/modal/specifyGender.html', {
-//                                            scope: $scope,
-//                                            animation: 'slide-in-up',
-//                                            backdropClickToClose: false,
-//                                            hardwareBackButtonClose: false})
-//        })
-//        .then(function(modal) 
-//        {
-//            $scope.modalSpecifyGender = modal;
-            if(RemoteAPISrv.hasInternet())
-                RemoteAPISrv.checkAppUpdate($scope.startApp, null);
-            else
-            {
-                $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: UITextsSrv.SETUP.noConnectionText});
-                $scope.endCheck('home'); 
-            }
+//            return $ionicModal.fromTemplateUrl('templates/modal/specifyGender.html', {scope: $scope, animation: 'slide-in-up', backdropClickToClose: false, hardwareBackButtonClose: false})}).then(function(modal) {  $scope.modalSpecifyGender = modal;}
+            BluetoothSrv.initBluetooth($scope.checkAppUpdate);
         });  
     });
     
     $scope.$on('$ionicView.leave', function(){if($scope.deregisterFunc)   $scope.deregisterFunc();});    
+   
+    // called by initBluetooth callback (plugin -> BluetoothSrv -> here)
+    $scope.checkAppUpdate = function()
+    {
+        if(RemoteAPISrv.hasInternet())
+            RemoteAPISrv.checkAppUpdate($scope.startApp, null);
+        else
+        {
+            $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: UITextsSrv.SETUP.noConnectionText});
+            $scope.endCheck('home'); 
+        }        
+    };
    
     // callback from RemoteAPISrv.checkAppUpdate (after update-finish or no-update)
     $scope.startApp = function(isServerOn) 

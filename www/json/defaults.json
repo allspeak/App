@@ -85,7 +85,7 @@
                 "nConcatenateMaxChunks":10,
                 "nNormalize":true,
                 "fNormalizationFactor":32767,
-                "nDataDest":204,
+                "nDataDest":206,
                 "nDataSubSample":1,
                 "nChunkMaxLengthMS":20000,
                 "sOutputPath":""
@@ -147,6 +147,10 @@
             "get_training_session_network":"training-sessions",
             "delete_training_session":"training-sessions",
             "api_key_reset":"api_key_reset"}
+        },
+        "bluetooth":{
+            "autoconnect":false,
+            "devices_list":[]
         },
         "system":{
             "plugin_interface_name":"window.speechrecognition"
