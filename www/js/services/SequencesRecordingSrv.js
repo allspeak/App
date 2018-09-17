@@ -172,28 +172,34 @@ function SequencesRecordingSrv($q, FileSystemSrv, InitAppSrv, CommandsSrv, Enums
         if(curr_sequence_id >= sequence.length)
         {
             // sequence terminated. 
-            if(sequenceMode == EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE)
-            {
-                // merge this temp session with the current one
-                // I get a recordings/temp/temp_XXXXXX, I must backup to recordings/backup/backup_XXXXXX
-                return mergeDirs()
-                .then(function()
-                {
-                    return -1;
-                })
-                .catch(function(error)
-                {
-                    return $q.reject(error)
-                });
-            }
-            else return Promise.resolve(-1);
+//            if(sequenceMode == EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE)
+//            {
+//                // merge this temp session with the current one
+//                // I get a recordings/temp/temp_XXXXXX, I must backup to recordings/backup/backup_XXXXXX
+//                return mergeDirs()
+//                .then(function()
+//                {
+//                    return -1;
+//                })
+//                .catch(function(error)
+//                {
+//                    return $q.reject(error)
+//                });
+//            }
+//            else
+                return Promise.resolve(-1);
         }
         else  return Promise.resolve(curr_sequence_id);
     };
     
     mergeDirs = function()
     {
-        return CommandsSrv.mergeDirs(sourceDir, destDir, backupDir);
+        return FileSystemSrv.countFilesInDir(sourceDir, ["wav"])
+        .then(function(len)
+        {
+            if(len) return CommandsSrv.mergeDirs(sourceDir, destDir, backupDir, ["wav"]);
+            else    return true;
+        });
     };
     // ======== UNUSED !!!!!!! ====================================================================================
     // for each command, get the highest recorded repetition IDs (+1). New repetitions will start from that Id

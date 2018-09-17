@@ -36,7 +36,7 @@
             </div>
 
             <ion-item class="item-button-right">{{mActiveHeadSetName}}
-                <button class="button button-larger" ng-disabled="!mExistHeadsetConnected || isvoicemonitoring" ng-class="mIsOnHeadsetSco ? 'button-assertive' : 'button-balanced'" ng-click="toogleHeadSet(true);">{{mIsOnHeadsetSco ? 'STOP' : 'USA'}}</button>
+                <button class="button button-larger" ng-if="mExistHeadsetConnected" ng-disabled="!mExistHeadsetConnected || isvoicemonitoring" ng-class="mIsOnHeadsetSco ? 'button-assertive' : 'button-balanced'" ng-click="toogleHeadSet(true);">{{mIsOnHeadsetSco ? 'STOP' : 'USA'}}</button>
             </ion-item>
             
             <!--<ion-toggle class="item" ng-model="mIsOnHeadsetSco" ng-disabled="isvoicemonitoring || !mExistHeadsetConnected" ng-click="useHS(mIsOnHeadsetSco)">MIC: {{mActiveHeadSetName}}</ion-toggle>-->             

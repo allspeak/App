@@ -1,11 +1,11 @@
 <ion-view view-title="Comando : {{sentence.title}} {{labelSeqOrder}}" hide-back-button="true">
     
     
-    <ion-footer-bar class="bar-positive">
+    <ion-footer-bar class="bar-positive bar-footer-taller">
         <div class="button-bar">        
-            <button class="button button-block button-large button-balanced icon icon-left text-big" ng-disabled="!existNewFile" ng-click="confirm()">{{nextButtonLabel}}</button>       
-            <button class="button button-block button-large button-energized icon icon-left text-big" ng-if="isSequence" ng-click="skip()">{{skipButtonLabel}}</button>       
-            <button class="button button-block button-large button-assertive icon icon-left text-big" ng-click="cancel()">{{exitButtonLabel}}</button>       
+            <button class="button button-block button-large button-taller button-balanced icon icon-left text-big" ng-disabled="!existNewFile" ng-click="confirm()">{{nextButtonLabel}}</button>       
+            <button class="button button-block button-large button-taller button-energized icon icon-left text-big" ng-if="isSequence" ng-click="skip()">{{skipButtonLabel}}</button>       
+            <button class="button button-block button-large button-taller button-assertive icon icon-left text-big" ng-click="cancel()">{{exitButtonLabel}}</button>       
         </div>        
     </ion-footer-bar>       
     
@@ -35,8 +35,8 @@
         <label class="item">Volume voce [db]:<span class="badge">{{voiceDB}}</span></label>
 
         <ion-item class="item-button-right">{{mActiveHeadSetName}}
-            <button class="button button-larger" ng-disabled="!mExistHeadsetConnected || isvoicemonitoring" ng-class="mIsOnHeadsetSco ? 'button-assertive' : 'button-balanced'" ng-click="toogleHeadSet(true);">{{mIsOnHeadsetSco ? 'STOP' : 'USA'}}</button>
-        </ion-item>        
+            <button class="button button-larger" ng-if="mExistHeadsetConnected" ng-disabled="!mExistHeadsetConnected || isvoicemonitoring" ng-class="mIsOnHeadsetSco ? 'button-assertive' : 'button-balanced'" ng-click="toogleHeadSet(true);">{{mIsOnHeadsetSco ? 'STOP' : 'USA'}}</button>
+        </ion-item>     
         
         <div class="item range">
             <i class="icon ion-volume-low"></i>
