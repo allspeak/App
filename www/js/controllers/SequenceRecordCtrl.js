@@ -38,7 +38,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     // over-ride params
     $scope.captureProfile       = "record";
     $scope.initCaptureParams    = {nDataDest:206};  // file & DB
-    $scope.initMfccParams       = {nDataType: 251, nDataDest: 235};     // calculate MFFILTERS and use them internally
+    $scope.initMfccParams       = {nDataType: 251, nDataDest: 230};     // do NOT calculate MFFILTERS 
     
     $scope.Cfg                  = {};
     $scope.Cfg.captureCfg       = {};
@@ -105,6 +105,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     $scope.resetFlags();
     
     $scope.modalAskAbortReplaceSession = null;
+    $scope.modalAskConfirmReplaceSession = null;
     //==================================================================================================================
     // INIT PAGE
     //==================================================================================================================
@@ -208,7 +209,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND:
             case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:
 
-                $scope.initMfccParams       = {nDataType: 251, nDataDest: 235};     // get MFFILTERS & write 2 file
+                $scope.initMfccParams       = {nDataType: 251, nDataDest: 230};     // get MFFILTERS & write 2 file
                 
                 $scope.preserveOriginal     = false;   
                 $scope.isSequence           = true;
@@ -268,11 +269,16 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
             
             $scope.$apply();
             
-            if($scope.modalAskAbortReplaceSession == null)
-            {
-                return $ionicModal.fromTemplateUrl('templates/modal/modal3QuestionsBigButtons.html', {scope: $scope, animation: 'slide-in-up'})
-                .then(function(modal) {$scope.modalAskAbortReplaceSession = modal; return true;});                
-            }              
+            return $ionicModal.fromTemplateUrl('templates/modal/modal3QuestionsBigButtons.html', {scope: $scope, animation: 'slide-in-up'});
+        })
+        .then(function(modal) 
+        {
+            $scope.modalAskAbortReplaceSession = modal;
+            return $ionicModal.fromTemplateUrl('templates/modal/modal2QuestionsBigButtons.html', {scope: $scope, animation: 'slide-in-up'});
+        })
+        .then(function(modal) 
+        {
+            $scope.modalAskConfirmReplaceSession = modal;
         });
     });
 
@@ -473,120 +479,171 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
     //=====================================================================    
     $scope.confirm = function()
     {
-        switch($scope.mode_id)
+        return (function() 
         {
-            case EnumsSrv.RECORD.MODE_SINGLE_BANK:
-                return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, 2)    // force renaming
-                .then(function()
-                {
-                    if($scope.successState != "")
-                        $state.go($scope.successState, {foldername:$scope.foldername, backState:$scope.backState, elems2display:$scope.elems2display});
-                    else
-                        $ionicHistory.goBack();
-                })
-                .catch(function(error){
-                    alert(error.message);
-                });
-                break;
-                
-            case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:
-                
-                return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, 2)    // force renaming
-                .then(function()
-                {
-                    return SequencesRecordingSrv.getNextSentenceId();
-                })
-                .then(function(next_id)
-                {
-                    if(next_id >= 0)
-                        $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername, backState:$scope.backState});
-                    else
-                    {
-                        // SEQUENZA FINITA
-                        
-                        if($scope.successState != "") $state.go($scope.successState, {foldername:$scope.foldername, backState:$scope.backState, elems2display:$scope.elems2display});
-                        else                          $ionicHistory.goBack();
-                    }                         
-                })
-                .catch(function(error)
-                {
-                    alert(error.message);
-                });
-                break;
+            switch($scope.mode_id)
+            {
+                case EnumsSrv.RECORD.MODE_SINGLE_BANK:
+                case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:
+                    return FileSystemSrv.renameFile($scope.rel_filepath, $scope.rel_originalfilepath, FileSystemSrv.OVERWRITE);    // force renaming
 
-            case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND:
-            case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:
-                
-                return SequencesRecordingSrv.getNextSentenceId()
-                .then(function(next_id) // returns -1 when sequence is finished
-                {
+                case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND:
+                case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:
+                    return SequencesRecordingSrv.getNextSentenceId();
+            }
+        })() 
+        .then(function(next_id)        
+        {
+            switch($scope.mode_id)
+            {
+                case EnumsSrv.RECORD.MODE_SINGLE_BANK:
+                    
+                    if($scope.successState != "")     $state.go($scope.successState, {foldername:$scope.foldername, backState:$scope.backState, elems2display:$scope.elems2display});
+                    else                              $ionicHistory.goBack();
+                    break;
+
+                case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:
+                    
+                    return SequencesRecordingSrv.getNextSentenceId()
+                    .then(function(next_id2)
+                    {
+                        if(next_id2 >= 0)
+                            $state.go('record_sequence', {commandId:next_id2, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername, backState:$scope.backState});
+                        else
+                        {   // sequence terminated
+                            if($scope.successState != "") $state.go($scope.successState, {foldername:$scope.foldername, backState:$scope.backState, elems2display:$scope.elems2display});
+                            else                          $ionicHistory.goBack();
+                        }                         
+                    });
+                    break;
+
+                case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND:
+                    // get next_id from above promise
                     if(next_id >= 0)
                         $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername, backState:$scope.backState});
                     else
-                    {
-                        // sequence terminated
-                        if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
-                        else                            $ionicHistory.goBack();
+                    {   // sequence terminated
+                        if($scope.successState != "") $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+                        else                          $ionicHistory.goBack();
                     }
-                })
-                break;
-        }
+                    break;                
+                
+                case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:
+                    // get next_id from above promise
+                    if(next_id >= 0)
+                        $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername, backState:$scope.backState});
+                    else
+                    {   // sequence terminated
+                        // ask whether 
+                        // ask whether deleting all the temporary session or just this last file
+                        $scope.modalText    = "LA SESSIONE DI REGISTRAZIONE E\' STATA COMPLETATA. CONFERMI DI VOLER SOSTIUIRE LE REGISTRAZIONI ATTUALI CON QUESTE APPENA ESEGUITE? LE REGISTRAZIONI ATTUALI VERRANNO SALVATE";
+                        $scope.labelActionA = UITextsSrv.labelSubstitute;
+                        $scope.labelActionB = UITextsSrv.labelCancel;
+                        $scope.modalAskConfirmReplaceSession.show();  
+                    }
+                    break;
+            }            
+        })     
+        .catch(function(err)        
+        {
+            $scope.showAlert(UITextsSrv.labelAlertTitle, err.message);
+            if($scope.successState == "") $ionicHistory.goBack();
+            else
+            {
+                switch($scope.mode_id)
+                {
+                    case EnumsSrv.RECORD.MODE_SINGLE_BANK:
+                    case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:
+                        $state.go($scope.successState, {foldername:$scope.foldername, backState:$scope.backState, elems2display:$scope.elems2display});
+                        break;
+
+                    case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND:
+                    case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:
+                        $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+                        break;
+                }
+            }
+        });
     };
+    // end point of CONFIRM in case of MODE_SEQUENCE_TRAINING_REPLACE
+    // determine whether:
+    // - proceed with the substitution
+    // - go back to sequence recording
+    $scope.TwoQuestionsAction = function(bool)
+    {
+        $scope.modalAskConfirmReplaceSession.hide();
+        return (function() 
+        {
+            if(bool)    return SequencesRecordingSrv.mergeDirs();
+            else        return Promise.resolve(true);
+        })()
+        .then(function()        
+        {
+            if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+            else                            $ionicHistory.goBack();              
+        })
+        .catch(function(err)
+        {
+            return $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: err.message})
+            .then(function()
+            {
+                if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+                else                            $ionicHistory.goBack();                    
+            })
+        });         
+    };    
+    
     
     $scope.skip = function()
     {
-        switch($scope.mode_id)
+        return FileSystemSrv.deleteFile($scope.rel_filepath)
+        .then(function()
         {
-            case EnumsSrv.RECORD.MODE_SEQUENCE_BANK: // rel_filepath is : original_temp.wav
-                
-                return FileSystemSrv.deleteFile($scope.rel_filepath)
-                .then(function()
+            return SequencesRecordingSrv.getNextSentenceId()
+            .then(function(seq_id)
+            {
+                var next_id = seq_id;
+
+                if(next_id >= 0)                    $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername});
+                else
                 {
-                    var next_id = SequencesRecordingSrv.getNextSentenceId();
-                    
-                    if(next_id >= 0)                    $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername});
+                    if($scope.mode_id == EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE)
+                    {
+                        // ask what to do with the temporary session: delete it, use it or cancel
+                        $scope.modalText    = "COSA VUOI FARE CON LA SESSIONE FIN QUI REGISTRATA?. VUOI CANCELLARLA TUTTA O USARLA COMUNQUE PER SOSTIUIRE LE REGISTRAZIONI CORRENTI";
+                        $scope.labelActionA = UITextsSrv.labelDeleteAll;
+                        $scope.labelActionB = UITextsSrv.labelSubstitute;
+                        $scope.labelActionC = UITextsSrv.labelCancel;
+                        $scope.modalAskAbortReplaceSession.show();                          
+                    }
                     else
                     {
                         if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername});
                         else                            $ionicHistory.goBack();
                     }
-                })
-                .catch(function(error){
-                    alert(error.message);
-                });
-                break;
-                
-            case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND: // rel_filepath is : original.wav
-            case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:     
-                
-                return FileSystemSrv.deleteFile($scope.rel_filepath)
-                .then(function()
-                {
-                    var next_id = SequencesRecordingSrv.getNextSentenceId();
-                    
-                    if(next_id >= 0) $state.go('record_sequence', {commandId:next_id, modeId:$scope.mode_id, successState:$scope.successState, cancelState:$scope.cancelState, foldername:$scope.foldername});
-                    else
-                    {
-                        if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
-                        else                            $ionicHistory.goBack();
-                    }  
-                })
-                .catch(function(error){
-                    alert(error.message);
-                });
-                break;
-        }
+                }
+            });
+        })
+        .catch(function(err)
+        {
+            return $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: err.message})
+            .then(function()
+            {
+                if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername});
+                else                            $ionicHistory.goBack();  
+            });
+        });
     };
     
     $scope.cancel = function()
     {
-        switch($scope.mode_id)
+        return FileSystemSrv.deleteFile($scope.rel_filepath)
+        .then(function()        
         {
-            case EnumsSrv.RECORD.MODE_SINGLE_BANK:        // rel_filepath is : original_temp.wav
-            case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:        // rel_filepath is : original_temp.wav
-                return FileSystemSrv.deleteFile($scope.rel_filepath)
-                .then(function()
-                {
+            switch($scope.mode_id)
+            {
+                case EnumsSrv.RECORD.MODE_SINGLE_BANK:        // rel_filepath is : original_temp.wav
+                case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:        // rel_filepath is : original_temp.wav
                     if($scope.cancelState == "")    $ionicHistory.goBack();
                     else
                     {
@@ -597,61 +654,91 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
                         }
                         else    $state.go($scope.cancelState);
                     }
-                })
-                .catch(function(error){
-                    alert(error.message);
-                });            
-                break;
-            
-            case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND:    // rel_filepath is : original.wav
-
-                return FileSystemSrv.deleteFile($scope.rel_filepath)
-                .then(function() 
-                {
-                    if($scope.cancelState != "")
-                        $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
-                    else
-                        $ionicHistory.goBack();                    
-                })
-                break;
-            
-            case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:  
+                    break;
                 
-                $scope.modalText    = "VUOI CANCELLARE TUTTA QUESTA NUOVA SESSIONE O SOSTIUIRE QUANTO REGISTRATO FIN QUI?"
-                $scope.labelActionA = "CANCELLA TUTTO"
-                $scope.labelActionB = "SOSTUISCI"
-                $scope.labelActionC = "ANNULLA"
-                $scope.modalAskAbortReplaceSession.show();        
-                break;
-        }
+                case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND:    // rel_filepath is : original.wav
+                    if($scope.cancelState != "")    $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+                    else                            $ionicHistory.goBack(); 
+                    break;
+                
+                case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:  
+                    // ask whether deleting all the temporary session or just this last file
+                    $scope.modalText    = "COSA VUOI FARE CON LA SESSIONE FIN QUI REGISTRATA?. VUOI CANCELLARLA TUTTA O USARLA COMUNQUE PER SOSTIUIRE LE REGISTRAZIONI CORRENTI";
+                    $scope.labelActionA = UITextsSrv.labelDeleteAll;
+                    $scope.labelActionB = UITextsSrv.labelSubstitute;
+                    $scope.labelActionC = UITextsSrv.labelCancel;
+                    $scope.modalAskAbortReplaceSession.show();  
+                    break;
+            }         
+        }) 
+        .catch(function(err)        
+        {
+            return $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: err.message})
+            .then(function()
+            {
+                switch($scope.mode_id)
+                {            
+                    case EnumsSrv.RECORD.MODE_SINGLE_BANK:          // rel_filepath is : original_temp.wav
+                    case EnumsSrv.RECORD.MODE_SEQUENCE_BANK:        // rel_filepath is : original_temp.wav
+                        if($scope.cancelState == "")    $ionicHistory.goBack();
+                        else
+                        {
+                            if($scope.cancelState == "voicebank")
+                            {
+                                if($scope.foldername != "")     $state.go("voicebank", {elems2display:EnumsSrv.VOICEBANK.SHOW_TRAINED   , backState:"vocabulary", foldername:$scope.foldername});
+                                else                            $state.go("voicebank", {elems2display:EnumsSrv.VOICEBANK.SHOW_ALL       , backState:"home"      , foldername:""});
+                            }
+                            else    $state.go($scope.cancelState);
+                        }
+                        break;
+
+                    case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_APPEND:    // rel_filepath is : original.wav
+                    case EnumsSrv.RECORD.MODE_SEQUENCE_TRAINING_REPLACE:    
+                        if($scope.cancelState != "")    $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+                        else                            $ionicHistory.goBack();                  
+                        break;
+                }
+            });
+        });
     };
-    
+   
+    // end point of CANCEL in case of MODE_SEQUENCE_TRAINING_REPLACE
+    // determine whether:
+    // - delete the temp folder
+    // - proceed with the substitution
+    // - go back to sequence recording
     $scope.ThreeQuestionsAction = function(res)
     {
-        switch(res)
+        $scope.modalAskAbortReplaceSession.hide();
+        return (function() 
         {
-            case 2:
-                var session_folder = StringSrv.getFileFolder($scope.rel_filepath);
-                return FileSystemSrv.deleteDir(session_folder)
-                .then(function()
-                {
-                    $scope.modalAskAbortReplaceSession.hide();
-                    if($scope.successState != "")
-                        $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
-                    else
-                        $ionicHistory.goBack();                                
-                })
-                .catch(function(error)
-                {
-                    alert(error.message);
-                });                          
-                break;
-                
-            case 1:
-                SequencesRecordingSrv.mergeDirs();
-                break;
-        }
-        $scope.modalAskAbortReplaceSession.hide();        
+            switch(res)
+            {
+                case 2:
+                    // delete all the temporary session
+                    var session_folder = StringSrv.getFileFolder($scope.rel_filepath);
+                    return FileSystemSrv.deleteDir(session_folder);
+
+                case 1:
+                    return SequencesRecordingSrv.mergeDirs();
+            }
+        })()
+        .then(function()        
+        {
+            if($scope.successState != "")
+                $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+            else
+                $ionicHistory.goBack();              
+        })
+        .catch(function(err)
+        {
+            return $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: err.message})
+            .then(function()
+            {
+                if($scope.successState != "")   $state.go($scope.successState, {foldername:$scope.foldername, sessionPath:"", subjId:""});
+                else                            $ionicHistory.goBack();                    
+            })
+        });         
     };
     //=====================================================================================
     // HEADSET
@@ -697,7 +784,7 @@ function SequenceRecordCtrl($scope, $ionicPlatform, $state, $ionicPopup, $ionicL
 
             alertPopup.then(function(){
                 $scope.popUpAlertOn = false;
-            })
+            });
         }
     };
     

@@ -30,6 +30,10 @@
     height:80px !important;
 }  
 
+.button-taller{
+    height:50px !important;
+}  
+
 .button-header-big{
     height:26px !important;
     font-size:26px !important;
@@ -52,12 +56,9 @@
 }  
 
 
-.bar-footer{
+.bar-footer-taller{
     height:50px !important;
-    .bar-footer.button{
-        font-size: 12;
-        height:40px !important
-    }
+
 }
 
 /* =======================================================================

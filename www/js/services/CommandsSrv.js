@@ -111,31 +111,30 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, FileSy
     };
     
     // compare two folders. 
-    // if a file is present in src_path and absent in dest_path :   source => dest
-    // if a file is present in both src_path and dest_path      :   dest => backup & source => dest
-    // 
+    // if a file is present in src_path and absent in dest_path :   source  => dest
+    // if a file is present in both src_path and dest_path      :   dest    => backup
+    //                                                              source  => dest
     // 1)   I create the backup folder
     // 2)   I get the list of source files
     // 3)   I create the unique list of repetitions to backup & replace
     // 4)   I get the list of dest files
-    // 5)   I calculate the list og dest files to be moved to backup folder
+    // 5)   I calculate the list of dest files to be moved to backup folder
     // 6)   I move the latter files
     // 7)   I move all source files to dest one
+    // 8)   I delete source (temp) dir 
+
     mergeDirs = function(src_path, dest_path, backup_path, valid_extensions)
     {
-        var source_files = [];
-        var dest_files = [];
+        var source_files        = [];
+        var dest_files          = [];
         
-        var source_files = [];
-        var dest_files = [];
+        var uniqueID2replace    = [];
         
-        var uniqueID2replace = [];
-        
-        var dest_files2backup = [];
+        var dest_files2backup   = [];
         var newpath_of_dest_files2backup = [];
 
         return FileSystemSrv.createDir(backup_path)                             // 1
-        .then(function(res)
+        .then(function()
         {       
             return FileSystemSrv.listFilesInDir(src_path, valid_extensions);    // 2
         })
@@ -153,13 +152,11 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, FileSy
                     if(s_id == uniqueID2replace[c]) addit = false;
                 if(addit) uniqueID2replace.push(s_id);
             }             
-
             return FileSystemSrv.listFilesInDir(dest_path, valid_extensions);   // 4
         })
         .then(function(destfiles)
         {
             dest_files = destfiles;
-            
             // define dest files to be replaced in the backup folder            
             var s_id, d_id;
             for(var fd=0; fd<dest_files.length; fd++)
@@ -174,40 +171,36 @@ main_module.service('CommandsSrv', function($q, FileSystemSrv, StringSrv, FileSy
                     }
                 }
             }
-            
-            // DO MOVE files 2 backup
+            // DO MOVE source files to dest folder (recordings_folder)
             var subPromises = [];
             for (var f=0; f<dest_files2backup.length; f++) 
-            {
-                (function(src, dest) 
-                {
-                    var subPromise  = FileSystemSrv.renameFile(src, dest, FileSystemSrv.OVERWRITE);    // force renaming
-                    subPromises.push(subPromise);
-                })(dest_files2backup[f], newpath_of_dest_files2backup[f]);
-            }
+                subPromises.push(FileSystemSrv.renameFile(dest_files2backup[f], newpath_of_dest_files2backup[f], FileSystemSrv.OVERWRITE));// force renaming            
             return $q.all(subPromises);                                         // 6
         })
         .then(function()
         {
-            // DO MOVE source files to dest folder (recordings_folder)
+            // DO MOVE files 2 backup
             var subPromises = [];
             for (var f=0; f<source_files.length; f++) 
-            {
-                (function(src, dest) 
-                {
-                    var subPromise  = FileSystemSrv.renameFile(src, dest, FileSystemSrv.OVERWRITE);    // force renaming
-                    subPromises.push(subPromise);
-                })(src_path + "/" + source_files[f], dest_path + "/" + source_files[f]);
-            }
+                subPromises.push(FileSystemSrv.renameFile(src_path + "/" + source_files[f], dest_path + "/" + source_files[f], FileSystemSrv.OVERWRITE));            
             return $q.all(subPromises);                                         // 7
+        })
+        .then(function()
+        {
+            return FileSystemSrv.deleteDir(src_path);                           // 8
         })
         .then(function()
         {
             return $q.defer().resolve(true);
         })
-        .catch(function(error){
-            error.message = "ERRORE CRITICO in CommandSrv::mergeDirs " + error.message;
-            return $q.reject(error);
+        .catch(function(error)
+        {
+            return FileSystemSrv.deleteDir(backup_path)    
+            .then(function()
+            {
+                error.message = "ERRORE CRITICO in CommandSrv::mergeDirs " + error.message;
+                return $q.reject(error);
+            });
         });        
     };
     //---------------------------------------------------------------------------

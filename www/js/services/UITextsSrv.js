@@ -25,6 +25,7 @@ function UITextsSrv()
     service.labelCancel                 = "ANNULLA"; 
     service.labelDelete                 = "CANCELLA"; 
     service.labelRecovery               = "RECUPERA"; 
+    service.labelDeleteAll              = "CANCELLA TUTTO"; 
     service.labelSureOverWriteExistFile = 'IL FILE ESISTE GIA\'.<br>VUOI SOVRASCRIVERLO ?'; 
     
     
