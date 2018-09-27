@@ -209,7 +209,7 @@ function RecognitionCtrl($scope, $q, $state, $ionicPopup, $cordovaTextToSpeech, 
     
     $scope.go2settings = function()
     {
-        $state.go('settings.recognition', {modeid:EnumsSrv.RECOGNITION.PARAMS_MOD_VOC, foldername:$scope.foldername}); 
+        $state.go('settings.recognition', {modeid:EnumsSrv.RECOGNITION.PARAMS_MOD_VOC, foldername:$scope.foldername, sessionname:$scope.sessionname}); 
     };
 
 //    $scope.changeThreshold = function(boolincrement)

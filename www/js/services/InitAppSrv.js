@@ -278,13 +278,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
             jsonfiles = files;
             var subPromises = [];
             for (var f=0; f<jsonfiles.length; f++) 
-            {
-                (function(relpath) 
-                {
-                    var subPromise = FileSystemSrv.readJSON(relpath)
-                    subPromises.push(subPromise);
-                })(dest_dataroot_folder + "/" + jsonfiles[f]);
-            }
+                subPromises.push(FileSystemSrv.readJSON(dest_dataroot_folder + "/" + jsonfiles[f]));
             return $q.all(subPromises);     // load all json files
         })
         .then(function(vocs)
@@ -293,11 +287,7 @@ function InitAppSrv($http, $q, $cordovaAppVersion, VoiceBankSrv, HWSrv, SpeechDe
             for (var f=0; f<vocs.length; f++) 
             {
                 vocs[f].sModelFilePath = FileSystemSrv.getResolvedOutDataFolder() + dest_dataroot_folder + "/" +  vocs[f].sModelFileName + ".pb";
-                (function(relpath, obj) 
-                {
-                    var subPromise = FileSystemSrv.createJSONFileFromObj(relpath, obj, FileSystemSrv.OVERWRITE);
-                    subPromises.push(subPromise);
-                })(dest_dataroot_folder + "/" + jsonfiles[f], vocs[f]);
+                subPromises.push(FileSystemSrv.createJSONFileFromObj(dest_dataroot_folder + "/" + jsonfiles[f], vocs[f], FileSystemSrv.OVERWRITE));
             }
             return $q.all(subPromises);     // update sModelFilePath within each json file
         })

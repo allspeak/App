@@ -170,6 +170,16 @@ main_module.service('VocabularySrv', function($q, $ionicPopup, $state, VoiceBank
         });
     }; 
  
+    // list folder for net_xxxxx.json, return the first (there should be just one when called)
+    getNetInFolder = function(folder)
+    {
+        return FileSystemSrv.listFilesInDir(folder, ["json"], "net_")
+        .then(function(files)
+        {
+            if(files.length)    return getTrainVocabulary(folder + "/" + files[0], false);
+            else                return null;
+        });
+    };
     //====================================================================================================================================================
     //  GET SOME COMMANDS
     //==================================================================================================================================================== 
@@ -390,7 +400,12 @@ main_module.service('VocabularySrv', function($q, $ionicPopup, $state, VoiceBank
         .then(function()
         {
             return FileSystemSrv.createFile(vocfile, JSON.stringify(voc), overwrite, textobj);
-        })      
+        })  
+        .then(function(created)
+        {
+            if(!created)    return $q.reject({"message":"NON HO POTUTO SALVARE IL VOCABOLARIO"});
+            else            return voc;
+        })           
         .catch(function(error)
         {
             // if is a new voc, delete all the folders created and reject error. 
@@ -1030,6 +1045,7 @@ main_module.service('VocabularySrv', function($q, $ionicPopup, $state, VoiceBank
         getTrainVocabularySelectedNet           : getTrainVocabularySelectedNet,        // returns promise of a {voc:train_vocabulary, net:selected net}, given a vocabulary.json rel path (AllSpeak/vocabularies/gigi/vocabulary.json)
         getTrainVocabularySelectedNetName       : getTrainVocabularySelectedNetName,    // returns promise of a {voc:train_vocabulary, net:selected net}, given a foldername (AllSpeak/vocabularies/gigi/vocabulary.json)
         getAllTrainVocabulary                   : getAllTrainVocabulary,                // returns the content of all the vocabulary.json of each vocabulary
+        getNetInFolder                          : getNetInFolder,                       // list folder for net_xxxxx.json, return the first (there should be just one when called)
 
         // SET, MODIFY
         setTrainVocabulary                      : setTrainVocabulary,                   // write train_vocabulary to file

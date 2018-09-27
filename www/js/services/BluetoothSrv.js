@@ -17,6 +17,8 @@ function BluetoothSrv($q)
     mExistHeadsetConnected  = false;
     mIsOnHeadsetSco         = false;
     mAutoConnect            = false;
+    mIsWiredConnected       = false;
+    mHasWiredMic            = false;
     
     mActiveHeadSetName       = "";
     ctrl_callback           = null;
@@ -60,7 +62,7 @@ function BluetoothSrv($q)
     // data are sent to the caller in the same format as cordova.fireWindowEvent("headsetstatus", {data: data});
     getBluetoothStatus = function()
     {
-        return pluginInterface.getBluetoothStatus()
+        return pluginInterface.getAudioIOStatus()
         .then(function(status)
         {
             mExistHeadsetConnected  = status.mExistHeadsetConnected;
@@ -68,12 +70,17 @@ function BluetoothSrv($q)
             mAutoConnect            = status.mAutoConnect;
             mActiveHeadSetName      = status.mActiveHeadSetName;    
             mActiveHeadSetAddress   = status.mActiveHeadSetAddress;    
+            mIsWiredConnected       = status.mIsWiredConnected;    
+            mHasWiredMic            = status.mHasWiredMic;    
             
             return {"data":{"mExistHeadsetConnected":mExistHeadsetConnected,
                             "mIsOnHeadsetSco"       :mIsOnHeadsetSco,
                             "mAutoConnect"          :mAutoConnect,
                             "mActiveHeadSetName"    :mActiveHeadSetName,
-                            "mActiveHeadSetAddress" :mActiveHeadSetAddress}};
+                            "mActiveHeadSetAddress" :mActiveHeadSetAddress,
+                            "mIsWiredConnected"     :mIsWiredConnected,
+                            "mHasWiredMic"          :mHasWiredMic
+                   }};
         });     
     };
 
@@ -109,6 +116,26 @@ function BluetoothSrv($q)
                 
             case plugin_enum.AUDIOSCO_DISCONNECTED:
                 mIsOnHeadsetSco         = false;                
+                break;              
+                
+            case plugin_enum.WIREDMIC_CONNECTED:
+                mIsWiredConnected   = true;
+                mHasWiredMic        = true;                
+                break;              
+                
+            case plugin_enum.WIREDMIC_DISCONNECTED:
+                mIsWiredConnected   = false;
+                mHasWiredMic        = false;                
+                break;              
+                
+            case plugin_enum.WIREDEAR_CONNECTED:
+                mIsWiredConnected   = true;
+                mHasWiredMic        = false;                
+                break;              
+                
+            case plugin_enum.WIREDMIC_DISCONNECTED:
+                mIsWiredConnected   = false;
+                mHasWiredMic        = false;                
                 break;              
         }
     };    

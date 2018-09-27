@@ -529,6 +529,8 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     };
     //--------------------------------------------------------------------------
     //return all the files contained in a folder, belonging to the [valid_extensions] formats.
+    // valid_extensions = ["ext1_without_dot", "", ..., ""], 
+    // contains = "string"
     service.listFilesInDir = function(relative_path, valid_extensions, filecontains, alternative_resolved_root)
     {
         var res_root = (alternative_resolved_root   ?   alternative_resolved_root   :   service.resolved_data_storage_root);
@@ -548,7 +550,7 @@ function FileSystemSrv($cordovaFile, $ionicPopup, $q, StringSrv)
     service.listFilesInAssetsSubDir = function(relative_path, valid_extensions, filecontains)
     {
         return $cordovaFile.listDir(service.resolved_assets_folder, service.data_assets_folder + "/" + relative_path)
-        .then(function(dirs)
+        .then(function(dirs) //dirs = [{"isDirectory", "name"}, ..., {}]
         {
             return service._filterFiles(dirs, valid_extensions, filecontains);
         })

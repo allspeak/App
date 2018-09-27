@@ -58,8 +58,12 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
                 $state.go("home");
             }   
             else $scope.foldername = data.stateParams.foldername;
+            
+            if(data.stateParams.sessionname != "")  $scope.sessionname = data.stateParams.sessionname;  // data.stateParams.sessionname = "/xxxxxxx"
+            else                                    $scope.sessionname = "";            
         }
 
+        $scope.vocabularies_relpath = InitAppSrv.getVocabulariesFolder();   // AllSpeak/vocabularies
         //---------------------------------------------------------------------------------------------------------------------       
         
         pluginInterface             = InitAppSrv.getPlugin();            
@@ -88,18 +92,29 @@ function SettingsRecognitionCtrl($scope, $state, $ionicPlatform, $ionicHistory, 
         $scope.countAD              = $scope.vadCfg.nSpeechDetectionAllowedDelay;
         $scope.mic_threshold        = $scope.vadCfg.nSpeechDetectionThreshold;      // TODO: set limits !
         
-//        $scope.priceSlider          = {value:200, options:{floor: 0, ceil: 500 }};
         $scope.has_changed_glob     = false;
         $scope.has_changed_net      = false;
         
         $scope.$apply();
         if($scope.modeId == EnumsSrv.RECOGNITION.PARAMS_MOD_VOC)
         {
-            return VocabularySrv.getTrainVocabularySelectedNetName($scope.foldername)
+            // check whether current net is an accepted one or a test one 
+            return(function() 
+            {
+                if($scope.sessionname != "")
+                {
+                    return VocabularySrv.getNetInFolder($scope.vocabularies_relpath + "/" + $scope.foldername + $scope.sessionname)     // $scope.sessionname is  "/xxxxxxx"
+                    .then(function(net)
+                    {
+                        return {"net":net};
+                    })
+                }
+                else return VocabularySrv.getTrainVocabularySelectedNetName($scope.foldername);
+            })()
             .then(function(voc_and_net)
             {
                 $scope.currentNet           = voc_and_net.net; // net or null
-                $scope.currentNetJsonPath   = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername + "/" + $scope.currentNet.sModelFileName + ".json";
+                $scope.currentNetJsonPath   = InitAppSrv.getVocabulariesFolder() + "/" + $scope.foldername + $scope.sessionname + "/" + $scope.currentNet.sModelFileName + ".json";
                 $scope.recThreshold         = $scope.currentNet.fRecognitionThreshold*100;
                 $scope.recDistance          = $scope.currentNet.nRecognitionDistance;
                 $scope.$apply();
