@@ -264,9 +264,9 @@ function ManageCommandsCtrl($scope, $state, $ionicHistory, $ionicPlatform, $ioni
         var newvocname          = labobj.label;
         var sourcefoldername    = selvoc.data;
         return VocabularySrv.copyVocabularyName(newvocname, sourcefoldername)
-        .then(function(success)
+        .then(function(voc_or_null)
         {
-            if(success)
+            if(voc_or_null)
             {
                 $state.go("vocabulary", {foldername: StringSrv.format2filesystem(newvocname)});
                 $scope.modalSelectNewVocabulary.hide();   
