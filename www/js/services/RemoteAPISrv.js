@@ -58,14 +58,17 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, $cordo
         initAppSrv      = initappserv;
         api_key         = apikey;
         
-//        ServerCfg.url   = "http://10.245.72.26:8095";        // IIT WL
+//        ServerCfg.url   = "http://10.245.72.36:8095";        // IIT WL
 //        ServerCfg.url   = "http://10.245.71.123:8095";        // IIT WL
-//        ServerCfg.url   = "http://192.168.1.6:8095";          // casa
+//        ServerCfg.url   = "http://192.168.1.7:8095";          // casa
 //        ServerCfg.url   = "http://192.168.36.28:8095";        // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.43.69:8095";        // Moto G3
         ServerCfg.url   = "https://api.allspeak.eu";           // produzione
 //        ServerCfg.url   = "http://api.allspeak.staging.eu";   // staging
 //        ServerCfg.url   = "http://10.255.7.79";               // OVERWRITE FOR DEBUG
+//        ServerCfg.url   = "http://10.0.2.1";               // EMULATORE TALOS
+//        ServerCfg.url   = "http://192.168.1.6";               // PC TALOS
+
         Enums           = window.AppUpdate.ENUM.PLUGIN;
         
         $cordovaNetwork.onConnect().subscribe(function(event)  

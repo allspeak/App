@@ -85,7 +85,7 @@ function InitCheckCtrl($scope, $q, $state, $ionicPlatform, $ionicModal, $ionicPo
         {
             $ionicPopup.alert({title: UITextsSrv.labelAlertTitle, template: UITextsSrv.SETUP.noConnectionText});
             $scope.endCheck('home'); 
-        }        
+        }    
     };
    
     // callback from RemoteAPISrv.checkAppUpdate (after update-finish or no-update)

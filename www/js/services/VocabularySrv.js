@@ -804,7 +804,7 @@ main_module.service('VocabularySrv', function($q, $ionicPopup, $state, VoiceBank
     // returns existingNets{{exist, path, voc},..,{exist, path, voc}}
     getExistingNets = function(uservocabularyname)
     {    
-        var voc_relpath = vocabularies_folder + "/" + uservocabularyname
+        var voc_relpath = vocabularies_folder + "/" + uservocabularyname;
         var existingNets = {
             "pu":   {"exist":false, path:"", "voc":{}},
             "pua":  {"exist":false, path:"", "voc":{}},
@@ -866,7 +866,7 @@ main_module.service('VocabularySrv', function($q, $ionicPopup, $state, VoiceBank
                 else
                     subPromises.push(Promise.resolve(true));
             }
-            return $q.all(subPromises)// Promises cycle !!    LEGGO CONTENUTO NETS' JSONS
+            return $q.all(subPromises);// Promises cycle !!    LEGGO CONTENUTO NETS' JSONS
         })
         .then(function(vocs)
         {
@@ -907,7 +907,7 @@ main_module.service('VocabularySrv', function($q, $ionicPopup, $state, VoiceBank
             }
 //            console.log(MiscellaneousSrv.printObjectArray(existingNets));
             return existingNets;
-        })
+        });
     };      
     
     // given a foldername, returns an objectarray{pu/pua/pura/ca/cra} with the netobjects of the last net of the two families (1)PURA <= (2) PUA <= (3) PU or (1) CRA (2) CA ...that can recognize

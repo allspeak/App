@@ -360,7 +360,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
         {
             if(!res)    $scope.updateProcScheme($scope.temp_preprocscheme);
         });
-    }
+    };
     
     //==============================================================================================================================
     // EXTRACT FEATURES
@@ -432,7 +432,7 @@ function ManageTrainingCtrl($scope, $q, $ionicPopup, $state, $ionicPlatform, $io
                                 ow,
                                 outputfile_noext);  
         
-    }
+    };
     // manage pluginevents
     $scope.onMFCCProgressFolder = function(res)
     {
