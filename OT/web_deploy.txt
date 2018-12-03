@@ -19,7 +19,7 @@ ssh -i inuggi inuggi@10.255.7.79
 ssh -i inuggi inuggi@172.31.0.116
 
 su allspeak
-pwd: bozzini
+pwd: 
 
 
 # per lanciare update da github
