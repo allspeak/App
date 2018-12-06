@@ -63,10 +63,11 @@ main_module.service('RemoteAPISrv', function($http, $q, $cordovaTransfer, $cordo
 //        ServerCfg.url   = "http://192.168.1.7:8095";          // casa
 //        ServerCfg.url   = "http://192.168.36.28:8095";        // OVERWRITE FOR DEBUG
 //        ServerCfg.url   = "http://192.168.43.69:8095";        // Moto G3
-        ServerCfg.url   = "https://api.allspeak.eu";           // produzione
+        ServerCfg.url   = "https://api.allspeak.eu";            // produzione
 //        ServerCfg.url   = "http://api.allspeak.staging.eu";   // staging
 //        ServerCfg.url   = "http://10.255.7.79";               // OVERWRITE FOR DEBUG
-//        ServerCfg.url   = "http://10.0.2.1";               // EMULATORE TALOS
+//        ServerCfg.url   = "https://api.allspeak.iit.local";   // test docker https
+//        ServerCfg.url   = "http://10.0.2.1";                  // EMULATORE TALOS
 //        ServerCfg.url   = "http://192.168.1.6";               // PC TALOS
 
         Enums           = window.AppUpdate.ENUM.PLUGIN;
